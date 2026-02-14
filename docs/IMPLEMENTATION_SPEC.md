@@ -392,13 +392,14 @@ Manifests are the backbone. Any silent duplication or missing pair corrupts all 
 
 Canonicalization policy (deterministic):
 - If duplicates exist for a key:
-  - Prefer the row that passes strict prompt integrity checks (must contain the question and all 4 option strings, must contain
-    an explicit single-letter instruction, and must end with `Answer:` plus trailing space after canonicalization).
-  - If multiple duplicates pass (or none pass), choose the row with the lexicographically smallest `prompt_text_sha256` as the
-    deterministic tie-breaker.
-  - Log all dropped duplicates in a canonicalization report (including why each was dropped).
+  - For this project, the paid robustness v2 input contains a known mixture of older+newer rows for some `(example_id, wrapper_id)`.
+  - We **keep the later file occurrence** (larger source line index) and drop the earlier occurrence.
+  - Log all dropped duplicates in a canonicalization report (line numbers + hashes + prompt ids).
 - If missing wrappers exist:
-  - Fail fast by default. Missing wrappers may only be repaired via an explicit regeneration mode that:
+  - Fail fast by default.
+  - A narrow deterministic repair is allowed only for the known missing pair `(mmlu::test::12183, ascii_box)` using a local
+    reproducible template (logged in the canonicalization report as a repair event).
+  - Any other missing wrapper pairs are treated as a hard failure and require an explicit regeneration mode that:
     - records generator model id + revision
     - stores the full raw generator output
     - writes a regeneration report
@@ -440,7 +441,8 @@ If any bucket is empty for any model, stop.
 This methodology cannot proceed for that model without changing the approach.
 
 Outputs:
-- `runs/<run_id>/token_buckets/<model_id>.json`
+- `runs/<run_id>/token_buckets/<model_id_fs>.json` where `<model_id_fs>` is a filesystem-safe form of the HF model id
+  (for example `meta-llama__Llama-3.1-8B-Instruct`).
 
 Validator:
 - Each of A/B/C/D has at least one token identifier.

@@ -143,3 +143,18 @@ Canonical references:
 - notes: PCA policy: sample_size=1000, stratified(wrapper_id, coarse_domain) uniform-over-strata, n_components=128; seed=12345; membership files are in /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pca/
 - notes: resume key definition: sha256(model_id + ':' + prompt_uid)
 - next: Stage 5 - option token buckets
+
+### 2026-02-14 13:50 (local) - Stage 5 - option token buckets (A/B/C/D) per model - PASS
+- command: python3 sow.py token-buckets --run-id m1_20260214_124722
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/token_buckets/Qwen__Qwen2.5-7B-Instruct.json: 598bc72008d0e3fee9842a1c1b78a2c28acaa9fcd34314e882387bbd2d1270d2
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/token_buckets/meta-llama__Llama-3.1-8B-Instruct.json: 787cdc48c4f0e4ceb1094906278433f3542410cb15086ed9b02cb6cb9cd84d28
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/token_buckets/mistralai__Mistral-7B-Instruct-v0.3.json: 9bb8576e4e12004194dbef7578e4c136cd25ceb1f005f70f312e2e2956fbe921
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/token_buckets_report.json: a8cac1a8675dcb464379fcc6382afdd394e2e251075f8e337c619b086e3e6ec0
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/token_buckets.done: 98f478ec6062526f521b70c74b5a9bb0cb44ac7922e263ea46ac4de567065938
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/token_buckets_report.json: a8cac1a8675dcb464379fcc6382afdd394e2e251075f8e337c619b086e3e6ec0
+- notes: Built tokenizer-derived A/B/C/D token buckets with fixed variant templates; fail-fast if any bucket empty or overlaps detected.
+- next: Stage 7 - pilot inference (after confirming Stage 6 PASS already)

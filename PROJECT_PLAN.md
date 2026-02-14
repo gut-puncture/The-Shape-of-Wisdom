@@ -36,7 +36,7 @@ Canonical docs:
   - Artifacts: canonical manifest(s) (only if needed) + canonicalization report
   - Gate: join-key uniqueness + wrapper coverage invariants PASS
 
-- [ ] Stage 5 - Build per-model option token buckets (A/B/C/D)
+- [x] Stage 5 - Build per-model option token buckets (A/B/C/D)
   - Artifacts: `runs/<run_id>/token_buckets/<model_id>.json`
   - Gate: buckets non-empty and handled deterministically PASS
 

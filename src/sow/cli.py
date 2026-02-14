@@ -14,6 +14,7 @@ from sow.manifest.canonicalize import canonicalize_baseline_manifest, canonicali
 from sow.manifest.schema import validate_baseline_manifest, validate_robustness_manifest
 from sow.pca.membership import select_pca_membership, write_membership_file
 from sow.state import HashedPath, append_state_entry
+from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -233,6 +234,54 @@ def cmd_parser_regression(args: argparse.Namespace) -> int:
     return 0 if report["pass"] else 2
 
 
+def cmd_token_buckets(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    out_dir = run_dir / "token_buckets"
+    v_dir = run_dir / "validation"
+    s_dir = run_dir / "sentinels"
+    v_dir.mkdir(parents=True, exist_ok=True)
+    s_dir.mkdir(parents=True, exist_ok=True)
+
+    report = build_and_write_option_buckets_for_models(
+        run_id=args.run_id,
+        models=list(cfg["models"]),
+        out_dir=out_dir,
+    )
+
+    v_path = v_dir / "token_buckets_report.json"
+    v_path.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    s_path = s_dir / "token_buckets.done"
+    s_path.write_text(
+        json.dumps({"stage": "token_buckets", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 5 - option token buckets (A/B/C/D) per model",
+        status="PASS" if report.get("pass") else "FAIL",
+        command=f"python3 sow.py token-buckets --run-id {args.run_id}",
+        inputs=[HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path))],
+        outputs=[
+            *(HashedPath(path=f["path"], sha256=f["sha256"]) for f in report["files"]),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+            HashedPath(path=str(s_path), sha256=sha256_file(s_path)),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Built tokenizer-derived A/B/C/D token buckets with fixed variant templates; fail-fast if any bucket empty or overlaps detected.",
+        next_step="Stage 7 - pilot inference (after confirming Stage 6 PASS already)" if report.get("pass") else "Fix bucket builder",
+    )
+
+    print(str(v_path))
+    return 0 if report.get("pass") else 2
+
+
 def cmd_pca_membership(args: argparse.Namespace) -> int:
     run_dir = _run_dir(args.run_id)
     cfg_path = run_dir / "run_config.yaml"
@@ -338,6 +387,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_pr.add_argument("--run-id", required=True)
     p_pr.set_defaults(func=cmd_parser_regression)
 
+    p_tb = sub.add_parser("token-buckets", help="Build per-model option token buckets (A/B/C/D)")
+    p_tb.add_argument("--run-id", required=True)
+    p_tb.set_defaults(func=cmd_token_buckets)
+
     p_pca = sub.add_parser("pca-membership", help="Freeze PCA sample membership (1000, stratified)")
     p_pca.add_argument("--run-id", required=True)
     p_pca.set_defaults(func=cmd_pca_membership)
@@ -349,4 +402,3 @@ def main(argv: List[str] | None = None) -> int:
     ap = build_parser()
     args = ap.parse_args(argv)
     return int(args.func(args))
-
