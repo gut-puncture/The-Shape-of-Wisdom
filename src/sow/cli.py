@@ -13,6 +13,7 @@ from sow.judging.deterministic_parser import parse_choice
 from sow.manifest.canonicalize import canonicalize_baseline_manifest, canonicalize_robustness_manifest_v2
 from sow.manifest.schema import validate_baseline_manifest, validate_robustness_manifest
 from sow.pca.membership import select_pca_membership, write_membership_file
+from sow.pcc.build_pcc import build_pcc_manifests_for_model
 from sow.state import HashedPath, append_state_entry
 from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models, model_fs_id
 from sow.stage0_env import collect_environment, run_smoke_test
@@ -641,6 +642,189 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
     return 0 if v_report["pass"] else 2
 
 
+def _pilot_status_for_model(*, run_dir: Path, model_id: str) -> Dict[str, Any]:
+    """
+    Returns best-known pilot gate status for a model from run artifacts.
+    Prefers per-model pilot reports if present; otherwise falls back to stage-level pilot reports.
+    """
+    model_key = model_fs_id(model_id)
+    v_dir = run_dir / "validation"
+
+    def attempt_idx(p: Path) -> int:
+        name = p.name
+        if ".attempt" not in name:
+            return 0
+        try:
+            frag = name.split(".attempt", 1)[1]
+            n = frag.split(".", 1)[0]
+            return int(n)
+        except Exception:
+            return 0
+
+    # 1) Per-model reports: pilot_report.<model_key>[.attemptN].json
+    per_model = sorted(v_dir.glob(f"pilot_report.{model_key}*.json"), key=lambda p: (attempt_idx(p), p.name))
+    if per_model:
+        best = per_model[-1]
+        obj = json.loads(best.read_text(encoding="utf-8"))
+        gate = obj.get("gate") or {}
+        return {
+            "source": "per_model",
+            "pass": bool(gate.get("pass")),
+            "report_path": str(best),
+            "report_sha256": sha256_file(best),
+            "gate": gate,
+        }
+
+    # 2) Stage-level reports: pilot_report[.attemptN].json
+    stage_reports = []
+    for p in v_dir.glob("pilot_report*.json"):
+        if p.name == "pilot_report.json" or p.name.startswith("pilot_report.attempt"):
+            stage_reports.append(p)
+    stage_reports = sorted(stage_reports, key=lambda p: (attempt_idx(p), p.name))
+    for p in reversed(stage_reports):
+        obj = json.loads(p.read_text(encoding="utf-8"))
+        for entry in obj.get("models", []) or []:
+            if entry.get("model_id") == model_id:
+                gate = entry.get("gate") or {}
+                return {
+                    "source": "stage_level",
+                    "pass": bool(gate.get("pass")),
+                    "report_path": str(p),
+                    "report_sha256": sha256_file(p),
+                    "gate": gate,
+                    "metrics_overall": entry.get("metrics_overall"),
+                }
+
+    return {"source": "missing", "pass": False, "error": f"no pilot report found for model_id={model_id}"}
+
+
+def cmd_build_pcc(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    # Dependencies (stage gates).
+    for s in ["stage0.done", "manifests.done", "token_buckets.done", "parser_regression.done"]:
+        p = run_dir / "sentinels" / s
+        if not p.exists():
+            raise SystemExit(f"missing dependency sentinel: {p}")
+
+    baseline_manifest = run_dir / "manifests" / "baseline_manifest.jsonl"
+    robustness_manifest = run_dir / "manifests" / "robustness_manifest_v2.jsonl"
+    if not baseline_manifest.exists() or not robustness_manifest.exists():
+        raise SystemExit("manifests must be built before PCC")
+
+    expected_wrappers = list(cfg["prompting"]["robustness_wrapper_ids_v2"])
+    seed = int(cfg["random_seed"])
+    target_size = int(args.target_size)
+    max_new = int(cfg["generation"]["max_new_tokens"])
+
+    # Require pilot gate PASS for every model we intend to run.
+    pilot_info = {}
+    missing = []
+    for m in cfg["models"]:
+        st = _pilot_status_for_model(run_dir=run_dir, model_id=m["model_id"])
+        pilot_info[m["name"]] = st
+        if not st.get("pass"):
+            missing.append(f"{m['name']}: {st.get('error') or st.get('gate')}")
+    if missing:
+        raise SystemExit("pilot gate missing/failed for models: " + "; ".join(missing))
+
+    out_dir = run_dir / "manifests"
+    per_model = []
+    for m in cfg["models"]:
+        res = build_pcc_manifests_for_model(
+            run_id=args.run_id,
+            model_name=m["name"],
+            model_id=m["model_id"],
+            model_revision=m["revision"],
+            baseline_manifest_path=baseline_manifest,
+            robustness_manifest_path=robustness_manifest,
+            expected_wrapper_ids=expected_wrappers,
+            generation_max_new_tokens=max_new,
+            target_size=target_size,
+            seed=seed,
+            out_dir=out_dir,
+        )
+        per_model.append(
+            {
+                "model_name": m["name"],
+                "model_id": m["model_id"],
+                "model_revision": m["revision"],
+                "pilot": pilot_info.get(m["name"]),
+                **res,
+            }
+        )
+
+    report = {
+        "pass": True,
+        "run_id": args.run_id,
+        "target_size": target_size,
+        "seed": seed,
+        "expected_wrapper_ids": expected_wrappers,
+        "baseline_manifest_path": str(baseline_manifest),
+        "baseline_manifest_sha256": sha256_file(baseline_manifest),
+        "robustness_manifest_path": str(robustness_manifest),
+        "robustness_manifest_sha256": sha256_file(robustness_manifest),
+        "models": per_model,
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    report_path = _next_available_path(out_dir / "pcc_report.json")
+    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    sent_dir = run_dir / "sentinels"
+    sent_dir.mkdir(parents=True, exist_ok=True)
+    sent_path = _next_available_path(sent_dir / "pcc.done")
+    sent_path.write_text(
+        json.dumps({"stage": "pcc", "output": str(report_path), "sha256": sha256_file(report_path)}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    # Per-model sentinels.
+    for entry in per_model:
+        mk = model_fs_id(entry["model_id"])
+        per_model_report = _next_available_path(out_dir / f"pcc_report.{mk}.json")
+        per_model_report.write_text(json.dumps(entry, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        per_model_sent = _next_available_path(sent_dir / f"pcc.{mk}.done")
+        per_model_sent.write_text(
+            json.dumps({"stage": "pcc", "model_id": entry["model_id"], "output": str(per_model_report), "sha256": sha256_file(per_model_report)}, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 8 - build Primary Core Corpus (PCC)",
+        status="PASS",
+        command=f"python3 sow.py build-pcc --run-id {args.run_id} --target-size {target_size}",
+        inputs=[
+            HashedPath(path=str(baseline_manifest), sha256=sha256_file(baseline_manifest)),
+            HashedPath(path=str(robustness_manifest), sha256=sha256_file(robustness_manifest)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            *(HashedPath(path=e["pcc_baseline_path"], sha256=e["pcc_baseline_sha256"]) for e in per_model),
+            *(HashedPath(path=e["pcc_robustness_path"], sha256=e["pcc_robustness_sha256"]) for e in per_model),
+            *(HashedPath(path=e["pcc_meta_path"], sha256=e["pcc_meta_sha256"]) for e in per_model),
+            HashedPath(path=str(report_path), sha256=sha256_file(report_path)),
+            HashedPath(path=str(sent_path), sha256=sha256_file(sent_path)),
+        ],
+        validators=[HashedPath(path=str(report_path), sha256=sha256_file(report_path))],
+        notes="PCC filters: prompt-length safety (per-model context length), wrapper completeness (20/20), and pilot-gate PASS prerequisite.",
+        next_step="Stage 9 - build CCC",
+    )
+
+    print(str(report_path))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="sow", description="Shape of Wisdom pipeline (Milestone 1)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -685,6 +869,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_pca = sub.add_parser("pca-membership", help="Freeze PCA sample membership (1000, stratified)")
     p_pca.add_argument("--run-id", required=True)
     p_pca.set_defaults(func=cmd_pca_membership)
+
+    p_pcc = sub.add_parser("build-pcc", help="Stage 8: build Primary Core Corpus (PCC) per model")
+    p_pcc.add_argument("--run-id", required=True)
+    p_pcc.add_argument("--target-size", type=int, default=3000)
+    p_pcc.set_defaults(func=cmd_build_pcc)
 
     return ap
 
