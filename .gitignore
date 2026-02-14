@@ -38,11 +38,12 @@ logs/
 *.temp
 
 # Experiment outputs / caches (never commit)
-runs/
-artifacts/
+runs/*
 
-# Allow the deterministic parser regression suite (required, small).
+# Ignore all artifacts by default, but keep the deterministic parser regression suite in-repo.
+artifacts/*
 !artifacts/parser_edge_case_regression/
+artifacts/parser_edge_case_regression/*
 !artifacts/parser_edge_case_regression/regression_cases.json
 
 # Paid/large inputs and derived data (never commit)
