@@ -1,0 +1,470 @@
+[
+  {
+    "case_id": "letter_plain_A",
+    "category": "letters",
+    "description": "Single letter only",
+    "response_text": "A",
+    "first_token": "A",
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "letter_lowercase_with_punct",
+    "category": "letters",
+    "description": "Lowercase + punctuation",
+    "response_text": "a.",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "letter_parenthesized",
+    "category": "letters",
+    "description": "Parenthesized letter",
+    "response_text": "(C)",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "C",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "letter_cue_then_letter",
+    "category": "letters",
+    "description": "Cue phrase then letter",
+    "response_text": "Final answer: D",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "D",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "letter_choose_letter",
+    "category": "letters",
+    "description": "Choose/pick/select pattern",
+    "response_text": "I would choose b because...",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "B",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "letter_is_correct_pattern",
+    "category": "letters",
+    "description": "'X is correct' pattern",
+    "response_text": "C is the correct answer.",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "C",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "unicode_fullwidth_letter",
+    "category": "unicode",
+    "description": "Fullwidth Latin letter (NFKC -> ASCII)",
+    "response_text": "Ａ",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "unicode_circled_letter",
+    "category": "unicode",
+    "description": "Circled letter (NFKC often -> ASCII)",
+    "response_text": "Ⓑ",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "B",
+      "decision": "resolved_letter"
+    }
+  },
+  {
+    "case_id": "numeric_exact_start",
+    "category": "numeric",
+    "description": "Start-of-response numeric resolves by exact numeric option",
+    "response_text": "8",
+    "first_token": "8",
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "C",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_cue_then_numeric",
+    "category": "numeric",
+    "description": "Cue phrase then numeric",
+    "response_text": "Answer: 7",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "B",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_with_trailing_punct",
+    "category": "numeric",
+    "description": "Numeric with punctuation and parens",
+    "response_text": "(11).",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "D",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_decimal_dot5",
+    "category": "numeric",
+    "description": "Canonicalize leading-decimal .5 -> 0.5",
+    "response_text": ".5",
+    "first_token": ".5",
+    "options": {
+      "A": "0.5",
+      "B": "0.25",
+      "C": "0.75",
+      "D": "1"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_unicode_minus",
+    "category": "numeric",
+    "description": "Unicode minus sign normalizes to '-'",
+    "response_text": "−3",
+    "first_token": "−3",
+    "options": {
+      "A": "-3",
+      "B": "3",
+      "C": "-2",
+      "D": "2"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_fraction",
+    "category": "numeric",
+    "description": "Fraction token 3/4",
+    "response_text": "3/4",
+    "first_token": "3/4",
+    "options": {
+      "A": "1/2",
+      "B": "2/3",
+      "C": "3/4",
+      "D": "4/5"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "C",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_pi_symbol",
+    "category": "numeric",
+    "description": "pi symbol maps to option text π",
+    "response_text": "π",
+    "first_token": "π",
+    "options": {
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "π"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "D",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_pi_word_inside_sentence",
+    "category": "numeric",
+    "description": "Symbol pi present even if not at start",
+    "response_text": "I think the answer is pi.",
+    "first_token": null,
+    "options": {
+      "A": "pi",
+      "B": "e",
+      "C": "2",
+      "D": "0"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_leading_option_text",
+    "category": "numeric_leading",
+    "description": "Option text begins with numeric token (leading match)",
+    "response_text": "8",
+    "first_token": null,
+    "options": {
+      "A": "8 meters",
+      "B": "9 meters",
+      "C": "10 meters",
+      "D": "11 meters"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_index_fallback_2",
+    "category": "index_fallback",
+    "description": "Index 2 should map to B",
+    "response_text": "2",
+    "first_token": "2",
+    "options": {
+      "A": "red",
+      "B": "blue",
+      "C": "green",
+      "D": "yellow"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "B",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "numeric_index_fallback_cue",
+    "category": "index_fallback",
+    "description": "Cue phrase with index fallback",
+    "response_text": "Option is 4",
+    "first_token": null,
+    "options": {
+      "A": "red",
+      "B": "blue",
+      "C": "green",
+      "D": "yellow"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "D",
+      "decision": "resolved_numeric"
+    }
+  },
+  {
+    "case_id": "conflict_letter_vs_numeric",
+    "category": "conflicts",
+    "description": "Letter vote conflicts with numeric vote (should stay unresolved)",
+    "response_text": "A. Answer: 8",
+    "first_token": "A",
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": null,
+      "decision": "unresolved_conflicting_signals"
+    }
+  },
+  {
+    "case_id": "ambiguous_multiple_letters_no_unique",
+    "category": "conflicts",
+    "description": "Multiple distinct letter candidates; no unique letter vote -> unresolved",
+    "response_text": "Final answer: A. Actually, correct answer: B.",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": null,
+      "decision": "unresolved_no_signal"
+    }
+  },
+  {
+    "case_id": "ambiguous_multiple_numerics",
+    "category": "conflicts",
+    "description": "Multiple cue numerics map to different options -> unresolved",
+    "response_text": "Answer: 7. Final answer: 8.",
+    "first_token": null,
+    "options": {
+      "A": "3",
+      "B": "7",
+      "C": "8",
+      "D": "11"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": null,
+      "decision": "unresolved_no_signal"
+    }
+  },
+  {
+    "case_id": "numeric_ambiguous_duplicate_values",
+    "category": "numeric",
+    "description": "Ambiguous numeric token: full numeric match is non-unique; index fallback can conflict with option-text substring",
+    "response_text": "Answer: 1.0",
+    "first_token": null,
+    "options": {
+      "A": "1",
+      "B": "1.0",
+      "C": "2",
+      "D": "3"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": null,
+      "decision": "unresolved_conflicting_signals"
+    }
+  },
+  {
+    "case_id": "option_text_exact_substring",
+    "category": "option_text",
+    "description": "Unique option text substring hit should resolve",
+    "response_text": "I pick the one that says photosynthesis.",
+    "first_token": null,
+    "options": {
+      "A": "metabolism",
+      "B": "respiration",
+      "C": "photosynthesis",
+      "D": "fermentation"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "C",
+      "decision": "resolved_option_text"
+    }
+  },
+  {
+    "case_id": "option_text_trap_multiple_hits",
+    "category": "option_text_traps",
+    "description": "Response contains multiple option substrings; should not uniquely resolve",
+    "response_text": "The word concatenate appears here.",
+    "first_token": null,
+    "options": {
+      "A": "concatenate",
+      "B": "cat",
+      "C": "dog",
+      "D": "mouse"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": null,
+      "decision": "unresolved_no_signal"
+    }
+  },
+  {
+    "case_id": "option_text_trap_ultrashort_ignored",
+    "category": "option_text_traps",
+    "description": "Ultra-short option texts (<3) should be ignored by substring matcher",
+    "response_text": "to be or to be",
+    "first_token": null,
+    "options": {
+      "A": "to",
+      "B": "be",
+      "C": "or",
+      "D": "no"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": null,
+      "decision": "unresolved_no_signal"
+    }
+  }
+]
