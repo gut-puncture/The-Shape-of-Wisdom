@@ -392,6 +392,13 @@ def run_pca_sample_inference_for_model(
         out_meta = Path(str(ckpt_meta["final_meta"]))
         n_layers = int(ckpt_meta["n_layers"])
         hidden_dim = int(ckpt_meta["hidden_dim"])
+        # Append-only attempts: if prior finalize already wrote these, pick a new attempt path.
+        if out_npz.exists() or out_meta.exists():
+            out_npz = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.npz")
+            out_meta = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.meta.json")
+            ckpt_meta["final_npz"] = str(out_npz)
+            ckpt_meta["final_meta"] = str(out_meta)
+            _write_json_atomic_replace(ckpt.ckpt_meta_json, ckpt_meta)
 
         prog = json.loads(ckpt.progress_json.read_text(encoding="utf-8"))
         if prog.get("resume_key") != resume_key:
@@ -406,24 +413,30 @@ def run_pca_sample_inference_for_model(
         out_npz = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.npz")
         out_meta = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.meta.json")
 
-    # If a prior attempt wrote final outputs but crashed before sentinel/report, make finalize idempotent.
+    # If final outputs already exist, do not assume success. Validate based on stored meta.
     if out_npz.exists() and out_meta.exists():
+        try:
+            meta_existing = json.loads(out_meta.read_text(encoding="utf-8"))
+        except Exception:
+            meta_existing = {}
+        repro_existing = meta_existing.get("repro_check") if isinstance(meta_existing, dict) else None
+        repro_pass = bool(isinstance(repro_existing, dict) and repro_existing.get("pass") is True)
         report = {
-            "pass": True,
+            "pass": bool(repro_pass),
             "run_id": run_id,
             "model_id": model_id,
             "model_revision": revision,
             "sample_size": int(n),
-            "n_layers": int(n_layers) if n_layers is not None else None,
-            "hidden_dim": int(hidden_dim) if hidden_dim is not None else None,
+            "n_layers": int(len(meta_existing.get("layer_indices", []))) if isinstance(meta_existing, dict) else None,
+            "hidden_dim": meta_existing.get("hidden_dim") if isinstance(meta_existing, dict) else None,
             "hidden_sha256": sha256_file(out_npz),
             "meta_sha256": sha256_file(out_meta),
             "prompt_uids_sha256": prompt_uids_sha,
-            "repro_check": {"k": 0, "atol": float(repro_atol), "max_abs_diff": 0.0, "pass": True, "skipped": True},
-            "batch_invariance_check": {"skipped": True},
+            "repro_check": repro_existing or {"pass": False, "error": "missing repro_check in existing meta"},
             "run_config_sha256": sha256_file(run_dir / "run_config.yaml"),
             "config_snapshot_sha256": sha256_file(run_dir / "meta" / "config_snapshot.yaml"),
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "note": "final outputs already existed; pass determined from stored meta repro_check.pass",
         }
         return {
             "report": report,
@@ -582,22 +595,31 @@ def run_pca_sample_inference_for_model(
     if hidden_mm.shape != (n, int(n_layers), int(hidden_dim)):
         raise RuntimeError(f"unexpected hidden_mm shape: {hidden_mm.shape} expected {(n, int(n_layers), int(hidden_dim))}")
 
-    # Reproducibility spot-check: recompute first K prompts and compare (same batch size).
+    # Reproducibility spot-check: recompute first K prompts using the SAME first-batch context
+    # as the original extraction. This avoids false negatives when fused kernels depend on
+    # padded sequence length / batch composition.
     k = min(int(repro_check_k), n)
-    hidden_k = run_batches(m_prompts=prompts[:k], use_batch_size=int(max(bs_used)))
-    diff = float(np.max(np.abs(hidden_k.astype(np.float32) - np.asarray(hidden_mm[:k]).astype(np.float32))))
+    bs_max = int(max(bs_used))
+    k_ctx = min(int(((k + bs_max - 1) // bs_max) * bs_max), n)
+    hidden_ctx = run_batches(m_prompts=prompts[:k_ctx], use_batch_size=bs_max)
+    diff = float(np.max(np.abs(hidden_ctx[:k].astype(np.float32) - np.asarray(hidden_mm[:k]).astype(np.float32))))
     repro_ok = bool(diff <= float(repro_atol))
 
-    # Batch invariance spot-check (if we ever ran with batching > 1): compare bs=1 vs max(bs_used).
-    bs_max = int(max(bs_used))
+    # Record (but do not gate) a batch-size invariance spot-check.
+    # Stage 13 has a hard batch-invariance gate; Stage 11 only requires reproducibility
+    # for the chosen batching settings.
     if bs_max > 1:
         hidden_bs1 = run_batches(m_prompts=prompts[:k], use_batch_size=1)
-        hidden_bsn = run_batches(m_prompts=prompts[:k], use_batch_size=bs_max)
+        hidden_bsn = hidden_ctx[:k]
         bdiff = float(np.max(np.abs(hidden_bs1.astype(np.float32) - hidden_bsn.astype(np.float32))))
-        batch_invariance_ok = bool(bdiff <= float(repro_atol))
-        batch_invariance = {"k": int(k), "atol": float(repro_atol), "max_abs_diff": float(bdiff), "batch_size": int(bs_max), "pass": bool(batch_invariance_ok)}
+        batch_invariance = {
+            "k": int(k),
+            "atol": float(repro_atol),
+            "max_abs_diff": float(bdiff),
+            "batch_size": int(bs_max),
+            "note": "informational only (not gated in Stage 11)",
+        }
     else:
-        batch_invariance_ok = True
         batch_invariance = {"skipped": True, "reason": "batch_size_max==1"}
 
     meta = {
@@ -653,7 +675,7 @@ def run_pca_sample_inference_for_model(
         _write_json_atomic_new(out_meta, meta)
 
     report = {
-        "pass": bool(repro_ok and batch_invariance_ok),
+        "pass": bool(repro_ok),
         "run_id": run_id,
         "model_id": model_id,
         "model_revision": revision,

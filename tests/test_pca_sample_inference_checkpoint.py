@@ -254,7 +254,8 @@ class TestPCASampleInferenceCheckpointing(unittest.TestCase):
 
             self.assertTrue(res["report"]["pass"])
             meta = json.loads(Path(res["meta_path"]).read_text(encoding="utf-8"))
-            self.assertEqual(meta["batch_invariance_check"].get("pass"), True)
+            # Stage 11 does not gate on batch invariance; it is recorded informationally.
+            self.assertIn("max_abs_diff", meta["batch_invariance_check"])
             # Auto calibration should never exceed oom_batch_gt=2 in steady state.
             used = meta["batching"]["batch_sizes_used"]
             self.assertTrue(all(int(x) <= 2 for x in used))
