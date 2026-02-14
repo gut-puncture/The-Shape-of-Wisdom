@@ -45,7 +45,7 @@ Canonical docs:
   - Artifacts: `runs/<run_id>/validation/parser_regression_report.json`
   - Gate: exact-match regression PASS
 
-- [ ] Stage 7 - Pilot inference (small)
+- [x] Stage 7 - Pilot inference (small)
   - Artifacts: `runs/<run_id>/pilot/*`
   - Gate: viability + one-token compliance thresholds met PASS
 

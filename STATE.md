@@ -200,3 +200,33 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.json: de8d190c09510c5f6bb178fab8bc74b41b33850de5cc8e7aa8f419f78c0cc78e
 - notes: Pilot measures first-token one-token compliance and deterministic parser resolution/accuracy on a stratified sample.
 - next: Stage 8 - build PCC
+
+### 2026-02-14 15:24 (local) - Stage 7 - pilot inference (one-token compliance + viability) - PASS
+- command: python3 sow.py pilot-inference --run-id m1_20260214_124722 --model-name llama-3.1-8b-instruct --sample-size 200 --min-one-token-compliance 0.8 --min-parser-resolved 0.9 --device mps
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/meta-llama__Llama-3.1-8B-Instruct_pilot_outputs.jsonl: efd9fd48c2d1e855eb2c0e92be9597bb502c7eae081fcdbd3110dbc6b3c6f311
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/meta-llama__Llama-3.1-8B-Instruct_pilot_report.json: 45183a8a2d68fe467b6eb5e14d8b71c9ef792b4595bce85f5f004f6c4ecac8c6
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.attempt2.json: ccff9f60e454455e6da0b5c4e52dc46287d60376817a62451509e71b991943d4
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/pilot.attempt2.done: ed0795e169b82e161f554ea6918908ec99462caca5ebeb78cf68ce1cb0d9a195
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.attempt2.json: ccff9f60e454455e6da0b5c4e52dc46287d60376817a62451509e71b991943d4
+- notes: Pilot measures first-token one-token compliance and deterministic parser resolution/accuracy on a stratified sample.
+- next: Stage 8 - build PCC
+
+### 2026-02-14 15:34 (local) - Stage 7 - pilot inference (one-token compliance + viability) - PASS
+- command: python3 sow.py pilot-inference --run-id m1_20260214_124722 --model-name mistral-7b-instruct-v0.3 --sample-size 200 --min-one-token-compliance 0.8 --min-parser-resolved 0.9 --device mps
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/mistralai__Mistral-7B-Instruct-v0.3_pilot_outputs.jsonl: c341ae9fdac481d2c6005bcbb49ec3d4298e434c3043bb5a47b85aa931bc0317
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/mistralai__Mistral-7B-Instruct-v0.3_pilot_report.json: 46a0ac4df02c0708a738f26415639c5d4ca7fcd085720eea9b8401c52a1caf01
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.attempt3.json: 70fed81ef99aea2edbba912c219eab3a11a30675d5fdc9e5c075d27fa50befdf
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/pilot.attempt3.done: bda4a9a7d6457a7125b26a5339860aca879dcdce994f287fba20b329ee58a2f7
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.attempt3.json: 70fed81ef99aea2edbba912c219eab3a11a30675d5fdc9e5c075d27fa50befdf
+- notes: Pilot measures first-token one-token compliance and deterministic parser resolution/accuracy on a stratified sample.
+- next: Stage 8 - build PCC
