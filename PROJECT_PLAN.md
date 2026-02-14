@@ -15,7 +15,7 @@ Canonical docs:
 
 ## Stage Checklist (authoritative order)
 
-- [ ] Stage 0 - Environment lock + smoke test
+- [x] Stage 0 - Environment lock + smoke test
   - Artifacts: `runs/<run_id>/meta/environment.json`, `runs/<run_id>/meta/smoke_test.json`
   - Gate: smoke test PASS
 

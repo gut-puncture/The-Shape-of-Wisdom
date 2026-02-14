@@ -158,3 +158,17 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/token_buckets_report.json: a8cac1a8675dcb464379fcc6382afdd394e2e251075f8e337c619b086e3e6ec0
 - notes: Built tokenizer-derived A/B/C/D token buckets with fixed variant templates; fail-fast if any bucket empty or overlaps detected.
 - next: Stage 7 - pilot inference (after confirming Stage 6 PASS already)
+
+### 2026-02-14 14:16 (local) - Stage 0 - environment lock + smoke test - PASS
+- command: python3 sow.py stage0 --run-id m1_20260214_124722 --model-name qwen2.5-7b-instruct --device mps
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/meta/environment.json: 1fffda10eb7954948a7ed75fe637036dec87931bbb26478e0d187d1c08c4c393
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/meta/smoke_test.json: 14887e88f5a2176c44661b29dc3ffe6c3abebeba7a724231d6c98a0f2ef001e8
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/stage0_report.json: 6f84741349d95d6980e9b4c47b400d2beb33701a0333ada092a31e2b23701968
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/stage0.done: 656908c9bdfb8d6df2dda03533310de58f5e2ddc90cccfd2281a5bd00d4e637d
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/stage0_report.json: 6f84741349d95d6980e9b4c47b400d2beb33701a0333ada092a31e2b23701968
+- notes: Smoke test attempts: tokenizer+model load, forward pass w/ hidden states, token bucket scoring, greedy generate.
+- next: Stage 7 - pilot inference

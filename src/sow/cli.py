@@ -15,6 +15,7 @@ from sow.manifest.schema import validate_baseline_manifest, validate_robustness_
 from sow.pca.membership import select_pca_membership, write_membership_file
 from sow.state import HashedPath, append_state_entry
 from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models
+from sow.stage0_env import collect_environment, run_smoke_test
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -63,6 +64,86 @@ def cmd_init_run(args: argparse.Namespace) -> int:
     )
     print(str(cfg_path))
     return 0
+
+
+def cmd_stage0(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    meta_dir = run_dir / "meta"
+    v_dir = run_dir / "validation"
+    s_dir = run_dir / "sentinels"
+    meta_dir.mkdir(parents=True, exist_ok=True)
+    v_dir.mkdir(parents=True, exist_ok=True)
+    s_dir.mkdir(parents=True, exist_ok=True)
+
+    env = collect_environment(repo_root=REPO_ROOT)
+    env_path = meta_dir / "environment.json"
+    env_path.write_text(json.dumps(env, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    # Default to the first model in run_config for smoke.
+    model_name = args.model_name or cfg["models"][0]["name"]
+    model = next((m for m in cfg["models"] if m["name"] == model_name), None)
+    if model is None:
+        raise SystemExit(f"unknown model name: {model_name}")
+
+    try:
+        smoke = run_smoke_test(
+            model_id=model["model_id"],
+            revision=model["revision"],
+            generation=cfg["generation"],
+            seed=int(cfg["random_seed"]),
+            preferred_device=args.device,
+        )
+    except Exception as exc:
+        smoke = {
+            "pass": False,
+            "model_id": model["model_id"],
+            "model_revision": model["revision"],
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+
+    smoke_path = meta_dir / "smoke_test.json"
+    smoke_path.write_text(json.dumps(smoke, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    v_report = {
+        "pass": bool(smoke.get("pass")),
+        "run_id": args.run_id,
+        "model_name": model_name,
+        "environment_sha256": sha256_file(env_path),
+        "smoke_test_sha256": sha256_file(smoke_path),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    v_path = v_dir / "stage0_report.json"
+    v_path.write_text(json.dumps(v_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    s_path = s_dir / "stage0.done"
+    s_path.write_text(json.dumps({"stage": "stage0", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n")
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 0 - environment lock + smoke test",
+        status="PASS" if v_report["pass"] else "FAIL",
+        command="python3 sow.py stage0 --run-id " + args.run_id + (f" --model-name {model_name}" if args.model_name else "") + (f" --device {args.device}" if args.device else ""),
+        inputs=[HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path))],
+        outputs=[
+            HashedPath(path=str(env_path), sha256=sha256_file(env_path)),
+            HashedPath(path=str(smoke_path), sha256=sha256_file(smoke_path)),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+            HashedPath(path=str(s_path), sha256=sha256_file(s_path)),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Smoke test attempts: tokenizer+model load, forward pass w/ hidden states, token bucket scoring, greedy generate.",
+        next_step="Stage 7 - pilot inference" if v_report["pass"] else "Fix environment/smoke issues before any inference",
+    )
+
+    print(str(v_path))
+    return 0 if v_report["pass"] else 2
 
 
 def _load_manifest_rows(path: Path) -> List[Dict[str, Any]]:
@@ -373,6 +454,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.add_argument("--run-id", required=True)
     p_init.add_argument("--seed", type=int, default=12345)
     p_init.set_defaults(func=cmd_init_run)
+
+    p_s0 = sub.add_parser("stage0", help="Environment lock + smoke test (model load, hidden states, short generate)")
+    p_s0.add_argument("--run-id", required=True)
+    p_s0.add_argument("--model-name", default=None, help="Model name from run_config.models[].name (default: first model)")
+    p_s0.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_s0.set_defaults(func=cmd_stage0)
 
     p_m = sub.add_parser("build-manifests", help="Canonicalize + validate baseline and robustness manifests (run-scoped)")
     p_m.add_argument("--run-id", required=True)
