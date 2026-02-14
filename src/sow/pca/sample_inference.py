@@ -217,6 +217,11 @@ def run_pca_sample_inference_for_model(
         m_prompts = prompts[:take_first_k] if take_first_k is not None else prompts
         total = len(m_prompts)
         out_arr: Optional[np.ndarray] = None
+        if n_layers is not None and hidden_dim is not None:
+            out_arr = np.empty(
+                (total, int(n_layers), int(hidden_dim)),
+                dtype=np.float16 if torch_dtype == torch.float16 else np.float32,
+            )
 
         with torch.inference_mode():
             offset = 0
