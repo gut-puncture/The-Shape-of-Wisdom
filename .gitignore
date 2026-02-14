@@ -1,0 +1,49 @@
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+.secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.temp
+
+# Experiment outputs / caches (never commit)
+runs/
+artifacts/
+
+# Allow the deterministic parser regression suite (required, small).
+!artifacts/parser_edge_case_regression/
+!artifacts/parser_edge_case_regression/regression_cases.json
+
+# Paid/large inputs and derived data (never commit)
+data/

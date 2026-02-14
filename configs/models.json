@@ -1,0 +1,22 @@
+{
+  "models": [
+    {
+      "name": "qwen2.5-7b-instruct",
+      "hf_id": "Qwen/Qwen2.5-7B-Instruct",
+      "family": "qwen",
+      "pilot": true
+    },
+    {
+      "name": "llama-3.1-8b-instruct",
+      "hf_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "family": "llama",
+      "pilot": false
+    },
+    {
+      "name": "mistral-7b-instruct-v0.3",
+      "hf_id": "mistralai/Mistral-7B-Instruct-v0.3",
+      "family": "mistral",
+      "pilot": false
+    }
+  ]
+}
