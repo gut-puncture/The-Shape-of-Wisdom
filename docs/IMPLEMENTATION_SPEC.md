@@ -796,6 +796,13 @@ Local machine rules:
 - Avoid environment hacks that mask broken linking issues.
 - Use time-budgeted shards to support cooldown.
 - After each shard, write a shard report and update `STATE.md`.
+- Thermal hygiene is mandatory for all local inference stages on the Mac mini:
+  - Use a cooperative thermal governor (no background daemon required) that runs **only while inference is running**.
+  - Poll macOS thermal pressure via `sudo -n powermetrics -s thermal` at a fixed interval (default: 30s).
+  - If thermal pressure is at/above the cutoff (default: `Serious`, intended as a conservative proxy for "starting around ~80-90C"),
+    pause inference for a fixed cooldown period (default: 20 minutes).
+  - Log all checks + cooldown events to `runs/<run_id>/meta/thermal_events.jsonl`.
+  - The thermal hygiene policy must be captured in `runs/<run_id>/run_config.yaml` under `thermal_hygiene`.
 
 GPU virtual machine rules:
 - Assume root disk is ephemeral.

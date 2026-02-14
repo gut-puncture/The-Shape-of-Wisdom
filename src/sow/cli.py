@@ -22,6 +22,7 @@ from sow.ccc.build_ccc import (
     read_pcc_example_ids_and_domain_counts,
 )
 from sow.state import HashedPath, append_state_entry
+from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
 from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models, model_fs_id
 from sow.stage0_env import collect_environment, run_smoke_test
 from sow.pilot.pilot_inference import run_pilot_for_model, select_pilot_rows, stage7_gate
@@ -124,6 +125,9 @@ def cmd_stage0(args: argparse.Namespace) -> int:
     if model is None:
         raise SystemExit(f"unknown model name: {model_name}")
 
+    th_cfg = ThermalHygieneConfig.from_cfg(cfg.get("thermal_hygiene"))
+    thermal_governor = ThermalGovernor(cfg=th_cfg, events_path=meta_dir / "thermal_events.jsonl") if th_cfg.enabled else None
+
     try:
         smoke = run_smoke_test(
             model_id=model["model_id"],
@@ -131,6 +135,7 @@ def cmd_stage0(args: argparse.Namespace) -> int:
             generation=cfg["generation"],
             seed=int(cfg["random_seed"]),
             preferred_device=args.device,
+            thermal_governor=thermal_governor,
         )
     except Exception as exc:
         smoke = {
@@ -554,6 +559,7 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
             generation=cfg["generation"],
             sample_rows=sample_rows,
             device_override=args.device,
+            thermal_hygiene=cfg.get("thermal_hygiene"),
         )
         gate_ok, reasons = stage7_gate(
             overall_metrics=res["metrics_overall"],

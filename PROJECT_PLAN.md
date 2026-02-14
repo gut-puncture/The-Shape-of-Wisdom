@@ -7,6 +7,7 @@ Rules:
 - Run history, blockers, and "what is running now" live in `STATE.md`.
 - Never proceed to the next stage unless the prior stage's validator passes and a `.done` sentinel exists.
 - Cost discipline: build cheap validators + smoke tests first; avoid GPU until all local gates pass.
+- Local Mac mini discipline: all inference stages must use thermal hygiene (see `docs/IMPLEMENTATION_SPEC.md` section 23).
 
 Canonical docs:
 - `docs/IMPLEMENTATION_SPEC.md`

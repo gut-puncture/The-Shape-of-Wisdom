@@ -93,6 +93,7 @@ def run_smoke_test(
     generation: Dict[str, Any],
     seed: int,
     preferred_device: Optional[str] = None,
+    thermal_governor: Any | None = None,
 ) -> Dict[str, Any]:
     """
     Stage 0 smoke: verify tokenizer + model load, forward pass w/ hidden states, bucket scoring, and a short greedy generate.
@@ -176,6 +177,15 @@ def run_smoke_test(
     if do_sample:
         raise ValueError("Smoke test requires greedy decoding (do_sample=false)")
 
+    thermal_action = None
+    if thermal_governor is not None:
+        # Cooperative thermal hygiene (may sleep) before generation.
+        thermal_action = thermal_governor.maybe_cooldown(
+            stage="stage0_generate",
+            model_id=model_id,
+            model_revision=revision,
+        )
+
     gen_ids = model.generate(
         input_ids=input_ids,
         attention_mask=attn,
@@ -214,6 +224,14 @@ def run_smoke_test(
             "first_generated_token_text": first_piece,
             "generated_text": gen_text,
         },
+        "thermal_hygiene": {
+            "enabled": bool(getattr(getattr(thermal_governor, "cfg", None), "enabled", False)) if thermal_governor else False,
+            "provider": getattr(getattr(thermal_governor, "cfg", None), "provider", None) if thermal_governor else None,
+            "cutoff_level": getattr(getattr(thermal_governor, "cfg", None), "cutoff_level", None) if thermal_governor else None,
+            "cooldown_seconds": getattr(getattr(thermal_governor, "cfg", None), "cooldown_seconds", None) if thermal_governor else None,
+            "check_interval_seconds": getattr(getattr(thermal_governor, "cfg", None), "check_interval_seconds", None) if thermal_governor else None,
+            "action": thermal_action,
+        },
         "timing_seconds": {
             "total": float(t_gen - t0),
             "tokenizer_load": float(t_tok - t0),
@@ -224,4 +242,3 @@ def run_smoke_test(
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     return report
-

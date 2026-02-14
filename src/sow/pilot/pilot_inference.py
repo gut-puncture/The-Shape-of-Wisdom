@@ -146,6 +146,7 @@ def run_pilot_for_model(
     generation: Dict[str, Any],
     sample_rows: List[Dict[str, Any]],
     device_override: Optional[str] = None,
+    thermal_hygiene: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     """
     Runs pilot inference for a single model over the provided sample rows.
@@ -188,6 +189,13 @@ def run_pilot_for_model(
         model_obj.to(device)
     t_load = time.perf_counter()
 
+    # Cooperative thermal hygiene (no background thread): inference loop polls at an interval.
+    from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig  # noqa: PLC0415
+
+    th_cfg = ThermalHygieneConfig.from_cfg(thermal_hygiene)
+    thermal_events_path = run_dir / "meta" / "thermal_events.jsonl"
+    governor = ThermalGovernor(cfg=th_cfg, events_path=thermal_events_path) if th_cfg.enabled else None
+
     out_dir = run_dir / "pilot"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_jsonl = _next_available_path(out_dir / f"{model_fs_id(model_id)}_pilot_outputs.jsonl")
@@ -197,6 +205,9 @@ def run_pilot_for_model(
 
     with torch.inference_mode():
         for r in sample_rows:
+            if governor is not None:
+                governor.maybe_cooldown(stage="pilot_inference", model_id=model_id, model_revision=revision)
+
             prompt_text = r["prompt_text"]
             inputs = tok(prompt_text, return_tensors="pt")
             input_ids = inputs["input_ids"]
@@ -282,6 +293,14 @@ def run_pilot_for_model(
         "model_revision": revision,
         "device": device,
         "torch_dtype": str(torch_dtype).replace("torch.", ""),
+        "thermal_hygiene": {
+            "enabled": bool(th_cfg.enabled),
+            "provider": th_cfg.provider,
+            "cutoff_level": th_cfg.cutoff_level,
+            "cooldown_seconds": int(th_cfg.cooldown_seconds),
+            "check_interval_seconds": int(th_cfg.check_interval_seconds),
+            "events_path": str(thermal_events_path),
+        },
         "baseline_manifest_path": str(run_dir / "manifests" / "baseline_manifest.jsonl"),
         "baseline_manifest_sha256": sha256_file(run_dir / "manifests" / "baseline_manifest.jsonl"),
         "token_bucket_path": str(tb["path"]),

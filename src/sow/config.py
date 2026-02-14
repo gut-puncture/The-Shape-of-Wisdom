@@ -42,6 +42,16 @@ def default_run_config(*, run_id: str, random_seed: int) -> Dict[str, Any]:
             "top_p": 1.0,
             "max_new_tokens": 24,
         },
+        # Operational safety for local Apple Silicon runs.
+        # Uses macOS "thermal pressure" signals (via powermetrics) to trigger cool-downs.
+        "thermal_hygiene": {
+            "enabled": True,
+            "provider": "powermetrics_thermal_pressure",
+            # Approximate "start cooling around ~80-90C" by triggering before "Critical".
+            "cutoff_level": "serious",
+            "cooldown_seconds": 20 * 60,
+            "check_interval_seconds": 30,
+        },
         "prompting": {
             "baseline_wrapper_id": "plain_exam",
             "robustness_wrapper_ids_v2": list(EXPECTED_ROBUSTNESS_WRAPPER_IDS_V2),
@@ -91,3 +101,20 @@ def validate_run_config(cfg: Dict[str, Any]) -> None:
     if wrappers != EXPECTED_ROBUSTNESS_WRAPPER_IDS_V2:
         raise ValueError("robustness wrapper list must match the expected v2 wrapper_id list exactly")
 
+    # Optional (back-compat): thermal hygiene block.
+    th = cfg.get("thermal_hygiene")
+    if th is not None:
+        if not isinstance(th, dict):
+            raise ValueError("thermal_hygiene must be a mapping")
+        provider = str(th.get("provider", "powermetrics_thermal_pressure"))
+        if provider != "powermetrics_thermal_pressure":
+            raise ValueError("thermal_hygiene.provider must be powermetrics_thermal_pressure")
+        cutoff = str(th.get("cutoff_level", "serious")).strip().lower()
+        if cutoff not in ("nominal", "fair", "serious", "critical"):
+            raise ValueError("thermal_hygiene.cutoff_level must be one of: nominal/fair/serious/critical")
+        cooldown_seconds = int(th.get("cooldown_seconds", 20 * 60))
+        if cooldown_seconds <= 0:
+            raise ValueError("thermal_hygiene.cooldown_seconds must be positive")
+        interval_seconds = int(th.get("check_interval_seconds", 30))
+        if interval_seconds <= 0:
+            raise ValueError("thermal_hygiene.check_interval_seconds must be positive")
