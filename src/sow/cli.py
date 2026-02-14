@@ -13,6 +13,8 @@ from sow.judging.deterministic_parser import parse_choice
 from sow.manifest.canonicalize import canonicalize_baseline_manifest, canonicalize_robustness_manifest_v2
 from sow.manifest.schema import validate_baseline_manifest, validate_robustness_manifest
 from sow.pca.membership import select_pca_membership, write_membership_file
+from sow.pca.sample_inference import run_pca_sample_inference_for_model
+from sow.pca.fit_pca import run_stage12_fit_for_model
 from sow.pcc.build_pcc import build_pcc_manifests_for_model
 from sow.ccc.build_ccc import (
     build_ccc_manifests,
@@ -501,6 +503,272 @@ def cmd_pca_membership(args: argparse.Namespace) -> int:
     )
     print(str(v_path))
     return 0 if report["pass"] else 2
+
+
+def cmd_pca_sample_inference(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    # Dependencies
+    for s in ["stage0.done", "manifests.done", "pca_membership.done"]:
+        p = run_dir / "sentinels" / s
+        if not p.exists():
+            raise SystemExit(f"missing dependency sentinel: {p}")
+
+    baseline_manifest = run_dir / "manifests" / "baseline_manifest.jsonl"
+    robustness_manifest = run_dir / "manifests" / "robustness_manifest_v2.jsonl"
+    if not baseline_manifest.exists() or not robustness_manifest.exists():
+        raise SystemExit("manifests must be built before pca-sample-inference")
+
+    # Models to run.
+    model_names = [args.model_name] if args.model_name else [m["name"] for m in cfg["models"]]
+    models = [m for m in cfg["models"] if m["name"] in set(model_names)]
+    if len(models) != len(model_names):
+        known = sorted([m["name"] for m in cfg["models"]])
+        raise SystemExit(f"unknown model_name in {model_names}; known={known}")
+
+    per_model = []
+    ok_all = True
+
+    for m in models:
+        model_key = model_fs_id(m["model_id"])
+        sentinel = run_dir / "sentinels" / f"pca_sample_inference.{model_key}.done"
+        if sentinel.exists():
+            per_model.append(
+                {
+                    "model_name": m["name"],
+                    "model_id": m["model_id"],
+                    "model_revision": m["revision"],
+                    "skipped": True,
+                    "skip_reason": f"sentinel exists: {sentinel}",
+                }
+            )
+            continue
+
+        membership_path = run_dir / "pca" / f"{m['name']}_sample_membership.json"
+        if not membership_path.exists():
+            raise SystemExit(f"missing membership file for model {m['name']}: {membership_path}")
+
+        res = run_pca_sample_inference_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            baseline_manifest=baseline_manifest,
+            robustness_manifest=robustness_manifest,
+            membership_path=membership_path,
+            device_override=args.device,
+            batch_size=int(args.batch_size),
+            repro_check_k=int(args.repro_check_k),
+            repro_atol=float(args.repro_atol),
+            thermal_hygiene_cfg=cfg.get("thermal_hygiene"),
+        )
+
+        per_model_report = _next_available_path(run_dir / "validation" / f"pca_sample_inference_report.{model_key}.json")
+        per_model_report.write_text(json.dumps(res["report"], indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+        sent = {
+            "stage": "pca_sample_inference",
+            "run_id": args.run_id,
+            "model_id": m["model_id"],
+            "model_revision": m["revision"],
+            "hidden_path": str(res["hidden_path"]),
+            "hidden_sha256": res["hidden_sha256"],
+            "meta_path": str(res["meta_path"]),
+            "meta_sha256": res["meta_sha256"],
+            "report_path": str(per_model_report),
+            "report_sha256": sha256_file(per_model_report),
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        tmp = sentinel.with_name(f".{sentinel.name}.tmp")
+        if tmp.exists():
+            raise SystemExit(f"refusing to overwrite existing tmp sentinel: {tmp}")
+        tmp.write_text(json.dumps(sent, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        tmp.replace(sentinel)
+
+        per_model.append({"model_name": m["name"], **res["report"], "hidden_path": str(res["hidden_path"]), "meta_path": str(res["meta_path"])})
+        if not res["report"]["pass"]:
+            ok_all = False
+
+    v_report = {
+        "pass": bool(ok_all),
+        "run_id": args.run_id,
+        "models": per_model,
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    v_path = _next_available_path(run_dir / "validation" / "pca_sample_inference_report.json")
+    v_path.write_text(json.dumps(v_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    stage_sentinel = run_dir / "sentinels" / "pca_sample_inference.done"
+    if stage_sentinel.exists():
+        # Append-only stage report; do not overwrite stage-level sentinel if it already exists.
+        pass
+    else:
+        stage_sentinel.write_text(
+            json.dumps({"stage": "pca_sample_inference", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 11 - PCA sample extraction inference",
+        status="PASS" if v_report["pass"] else "FAIL",
+        command="python3 sow.py pca-sample-inference --run-id "
+        + args.run_id
+        + (f" --model-name {args.model_name}" if args.model_name else "")
+        + (f" --device {args.device}" if args.device else "")
+        + (f" --batch-size {args.batch_size}" if args.batch_size else "")
+        + (f" --repro-check-k {args.repro_check_k}" if args.repro_check_k else "")
+        + (f" --repro-atol {args.repro_atol}" if args.repro_atol else ""),
+        inputs=[
+            HashedPath(path=str(baseline_manifest), sha256=sha256_file(baseline_manifest)),
+            HashedPath(path=str(robustness_manifest), sha256=sha256_file(robustness_manifest)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            *(HashedPath(path=m["hidden_path"], sha256=m["hidden_sha256"]) for m in per_model if "hidden_path" in m and "hidden_sha256" in m),
+            *(HashedPath(path=m["meta_path"], sha256=m["meta_sha256"]) for m in per_model if "meta_path" in m and "meta_sha256" in m),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Extracted last-position hidden vectors for every transformer layer on the frozen PCA membership set. Includes a small reproducibility spot-check.",
+        next_step="Stage 12 - pca-fit" if v_report["pass"] else "Fix PCA extraction until reproducibility/shape checks pass",
+    )
+
+    print(str(v_path))
+    return 0 if v_report["pass"] else 2
+
+
+def cmd_pca_fit(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    # Dependencies
+    for s in ["pca_sample_inference.done"]:
+        p = run_dir / "sentinels" / s
+        if not p.exists():
+            raise SystemExit(f"missing dependency sentinel: {p}")
+
+    n_components = int(cfg["pca"]["n_components"])
+    seed = int(cfg["random_seed"])
+
+    model_names = [args.model_name] if args.model_name else [m["name"] for m in cfg["models"]]
+    models = [m for m in cfg["models"] if m["name"] in set(model_names)]
+    if len(models) != len(model_names):
+        known = sorted([m["name"] for m in cfg["models"]])
+        raise SystemExit(f"unknown model_name in {model_names}; known={known}")
+
+    per_model = []
+    ok_all = True
+
+    for m in models:
+        model_key = model_fs_id(m["model_id"])
+        s_in = run_dir / "sentinels" / f"pca_sample_inference.{model_key}.done"
+        if not s_in.exists():
+            raise SystemExit(f"missing per-model Stage 11 sentinel: {s_in}")
+        s_in_obj = json.loads(s_in.read_text(encoding="utf-8"))
+        hidden_path = Path(s_in_obj["hidden_path"])
+        meta_path = Path(s_in_obj["meta_path"])
+
+        s_out = run_dir / "sentinels" / f"pca_fit.{model_key}.done"
+        if s_out.exists():
+            per_model.append(
+                {
+                    "model_name": m["name"],
+                    "model_id": m["model_id"],
+                    "model_revision": m["revision"],
+                    "skipped": True,
+                    "skip_reason": f"sentinel exists: {s_out}",
+                }
+            )
+            continue
+
+        res = run_stage12_fit_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            hidden_npz=hidden_path,
+            hidden_meta=meta_path,
+            n_components=n_components,
+            seed=seed,
+        )
+
+        per_model_report = _next_available_path(run_dir / "validation" / f"pca_fit_report.{model_key}.json")
+        per_model_report.write_text(json.dumps(res["report"], indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+        sent = {
+            "stage": "pca_fit",
+            "run_id": args.run_id,
+            "model_id": m["model_id"],
+            "model_revision": m["revision"],
+            "basis_path": str(res["basis_path"]),
+            "basis_sha256": res["basis_sha256"],
+            "meta_path": str(res["meta_path"]),
+            "meta_sha256": res["meta_sha256"],
+            "report_path": str(per_model_report),
+            "report_sha256": sha256_file(per_model_report),
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        tmp = s_out.with_name(f".{s_out.name}.tmp")
+        if tmp.exists():
+            raise SystemExit(f"refusing to overwrite existing tmp sentinel: {tmp}")
+        tmp.write_text(json.dumps(sent, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        tmp.replace(s_out)
+
+        per_model.append({"model_name": m["name"], **res["report"], "basis_path": str(res["basis_path"]), "meta_path": str(res["meta_path"])})
+        if not res["report"]["pass"]:
+            ok_all = False
+
+    v_report = {
+        "pass": bool(ok_all),
+        "run_id": args.run_id,
+        "models": per_model,
+        "n_components": int(n_components),
+        "seed": int(seed),
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    v_path = _next_available_path(run_dir / "validation" / "pca_fit_report.json")
+    v_path.write_text(json.dumps(v_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    stage_sentinel = run_dir / "sentinels" / "pca_fit.done"
+    if not stage_sentinel.exists():
+        stage_sentinel.write_text(
+            json.dumps({"stage": "pca_fit", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 12 - fit PCA basis per model (pooled across layers)",
+        status="PASS" if v_report["pass"] else "FAIL",
+        command="python3 sow.py pca-fit --run-id " + args.run_id + (f" --model-name {args.model_name}" if args.model_name else ""),
+        inputs=[HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path))],
+        outputs=[
+            *(HashedPath(path=m["basis_path"], sha256=m["basis_sha256"]) for m in per_model if "basis_path" in m and "basis_sha256" in m),
+            *(HashedPath(path=m["meta_path"], sha256=m["meta_sha256"]) for m in per_model if "meta_path" in m and "meta_sha256" in m),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Fit one PCA basis per model from pooled layer vectors and canonicalize component signs; includes an in-process reproducibility test (fit twice).",
+        next_step="Stage 13 - full inference w/ on-the-fly PCA projection" if v_report["pass"] else "Fix PCA basis determinism until hash matches",
+    )
+
+    print(str(v_path))
+    return 0 if v_report["pass"] else 2
 
 
 def cmd_pilot_inference(args: argparse.Namespace) -> int:
@@ -1061,6 +1329,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_pca = sub.add_parser("pca-membership", help="Freeze PCA sample membership (1000, stratified)")
     p_pca.add_argument("--run-id", required=True)
     p_pca.set_defaults(func=cmd_pca_membership)
+
+    p_pcas = sub.add_parser("pca-sample-inference", help="Stage 11: PCA sample extraction inference (hidden states at decision position)")
+    p_pcas.add_argument("--run-id", required=True)
+    p_pcas.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
+    p_pcas.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_pcas.add_argument("--batch-size", type=int, default=1)
+    p_pcas.add_argument("--repro-check-k", type=int, default=8, help="Recompute first K prompts and compare to stored vectors (spot-check)")
+    p_pcas.add_argument("--repro-atol", type=float, default=1e-3, help="Absolute tolerance for repro spot-check on float16 vectors")
+    p_pcas.set_defaults(func=cmd_pca_sample_inference)
+
+    p_pcaf = sub.add_parser("pca-fit", help="Stage 12: fit PCA basis once per model (pooled across layers)")
+    p_pcaf.add_argument("--run-id", required=True)
+    p_pcaf.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
+    p_pcaf.set_defaults(func=cmd_pca_fit)
 
     p_pcc = sub.add_parser("build-pcc", help="Stage 8: build Primary Core Corpus (PCC) per model")
     p_pcc.add_argument("--run-id", required=True)
