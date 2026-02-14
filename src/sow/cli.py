@@ -16,6 +16,7 @@ from sow.pca.membership import select_pca_membership, write_membership_file
 from sow.state import HashedPath, append_state_entry
 from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models
 from sow.stage0_env import collect_environment, run_smoke_test
+from sow.pilot.pilot_inference import run_pilot_for_model, select_pilot_rows, stage7_gate
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +28,15 @@ def _run_dir(run_id: str) -> Path:
 
 def _state_path() -> Path:
     return REPO_ROOT / "STATE.md"
+
+
+def _config_snapshot_path(run_dir: Path) -> Path:
+    return run_dir / "meta" / "config_snapshot.yaml"
+
+
+def _config_snapshot_sha256(run_dir: Path) -> str | None:
+    p = _config_snapshot_path(run_dir)
+    return sha256_file(p) if p.exists() else None
 
 
 def cmd_init_run(args: argparse.Namespace) -> int:
@@ -118,6 +128,10 @@ def cmd_stage0(args: argparse.Namespace) -> int:
         "model_name": model_name,
         "environment_sha256": sha256_file(env_path),
         "smoke_test_sha256": sha256_file(smoke_path),
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     v_path = v_dir / "stage0_report.json"
@@ -206,6 +220,10 @@ def cmd_build_manifests(args: argparse.Namespace) -> int:
         "robustness_rows": len(robust_rows),
         "baseline_sha256": sha256_file(out_baseline),
         "robustness_sha256": sha256_file(out_robust),
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     v_path = run_dir / "validation" / "manifests_report.json"
@@ -285,6 +303,9 @@ def cmd_parser_regression(args: argparse.Namespace) -> int:
         "passed": passed,
         "failed": len(cases) - passed,
         "pass": passed == len(cases),
+        "run_id": args.run_id,
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
         "results": results,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -334,6 +355,10 @@ def cmd_token_buckets(args: argparse.Namespace) -> int:
         models=list(cfg["models"]),
         out_dir=out_dir,
     )
+    report["run_config_path"] = str(cfg_path)
+    report["run_config_sha256"] = sha256_file(cfg_path)
+    report["config_snapshot_path"] = str(_config_snapshot_path(run_dir))
+    report["config_snapshot_sha256"] = _config_snapshot_sha256(run_dir)
 
     v_path = v_dir / "token_buckets_report.json"
     v_path.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
@@ -412,6 +437,10 @@ def cmd_pca_membership(args: argparse.Namespace) -> int:
         "deterministic_repeat_match": bool(same),
         "baseline_manifest_sha256": sha256_file(baseline_manifest),
         "robustness_manifest_sha256": sha256_file(robustness_manifest),
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
         "out_files": [str(p) for p in out_paths],
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
@@ -446,6 +475,127 @@ def cmd_pca_membership(args: argparse.Namespace) -> int:
     return 0 if report["pass"] else 2
 
 
+def cmd_pilot_inference(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    baseline_manifest = run_dir / "manifests" / "baseline_manifest.jsonl"
+    if not baseline_manifest.exists():
+        raise SystemExit("baseline manifest must be built before pilot inference")
+
+    # Deterministic prompt sample (stratified by coarse_domain).
+    sample_rows = select_pilot_rows(
+        baseline_manifest_path=baseline_manifest,
+        sample_size=int(args.sample_size),
+        seed=int(cfg["random_seed"]),
+    )
+
+    # Pilot-gate thresholds (required for PASS status).
+    min_comp = float(args.min_one_token_compliance) if args.min_one_token_compliance is not None else None
+    min_res = float(args.min_parser_resolved) if args.min_parser_resolved is not None else None
+
+    # Models to run.
+    model_names = [args.model_name] if args.model_name else [m["name"] for m in cfg["models"]]
+    models = [m for m in cfg["models"] if m["name"] in set(model_names)]
+    if len(models) != len(model_names):
+        known = sorted([m["name"] for m in cfg["models"]])
+        raise SystemExit(f"unknown model_name in {model_names}; known={known}")
+
+    per_model = []
+    ok_all = True
+    gate_reasons_all = []
+    for m in models:
+        res = run_pilot_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            sample_rows=sample_rows,
+            device_override=args.device,
+        )
+        gate_ok, reasons = stage7_gate(
+            overall_metrics=res["metrics_overall"],
+            min_one_token_compliance_rate=min_comp,
+            min_parser_resolved_rate=min_res,
+        )
+        per_model.append(
+            {
+                "model_name": m["name"],
+                "model_id": m["model_id"],
+                "model_revision": m["revision"],
+                "outputs_path": str(res["outputs_path"]),
+                "outputs_sha256": res["outputs_sha256"],
+                "report_path": str(res["report_path"]),
+                "report_sha256": res["report_sha256"],
+                "metrics_overall": res["metrics_overall"],
+                "gate": {
+                    "pass": bool(gate_ok),
+                    "min_one_token_compliance_rate": min_comp,
+                    "min_parser_resolved_rate": min_res,
+                    "reasons": reasons,
+                },
+            }
+        )
+        if not gate_ok:
+            ok_all = False
+            gate_reasons_all.extend([f"{m['name']}: {r}" for r in reasons])
+
+    v_report = {
+        "pass": bool(ok_all),
+        "run_id": args.run_id,
+        "sample_size": int(args.sample_size),
+        "seed": int(cfg["random_seed"]),
+        "gate": {
+            "min_one_token_compliance_rate": min_comp,
+            "min_parser_resolved_rate": min_res,
+            "fail_reasons": gate_reasons_all,
+        },
+        "models": per_model,
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    v_path = run_dir / "validation" / "pilot_report.json"
+    v_path.write_text(json.dumps(v_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    s_path = run_dir / "sentinels" / "pilot.done"
+    s_path.write_text(json.dumps({"stage": "pilot", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n")
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 7 - pilot inference (one-token compliance + viability)",
+        status="PASS" if v_report["pass"] else "FAIL",
+        command="python3 sow.py pilot-inference --run-id "
+        + args.run_id
+        + (f" --model-name {args.model_name}" if args.model_name else "")
+        + (f" --sample-size {args.sample_size}" if args.sample_size else "")
+        + (f" --min-one-token-compliance {args.min_one_token_compliance}" if args.min_one_token_compliance is not None else "")
+        + (f" --min-parser-resolved {args.min_parser_resolved}" if args.min_parser_resolved is not None else "")
+        + (f" --device {args.device}" if args.device else ""),
+        inputs=[
+            HashedPath(path=str(baseline_manifest), sha256=sha256_file(baseline_manifest)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            *(HashedPath(path=m["outputs_path"], sha256=m["outputs_sha256"]) for m in per_model),
+            *(HashedPath(path=m["report_path"], sha256=m["report_sha256"]) for m in per_model),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+            HashedPath(path=str(s_path), sha256=sha256_file(s_path)),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Pilot measures first-token one-token compliance and deterministic parser resolution/accuracy on a stratified sample.",
+        next_step="Stage 8 - build PCC" if v_report["pass"] else "Fix prompting / token buckets / sampling before proceeding",
+    )
+
+    print(str(v_path))
+    return 0 if v_report["pass"] else 2
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="sow", description="Shape of Wisdom pipeline (Milestone 1)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -477,6 +627,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_tb = sub.add_parser("token-buckets", help="Build per-model option token buckets (A/B/C/D)")
     p_tb.add_argument("--run-id", required=True)
     p_tb.set_defaults(func=cmd_token_buckets)
+
+    p_pi = sub.add_parser("pilot-inference", help="Stage 7 pilot inference (200-500 prompts, stratified by coarse_domain)")
+    p_pi.add_argument("--run-id", required=True)
+    p_pi.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
+    p_pi.add_argument("--sample-size", type=int, default=200)
+    p_pi.add_argument("--min-one-token-compliance", type=float, default=None)
+    p_pi.add_argument("--min-parser-resolved", type=float, default=None)
+    p_pi.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_pi.set_defaults(func=cmd_pilot_inference)
 
     p_pca = sub.add_parser("pca-membership", help="Freeze PCA sample membership (1000, stratified)")
     p_pca.add_argument("--run-id", required=True)

@@ -33,6 +33,13 @@ def _piece_to_letter(piece: str) -> Optional[str]:
     return t if t in {"A", "B", "C", "D"} else None
 
 
+def piece_to_letter(piece: str) -> Optional[str]:
+    """
+    Public normalization helper used by pilot/inference code.
+    """
+    return _piece_to_letter(piece)
+
+
 def variants_for_letter(letter: str) -> List[str]:
     if letter not in {"A", "B", "C", "D"}:
         raise ValueError("letter must be one of A/B/C/D")
@@ -184,4 +191,3 @@ def build_and_write_option_buckets_for_models(
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "files": files,
     }
-
