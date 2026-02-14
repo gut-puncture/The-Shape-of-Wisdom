@@ -269,3 +269,81 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/ccc_report.json: 0e7db661b12f5c6a637b82d7722b2dbf52acb5b9a20c3603593446787a51154d
 - notes: CCC is the intersection of per-model PCC sets; gates enforce >=0.80 overall and >=0.60 per-domain retention (per model).
 - next: Stage 10 - PCA membership (already done) or Stage 11 - PCA sample extraction
+
+### 2026-02-14 18:02 (local) - Stage 0 - init-run-config - PASS
+- command: python3 sow.py init-run --run-id pca_20260214_180200 --seed 12345
+- inputs (paths + SHA-256):
+  - (none)
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/meta/config_snapshot.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- validators (paths + PASS/FAIL):
+  - (none)
+- notes: Pinned model revisions; greedy decoding; max_new_tokens=24; PCA sample size=1000.
+- next: Stage 2/3/4 - build-manifests
+
+### 2026-02-14 18:03 (local) - Stage 0 - environment lock + smoke test - PASS
+- command: python3 sow.py stage0 --run-id pca_20260214_180200 --device mps
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/meta/environment.json: 657b0fcb34bdcdf971ce610ac3fcbd88396d6f2084e64c252fc863edcda51d69
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/meta/smoke_test.json: acaa81118991465dcc79efe190c689cceb4dfba7d519822dc6a907456ab6b6eb
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/stage0_report.json: 6201ea7c920a1bb6cf1a94050c99784b9d3e359e0309825aa1a3a89e1f3b4425
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/sentinels/stage0.done: f693611b502baa891112ebfd226c2840795244b1aa39240e0428d8d5929881e8
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/stage0_report.json: 6201ea7c920a1bb6cf1a94050c99784b9d3e359e0309825aa1a3a89e1f3b4425
+- notes: Smoke test attempts: tokenizer+model load, forward pass w/ hidden states, token bucket scoring, greedy generate.
+- next: Stage 7 - pilot inference
+
+### 2026-02-14 18:03 (local) - Stage 2/3/4 - build+canonicalize+validate manifests - PASS
+- command: python3 sow.py build-manifests --run-id pca_20260214_180200
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/data/experiment_inputs/main_prompts.jsonl: 2f8608ce26fcc7091ad185ba74675d3fa6e61f974132e8055637ea847824bbbc
+  - /Users/shaileshrana/shape-of-wisdom/data/experiment_inputs/robustness_prompts_v2.jsonl: d39835d1123dcc1e7b65fd83f9043a764c39ec9ab641b796d343f9f1c4457d44
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.meta.json: 4ac583ffde657e55e041ab54d0cd8873a8326015360d1b6be99b3672217abdd2
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.meta.json: 923515b70e94c9ceff8269e6ef559c400d596387b38c0037315c11cc54571517
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.canonicalization_report.json: 596a97b60b3b4f7efafcf001f02153c292e8141c920f3c9478182b43dff6ad1b
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.canonicalization_report.json: b6541908b78edec72e2683503116fd1c6b84cfb65cde2d90c6060d9dcec8c214
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/manifests_report.json: e2aa46d48ea2e7d9ba6b0bdd36b489c9e8eed9d36c2375bf78d28a9858e8e02d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/sentinels/manifests.done: 841096681acee34ff65e26e27a0e299e83664f9d3ed72732938cf9daaa4788d3
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/manifests_report.json: e2aa46d48ea2e7d9ba6b0bdd36b489c9e8eed9d36c2375bf78d28a9858e8e02d
+- notes: Robustness v2: keep-last-line for duplicate (example_id, wrapper_id); drop out-of-wrapper-set; repair missing ascii_box for mmlu::test::12183; enforce suffix boundary.
+- next: Stage 6 - parser-regression
+
+### 2026-02-14 18:03 (local) - Stage 10 - freeze PCA sample membership - PASS
+- command: python3 sow.py pca-membership --run-id pca_20260214_180200
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/qwen2.5-7b-instruct_sample_membership.json: b02034bc42c58b1c49c71ee0906da69bd2e49bf359a113b930927bc586894f20
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/llama-3.1-8b-instruct_sample_membership.json: af3c511b14fc805e6ed63029a7877a188788d7a9b523ef4d88be8e6a1d48e9d0
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/mistral-7b-instruct-v0.3_sample_membership.json: 632a31cb8e1c5d1725da6c0a920ccf6266579dbfd01439c0624adfa59a6215b1
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_membership_report.json: 36477f7e3d9c2b630290f02f12b7101486a04d014ab15d85be32f1f6a864af97
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/sentinels/pca_membership.done: 6e01a54868d101b61a96594ae54ce93b25270bf4031b5c4249658bca3a4d13dc
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_membership_report.json: 36477f7e3d9c2b630290f02f12b7101486a04d014ab15d85be32f1f6a864af97
+- notes: Membership is stratified uniformly over (wrapper_id, coarse_domain) strata and is deterministic for the frozen seed.
+- next: Milestone 1 complete (no PCA fit / no inference yet)
+
+### 2026-02-14 18:38 (local) - Stage 11 - PCA sample extraction inference - PASS
+- command: python3 sow.py pca-sample-inference --run-id pca_20260214_180200 --model-name qwen2.5-7b-instruct --device mps --batch-size 1 --repro-check-k 8 --repro-atol 0.001
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/Qwen__Qwen2.5-7B-Instruct_sample_hidden.npz: bc140aebc0b8ef6b0e3bbfa6ba67614a647c5482d5f220fb1ed64f057c68483b
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/Qwen__Qwen2.5-7B-Instruct_sample_hidden.meta.json: 9a336db785058ee362b1fa244a569f8cce2b52b4a1f0f7c533fd36d91c173b8d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.json: 33d40febbcfc627e8f220969184bc1ebcf117e0ceccf8404deca631c5a36c95e
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.json: 33d40febbcfc627e8f220969184bc1ebcf117e0ceccf8404deca631c5a36c95e
+- notes: Extracted last-position hidden vectors for every transformer layer on the frozen PCA membership set. Includes a small reproducibility spot-check.
+- next: Stage 12 - pca-fit

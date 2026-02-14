@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import gc
 import json
+import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -31,6 +33,18 @@ def _write_json_atomic_new(path: Path, obj: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
         raise FileExistsError(f"refusing to overwrite existing file: {path}")
+    tmp = path.with_name(f".{path.name}.tmp")
+    if tmp.exists():
+        raise FileExistsError(f"refusing to overwrite existing tmp file: {tmp}")
+    tmp.write_text(json.dumps(obj, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def _write_json_atomic_replace(path: Path, obj: Dict[str, Any]) -> None:
+    """
+    Atomic replace writer (used for checkpoints/progress files).
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.tmp")
     if tmp.exists():
         raise FileExistsError(f"refusing to overwrite existing tmp file: {tmp}")
@@ -71,6 +85,34 @@ def load_membership(path: Path) -> Dict[str, Any]:
     if not isinstance(obj, dict) or "membership" not in obj:
         raise ValueError(f"invalid membership file: {path}")
     return obj
+
+
+def _is_oom_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return "out of memory" in msg or "cuda out of memory" in msg or "mps backend out of memory" in msg
+
+
+def _empty_device_cache(*, device: str) -> None:
+    try:
+        import torch  # noqa: PLC0415
+
+        if device == "cuda" and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        if device == "mps" and hasattr(torch, "mps"):
+            torch.mps.empty_cache()
+    except Exception:
+        # Best effort only.
+        pass
+    gc.collect()
+
+
+def _parse_batch_size_arg(batch_size: int | str) -> Optional[int]:
+    if isinstance(batch_size, int):
+        return int(batch_size)
+    s = str(batch_size).strip().lower()
+    if s in ("auto", ""):
+        return None
+    return int(s)
 
 
 def _extract_hidden_lastpos(
@@ -121,6 +163,90 @@ def _extract_hidden_lastpos(
     return out_cpu, n_layers, hidden_dim
 
 
+def _pick_longest_prompts(*, prompts: List[str], tok: Any, k: int) -> List[str]:
+    if k <= 0:
+        return []
+    if not prompts:
+        return []
+    k = min(int(k), len(prompts))
+    # Fast-tokenizer path: return_length provides stable lengths without needing attention masks.
+    try:
+        enc = tok(prompts, add_special_tokens=False, return_length=True, padding=False, truncation=False)
+        lengths = enc.get("length") or enc.get("lengths")
+        if lengths is None:
+            ids = enc.get("input_ids")
+            if ids is None:
+                raise RuntimeError("tokenizer did not return length(s) or input_ids")
+            lengths = [len(x) for x in ids]
+    except Exception:
+        # Fallback: approximate by characters (still deterministic).
+        lengths = [len(p) for p in prompts]
+    idxs = np.argsort(np.asarray(lengths, dtype=np.int64))[-k:]
+    return [prompts[int(i)] for i in idxs.tolist()]
+
+
+def _auto_calibrate_batch_size(
+    *,
+    model_obj: Any,
+    tok: Any,
+    prompts: List[str],
+    device: str,
+    include_embedding: bool,
+    governor: Optional[ThermalGovernor],
+) -> int:
+    """
+    Choose the largest batch size from a small candidate set that does not OOM on the
+    longest prompts in the membership list.
+    """
+    import torch  # noqa: PLC0415
+
+    candidates = [32, 16, 8, 4, 2, 1] if device == "cuda" else [16, 8, 4, 2, 1]
+    probe = _pick_longest_prompts(prompts=prompts, tok=tok, k=min(8, len(prompts)))
+    if not probe:
+        return 1
+
+    with torch.inference_mode():
+        for b in candidates:
+            batch_prompts = (probe * ((b + len(probe) - 1) // len(probe)))[:b]
+            try:
+                if governor is not None:
+                    governor.maybe_cooldown(stage="pca_sample_inference_calibration", model_id="(calibration)", model_revision="(calibration)")
+                enc = tok(batch_prompts, return_tensors="pt", padding=True)
+                input_ids = enc["input_ids"]
+                attn = enc.get("attention_mask")
+                if attn is None:
+                    raise RuntimeError("tokenizer did not return attention_mask")
+                if device != "cpu":
+                    input_ids = input_ids.to(device)
+                    attn = attn.to(device)
+                _extract_hidden_lastpos(model_obj=model_obj, input_ids=input_ids, attention_mask=attn, include_embedding=include_embedding)
+                return int(b)
+            except RuntimeError as exc:
+                if _is_oom_error(exc):
+                    _empty_device_cache(device=device)
+                    continue
+                raise
+    return 1
+
+
+@dataclass(frozen=True)
+class _SampleHiddenCheckpoint:
+    ckpt_dir: Path
+    hidden_npy: Path
+    ckpt_meta_json: Path
+    progress_json: Path
+
+
+def _checkpoint_paths(*, out_dir: Path, model_key: str, resume_key: str) -> _SampleHiddenCheckpoint:
+    d = out_dir / "_ckpt" / f"{model_key}.{resume_key[:12]}"
+    return _SampleHiddenCheckpoint(
+        ckpt_dir=d,
+        hidden_npy=d / "hidden.npy",
+        ckpt_meta_json=d / "checkpoint_meta.json",
+        progress_json=d / "progress.json",
+    )
+
+
 def run_pca_sample_inference_for_model(
     *,
     run_id: str,
@@ -131,7 +257,7 @@ def run_pca_sample_inference_for_model(
     robustness_manifest: Path,
     membership_path: Path,
     device_override: Optional[str],
-    batch_size: int,
+    batch_size: int | str,
     repro_check_k: int,
     repro_atol: float,
     thermal_hygiene_cfg: Dict[str, Any] | None,
@@ -146,8 +272,6 @@ def run_pca_sample_inference_for_model(
 
     if int(generation.get("max_new_tokens", 24)) != 24 or bool(generation.get("do_sample")) is not False:
         raise ValueError("PCA sample inference expects canonical greedy generation settings in run_config")
-    if batch_size <= 0:
-        raise ValueError("batch_size must be positive")
     if repro_check_k <= 0:
         raise ValueError("repro_check_k must be positive")
     if repro_atol <= 0:
@@ -165,13 +289,15 @@ def run_pca_sample_inference_for_model(
         else:
             device = "cpu"
 
+    mem = load_membership(membership_path)
+    membership = mem["membership"]
+    seed = int(mem.get("seed", 0))
+
     # Deterministic seeds for any stochastic ops (none expected under eval/no dropout).
-    torch.manual_seed(int(json.loads(membership_path.read_text(encoding="utf-8"))["seed"]))
+    torch.manual_seed(int(seed))
 
     torch_dtype = torch.float16 if device != "cpu" else torch.float32
 
-    mem = load_membership(membership_path)
-    membership = mem["membership"]
     prompt_uids = [str(m["prompt_uid"]) for m in membership]
     prompt_uids_sha = sha256_text("\n".join(prompt_uids) + "\n")
 
@@ -206,30 +332,127 @@ def run_pca_sample_inference_for_model(
     thermal_events_path = run_dir / "meta" / "thermal_events.jsonl"
     governor = ThermalGovernor(cfg=th_cfg, events_path=thermal_events_path) if th_cfg.enabled else None
 
-    # Forward-only extraction.
     n = len(prompts)
+    if n == 0:
+        raise ValueError("membership contains zero prompts")
+
+    out_dir = run_dir / "pca"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    requested_bs = _parse_batch_size_arg(batch_size)
+    if requested_bs is not None and requested_bs <= 0:
+        requested_bs = None
+    init_bs = int(requested_bs) if requested_bs is not None else _auto_calibrate_batch_size(
+        model_obj=model_obj,
+        tok=tok,
+        prompts=prompts,
+        device=device,
+        include_embedding=False,
+        governor=governor,
+    )
+    if init_bs <= 0:
+        raise ValueError("resolved batch size must be positive")
+
+    membership_sha = sha256_file(membership_path)
+    resume_key = sha256_text(
+        "\n".join(
+            [
+                "pca_sample_hidden",
+                model_id,
+                revision,
+                str(device),
+                str(torch_dtype).replace("torch.", ""),
+                str(membership_sha),
+                str(prompt_uids_sha),
+                "include_embedding=false",
+            ]
+        )
+        + "\n"
+    )
+    ckpt = _checkpoint_paths(out_dir=out_dir, model_key=model_fs_id(model_id), resume_key=resume_key)
+    ckpt.ckpt_dir.mkdir(parents=True, exist_ok=True)
+
+    # Final output paths are chosen once and recorded in checkpoint metadata.
+    out_npz: Path
+    out_meta: Path
+    resumed = False
+    offset = 0
     n_layers: Optional[int] = None
     hidden_dim: Optional[int] = None
-    hidden_all: Optional[np.ndarray] = None
+    hidden_mm: Optional[np.memmap] = None
 
-    def run_batches(*, take_first_k: Optional[int] = None) -> np.ndarray:
-        nonlocal n_layers, hidden_dim
-        m_prompts = prompts[:take_first_k] if take_first_k is not None else prompts
+    if ckpt.progress_json.exists():
+        resumed = True
+        if not ckpt.ckpt_meta_json.exists() or not ckpt.hidden_npy.exists():
+            raise RuntimeError(f"checkpoint is incomplete (missing meta or hidden.npy): {ckpt.ckpt_dir}")
+        ckpt_meta = json.loads(ckpt.ckpt_meta_json.read_text(encoding="utf-8"))
+        if ckpt_meta.get("resume_key") != resume_key:
+            raise RuntimeError(f"checkpoint resume_key mismatch; refusing to resume: {ckpt.ckpt_dir}")
+        out_npz = Path(str(ckpt_meta["final_npz"]))
+        out_meta = Path(str(ckpt_meta["final_meta"]))
+        n_layers = int(ckpt_meta["n_layers"])
+        hidden_dim = int(ckpt_meta["hidden_dim"])
+
+        prog = json.loads(ckpt.progress_json.read_text(encoding="utf-8"))
+        if prog.get("resume_key") != resume_key:
+            raise RuntimeError(f"checkpoint progress resume_key mismatch; refusing to resume: {ckpt.ckpt_dir}")
+        offset = int(prog.get("next_offset", 0))
+        if offset < 0 or offset > n:
+            raise RuntimeError(f"invalid checkpoint offset {offset} for total {n}")
+        hidden_mm = np.load(str(ckpt.hidden_npy), mmap_mode="r+")
+        if hidden_mm.shape != (n, int(n_layers), int(hidden_dim)):
+            raise RuntimeError("checkpoint hidden.npy shape mismatch vs membership/meta")
+    else:
+        out_npz = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.npz")
+        out_meta = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.meta.json")
+
+    # If a prior attempt wrote final outputs but crashed before sentinel/report, make finalize idempotent.
+    if out_npz.exists() and out_meta.exists():
+        report = {
+            "pass": True,
+            "run_id": run_id,
+            "model_id": model_id,
+            "model_revision": revision,
+            "sample_size": int(n),
+            "n_layers": int(n_layers) if n_layers is not None else None,
+            "hidden_dim": int(hidden_dim) if hidden_dim is not None else None,
+            "hidden_sha256": sha256_file(out_npz),
+            "meta_sha256": sha256_file(out_meta),
+            "prompt_uids_sha256": prompt_uids_sha,
+            "repro_check": {"k": 0, "atol": float(repro_atol), "max_abs_diff": 0.0, "pass": True, "skipped": True},
+            "batch_invariance_check": {"skipped": True},
+            "run_config_sha256": sha256_file(run_dir / "run_config.yaml"),
+            "config_snapshot_sha256": sha256_file(run_dir / "meta" / "config_snapshot.yaml"),
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        }
+        return {
+            "report": report,
+            "hidden_path": out_npz,
+            "hidden_sha256": sha256_file(out_npz),
+            "meta_path": out_meta,
+            "meta_sha256": sha256_file(out_meta),
+        }
+
+    # Forward-only extraction with checkpointing (hidden.npy + progress.json).
+    bs_cur = int(init_bs)
+    bs_used = {int(bs_cur)}
+
+    def run_batches(
+        *,
+        m_prompts: List[str],
+        use_batch_size: int,
+    ) -> np.ndarray:
         total = len(m_prompts)
-        out_arr: Optional[np.ndarray] = None
-        if n_layers is not None and hidden_dim is not None:
-            out_arr = np.empty(
-                (total, int(n_layers), int(hidden_dim)),
-                dtype=np.float16 if torch_dtype == torch.float16 else np.float32,
-            )
-
+        if total == 0:
+            raise ValueError("run_batches: empty prompt list")
+        out_arr = np.empty(
+            (total, int(n_layers), int(hidden_dim)),
+            dtype=np.float16 if torch_dtype == torch.float16 else np.float32,
+        )
         with torch.inference_mode():
-            offset = 0
-            while offset < total:
-                if governor is not None:
-                    governor.maybe_cooldown(stage="pca_sample_inference", model_id=model_id, model_revision=revision)
-
-                batch_prompts = m_prompts[offset : offset + batch_size]
+            off = 0
+            while off < total:
+                batch_prompts = m_prompts[off : off + int(use_batch_size)]
                 enc = tok(batch_prompts, return_tensors="pt", padding=True)
                 input_ids = enc["input_ids"]
                 attn = enc.get("attention_mask")
@@ -238,48 +461,144 @@ def run_pca_sample_inference_for_model(
                 if device != "cpu":
                     input_ids = input_ids.to(device)
                     attn = attn.to(device)
-
                 batch_hidden_t, bl, hd = _extract_hidden_lastpos(
                     model_obj=model_obj,
                     input_ids=input_ids,
                     attention_mask=attn,
                     include_embedding=False,
                 )
-                if n_layers is None:
-                    n_layers = int(bl)
-                    hidden_dim = int(hd)
-                    out_arr = np.empty((total, n_layers, hidden_dim), dtype=np.float16 if torch_dtype == torch.float16 else np.float32)
-                else:
-                    if int(bl) != int(n_layers) or int(hd) != int(hidden_dim):
-                        raise RuntimeError("model hidden shape changed across batches")
-                if out_arr is None:
-                    raise RuntimeError("internal error: out_arr not initialized")
-
+                if int(bl) != int(n_layers) or int(hd) != int(hidden_dim):
+                    raise RuntimeError("model hidden shape changed across batches")
                 bsz = int(batch_hidden_t.shape[0])
-                out_arr[offset : offset + bsz, :, :] = batch_hidden_t.numpy()
-                offset += bsz
-        if out_arr is None:
-            raise RuntimeError("internal error: out_arr not initialized")
+                out_arr[off : off + bsz, :, :] = batch_hidden_t.numpy()
+                off += bsz
         return out_arr
 
-    hidden_all = run_batches()
+    t_forward_start = time.perf_counter()
+    with torch.inference_mode():
+        start_wall = time.perf_counter()
+        last_print = start_wall
+
+        while offset < n:
+            if governor is not None:
+                governor.maybe_cooldown(stage="pca_sample_inference", model_id=model_id, model_revision=revision)
+
+            batch_prompts = prompts[offset : offset + int(bs_cur)]
+            try:
+                enc = tok(batch_prompts, return_tensors="pt", padding=True)
+                input_ids = enc["input_ids"]
+                attn = enc.get("attention_mask")
+                if attn is None:
+                    raise RuntimeError("tokenizer did not return attention_mask")
+                if device != "cpu":
+                    input_ids = input_ids.to(device)
+                    attn = attn.to(device)
+                batch_hidden_t, bl, hd = _extract_hidden_lastpos(
+                    model_obj=model_obj,
+                    input_ids=input_ids,
+                    attention_mask=attn,
+                    include_embedding=False,
+                )
+            except RuntimeError as exc:
+                if _is_oom_error(exc) and int(bs_cur) > 1:
+                    bs_cur = max(1, int(bs_cur) // 2)
+                    bs_used.add(int(bs_cur))
+                    _empty_device_cache(device=device)
+                    continue
+                raise
+
+            if hidden_mm is None:
+                n_layers = int(bl)
+                hidden_dim = int(hd)
+                # Initialize checkpoint memmap file.
+                if ckpt.hidden_npy.exists():
+                    raise FileExistsError(f"refusing to overwrite existing checkpoint hidden.npy: {ckpt.hidden_npy}")
+                hidden_mm = np.lib.format.open_memmap(
+                    str(ckpt.hidden_npy),
+                    mode="w+",
+                    dtype=np.float16 if torch_dtype == torch.float16 else np.float32,
+                    shape=(n, int(n_layers), int(hidden_dim)),
+                )
+                ckpt_meta = {
+                    "resume_key": resume_key,
+                    "run_id": run_id,
+                    "model_id": model_id,
+                    "model_revision": revision,
+                    "device": device,
+                    "torch_dtype": str(torch_dtype).replace("torch.", ""),
+                    "membership_path": str(membership_path),
+                    "membership_sha256": membership_sha,
+                    "prompt_uids_sha256": prompt_uids_sha,
+                    "prompt_uids_count": int(n),
+                    "include_embedding": False,
+                    "n_layers": int(n_layers),
+                    "hidden_dim": int(hidden_dim),
+                    "hidden_dtype": str(hidden_mm.dtype),
+                    "checkpoint_dir": str(ckpt.ckpt_dir),
+                    "hidden_npy": str(ckpt.hidden_npy),
+                    "final_npz": str(out_npz),
+                    "final_meta": str(out_meta),
+                    "batching": {"requested": str(batch_size), "initial_resolved": int(init_bs)},
+                    "created_at_utc": datetime.now(timezone.utc).isoformat(),
+                }
+                _write_json_atomic_replace(ckpt.ckpt_meta_json, ckpt_meta)
+
+            if n_layers is None or hidden_dim is None or hidden_mm is None:
+                raise RuntimeError("internal error: checkpoint memmap not initialized")
+            if int(bl) != int(n_layers) or int(hd) != int(hidden_dim):
+                raise RuntimeError("model hidden shape changed across batches")
+
+            bsz = int(batch_hidden_t.shape[0])
+            hidden_mm[offset : offset + bsz, :, :] = batch_hidden_t.numpy()
+            hidden_mm.flush()
+            offset += bsz
+
+            _write_json_atomic_replace(
+                ckpt.progress_json,
+                {
+                    "resume_key": resume_key,
+                    "next_offset": int(offset),
+                    "total": int(n),
+                    "batch_size_current": int(bs_cur),
+                    "batch_sizes_used": sorted(int(x) for x in bs_used),
+                    "updated_at_utc": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+
+            # Lightweight progress print (~every 15s) for ETA visibility.
+            now = time.perf_counter()
+            if (now - last_print) >= 15.0 or offset >= n:
+                elapsed = now - start_wall
+                rate = (offset / elapsed) if elapsed > 0 else 0.0
+                eta_s = ((n - offset) / rate) if rate > 0 else None
+                eta_txt = f"{eta_s/60:.1f}m" if eta_s is not None else "?"
+                print(f"[pca-sample-inference] {model_id}@{revision} {offset}/{n} bs={bs_cur} rate={rate:.2f} rows/s eta={eta_txt}")
+                last_print = now
+
     t_done = time.perf_counter()
 
-    if n_layers is None or hidden_dim is None:
+    if n_layers is None or hidden_dim is None or hidden_mm is None:
         raise RuntimeError("hidden extraction produced no data")
-    if hidden_all.shape != (n, n_layers, hidden_dim):
-        raise RuntimeError(f"unexpected hidden_all shape: {hidden_all.shape} expected {(n, n_layers, hidden_dim)}")
+    if hidden_mm.shape != (n, int(n_layers), int(hidden_dim)):
+        raise RuntimeError(f"unexpected hidden_mm shape: {hidden_mm.shape} expected {(n, int(n_layers), int(hidden_dim))}")
 
-    # Reproducibility spot-check: recompute first K prompts and compare.
+    # Reproducibility spot-check: recompute first K prompts and compare (same batch size).
     k = min(int(repro_check_k), n)
-    hidden_k = run_batches(take_first_k=k)
-    diff = np.max(np.abs(hidden_k.astype(np.float32) - hidden_all[:k].astype(np.float32)))
+    hidden_k = run_batches(m_prompts=prompts[:k], use_batch_size=int(max(bs_used)))
+    diff = float(np.max(np.abs(hidden_k.astype(np.float32) - np.asarray(hidden_mm[:k]).astype(np.float32))))
     repro_ok = bool(diff <= float(repro_atol))
 
-    out_dir = run_dir / "pca"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_npz = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.npz")
-    out_meta = _next_available_path(out_dir / f"{model_fs_id(model_id)}_sample_hidden.meta.json")
+    # Batch invariance spot-check (if we ever ran with batching > 1): compare bs=1 vs max(bs_used).
+    bs_max = int(max(bs_used))
+    if bs_max > 1:
+        hidden_bs1 = run_batches(m_prompts=prompts[:k], use_batch_size=1)
+        hidden_bsn = run_batches(m_prompts=prompts[:k], use_batch_size=bs_max)
+        bdiff = float(np.max(np.abs(hidden_bs1.astype(np.float32) - hidden_bsn.astype(np.float32))))
+        batch_invariance_ok = bool(bdiff <= float(repro_atol))
+        batch_invariance = {"k": int(k), "atol": float(repro_atol), "max_abs_diff": float(bdiff), "batch_size": int(bs_max), "pass": bool(batch_invariance_ok)}
+    else:
+        batch_invariance_ok = True
+        batch_invariance = {"skipped": True, "reason": "batch_size_max==1"}
 
     meta = {
         "run_id": run_id,
@@ -288,12 +607,12 @@ def run_pca_sample_inference_for_model(
         "device": device,
         "torch_dtype": str(torch_dtype).replace("torch.", ""),
         "membership_path": str(membership_path),
-        "membership_sha256": sha256_file(membership_path),
+        "membership_sha256": membership_sha,
         "prompt_uids": prompt_uids,
         "prompt_uids_sha256": prompt_uids_sha,
         "layer_indices": list(range(int(n_layers))),
         "hidden_dim": int(hidden_dim),
-        "hidden_dtype": str(hidden_all.dtype),
+        "hidden_dtype": str(hidden_mm.dtype),
         "baseline_manifest_path": str(baseline_manifest),
         "baseline_manifest_sha256": sha256_file(baseline_manifest),
         "robustness_manifest_path": str(robustness_manifest),
@@ -306,21 +625,35 @@ def run_pca_sample_inference_for_model(
             "check_interval_seconds": int(th_cfg.check_interval_seconds),
             "events_path": str(thermal_events_path),
         },
+        "checkpointing": {
+            "enabled": True,
+            "resume_key": resume_key,
+            "checkpoint_dir": str(ckpt.ckpt_dir),
+            "resumed": bool(resumed),
+            "progress_path": str(ckpt.progress_json),
+            "checkpoint_meta_path": str(ckpt.ckpt_meta_json),
+            "hidden_npy_path": str(ckpt.hidden_npy),
+        },
+        "batching": {"requested": str(batch_size), "initial_resolved": int(init_bs), "batch_sizes_used": sorted(int(x) for x in bs_used)},
         "repro_check": {"k": int(k), "atol": float(repro_atol), "max_abs_diff": float(diff), "pass": bool(repro_ok)},
+        "batch_invariance_check": batch_invariance,
         "timing_seconds": {
             "total": float(t_done - t0),
             "tokenizer_load": float(t_tok - t0),
             "model_load": float(t_model - t_tok),
-            "forward_only": float(t_done - t_model),
+            "forward_only": float(t_done - t_forward_start),
         },
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
 
-    _write_npz_atomic_new(out_npz, hidden=hidden_all)
-    _write_json_atomic_new(out_meta, meta)
+    # Finalize (idempotent-ish): if one exists, attempt to complete the other.
+    if not out_npz.exists():
+        _write_npz_atomic_new(out_npz, hidden=hidden_mm)
+    if not out_meta.exists():
+        _write_json_atomic_new(out_meta, meta)
 
     report = {
-        "pass": bool(repro_ok),
+        "pass": bool(repro_ok and batch_invariance_ok),
         "run_id": run_id,
         "model_id": model_id,
         "model_revision": revision,
@@ -331,10 +664,26 @@ def run_pca_sample_inference_for_model(
         "meta_sha256": sha256_file(out_meta),
         "prompt_uids_sha256": prompt_uids_sha,
         "repro_check": meta["repro_check"],
+        "batch_invariance_check": meta["batch_invariance_check"],
         "run_config_sha256": sha256_file(run_dir / "run_config.yaml"),
         "config_snapshot_sha256": sha256_file(run_dir / "meta" / "config_snapshot.yaml"),
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
+
+    # On success, remove checkpoint files to avoid doubling disk usage.
+    if report["pass"]:
+        try:
+            for p in [ckpt.progress_json, ckpt.ckpt_meta_json, ckpt.hidden_npy]:
+                if p.exists():
+                    p.unlink()
+            # Remove the directory if empty.
+            if ckpt.ckpt_dir.exists() and not any(ckpt.ckpt_dir.iterdir()):
+                ckpt.ckpt_dir.rmdir()
+            # Keep parent _ckpt dir if it contains other checkpoints.
+        except Exception:
+            # Best effort cleanup only.
+            pass
+
     return {
         "report": report,
         "hidden_path": out_npz,

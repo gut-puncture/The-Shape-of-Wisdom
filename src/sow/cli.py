@@ -562,7 +562,7 @@ def cmd_pca_sample_inference(args: argparse.Namespace) -> int:
             robustness_manifest=robustness_manifest,
             membership_path=membership_path,
             device_override=args.device,
-            batch_size=int(args.batch_size),
+            batch_size=str(args.batch_size),
             repro_check_k=int(args.repro_check_k),
             repro_atol=float(args.repro_atol),
             thermal_hygiene_cfg=cfg.get("thermal_hygiene"),
@@ -571,24 +571,25 @@ def cmd_pca_sample_inference(args: argparse.Namespace) -> int:
         per_model_report = _next_available_path(run_dir / "validation" / f"pca_sample_inference_report.{model_key}.json")
         per_model_report.write_text(json.dumps(res["report"], indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
-        sent = {
-            "stage": "pca_sample_inference",
-            "run_id": args.run_id,
-            "model_id": m["model_id"],
-            "model_revision": m["revision"],
-            "hidden_path": str(res["hidden_path"]),
-            "hidden_sha256": res["hidden_sha256"],
-            "meta_path": str(res["meta_path"]),
-            "meta_sha256": res["meta_sha256"],
-            "report_path": str(per_model_report),
-            "report_sha256": sha256_file(per_model_report),
-            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        }
-        tmp = sentinel.with_name(f".{sentinel.name}.tmp")
-        if tmp.exists():
-            raise SystemExit(f"refusing to overwrite existing tmp sentinel: {tmp}")
-        tmp.write_text(json.dumps(sent, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-        tmp.replace(sentinel)
+        if res["report"]["pass"]:
+            sent = {
+                "stage": "pca_sample_inference",
+                "run_id": args.run_id,
+                "model_id": m["model_id"],
+                "model_revision": m["revision"],
+                "hidden_path": str(res["hidden_path"]),
+                "hidden_sha256": res["hidden_sha256"],
+                "meta_path": str(res["meta_path"]),
+                "meta_sha256": res["meta_sha256"],
+                "report_path": str(per_model_report),
+                "report_sha256": sha256_file(per_model_report),
+                "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            }
+            tmp = sentinel.with_name(f".{sentinel.name}.tmp")
+            if tmp.exists():
+                raise SystemExit(f"refusing to overwrite existing tmp sentinel: {tmp}")
+            tmp.write_text(json.dumps(sent, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+            tmp.replace(sentinel)
 
         per_model.append({"model_name": m["name"], **res["report"], "hidden_path": str(res["hidden_path"]), "meta_path": str(res["meta_path"])})
         if not res["report"]["pass"]:
@@ -611,10 +612,11 @@ def cmd_pca_sample_inference(args: argparse.Namespace) -> int:
         # Append-only stage report; do not overwrite stage-level sentinel if it already exists.
         pass
     else:
-        stage_sentinel.write_text(
-            json.dumps({"stage": "pca_sample_inference", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n",
-            encoding="utf-8",
-        )
+        if ok_all:
+            stage_sentinel.write_text(
+                json.dumps({"stage": "pca_sample_inference", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n",
+                encoding="utf-8",
+            )
 
     append_state_entry(
         state_path=_state_path(),
@@ -1334,7 +1336,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_pcas.add_argument("--run-id", required=True)
     p_pcas.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
     p_pcas.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
-    p_pcas.add_argument("--batch-size", type=int, default=1)
+    p_pcas.add_argument("--batch-size", default="auto", help="Integer batch size, or 'auto' (calibrate + adapt to OOM)")
     p_pcas.add_argument("--repro-check-k", type=int, default=8, help="Recompute first K prompts and compare to stored vectors (spot-check)")
     p_pcas.add_argument("--repro-atol", type=float, default=1e-3, help="Absolute tolerance for repro spot-check on float16 vectors")
     p_pcas.set_defaults(func=cmd_pca_sample_inference)
