@@ -14,6 +14,13 @@ from sow.manifest.canonicalize import canonicalize_baseline_manifest, canonicali
 from sow.manifest.schema import validate_baseline_manifest, validate_robustness_manifest
 from sow.pca.membership import select_pca_membership, write_membership_file
 from sow.pcc.build_pcc import build_pcc_manifests_for_model
+from sow.ccc.build_ccc import (
+    build_ccc_manifests,
+    check_ccc_gates,
+    compute_ccc_intersection,
+    compute_retention_metrics,
+    read_pcc_example_ids_and_domain_counts,
+)
 from sow.state import HashedPath, append_state_entry
 from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models, model_fs_id
 from sow.stage0_env import collect_environment, run_smoke_test
@@ -825,6 +832,129 @@ def cmd_build_pcc(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_build_ccc(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    # Dependencies: manifests + PCC.
+    for s in ["manifests.done", "pcc.done"]:
+        p = run_dir / "sentinels" / s
+        if not p.exists():
+            raise SystemExit(f"missing dependency sentinel: {p}")
+
+    baseline_manifest = run_dir / "manifests" / "baseline_manifest.jsonl"
+    robustness_manifest = run_dir / "manifests" / "robustness_manifest_v2.jsonl"
+    if not baseline_manifest.exists() or not robustness_manifest.exists():
+        raise SystemExit("canonical manifests must exist before CCC")
+
+    expected_wrappers = list(cfg["prompting"]["robustness_wrapper_ids_v2"])
+
+    # Load per-model PCC sets.
+    per_model_example_ids: Dict[str, Set[str]] = {}
+    per_model_counts_by_domain: Dict[str, Dict[str, int]] = {}
+    domain_by_example: Dict[str, str] = {}
+
+    # Domain mapping comes from canonical baseline (stable and common).
+    for r in iter_jsonl(baseline_manifest):
+        domain_by_example[str(r["example_id"])] = str(r.get("coarse_domain") or "unknown")
+
+    for m in cfg["models"]:
+        pcc_baseline = run_dir / "manifests" / f"pcc_baseline.{m['name']}.jsonl"
+        if not pcc_baseline.exists():
+            raise SystemExit(f"missing per-model PCC baseline manifest: {pcc_baseline}")
+        obj = read_pcc_example_ids_and_domain_counts(pcc_baseline)
+        per_model_example_ids[m["name"]] = obj["example_ids"]
+        per_model_counts_by_domain[m["name"]] = obj["counts_by_domain"]
+
+    ccc_example_ids = compute_ccc_intersection(per_model_example_ids)
+    retention = compute_retention_metrics(
+        ccc_example_ids=set(ccc_example_ids),
+        per_model_counts_by_domain=per_model_counts_by_domain,
+        domain_by_example=domain_by_example,
+    )
+    ok, reasons = check_ccc_gates(
+        retention_metrics=retention,
+        min_overall=float(args.min_overall_retention),
+        min_per_domain=float(args.min_per_domain_retention),
+    )
+
+    out_dir = run_dir / "manifests"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Always write CCC manifests + report for audit; only write sentinel on PASS.
+    ccc_meta = build_ccc_manifests(
+        run_id=args.run_id,
+        ccc_example_ids=ccc_example_ids,
+        baseline_manifest_path=baseline_manifest,
+        robustness_manifest_path=robustness_manifest,
+        expected_wrapper_ids=expected_wrappers,
+        out_dir=out_dir,
+    )
+
+    report = {
+        "pass": bool(ok),
+        "run_id": args.run_id,
+        "min_overall_retention": float(args.min_overall_retention),
+        "min_per_domain_retention": float(args.min_per_domain_retention),
+        "gate_fail_reasons": reasons,
+        "ccc_size": int(len(ccc_example_ids)),
+        "ccc_example_ids_sha256": sha256_text("\n".join(ccc_example_ids) + "\n"),
+        "retention": retention,
+        "inputs": {
+            "baseline_manifest_path": str(baseline_manifest),
+            "baseline_manifest_sha256": sha256_file(baseline_manifest),
+            "robustness_manifest_path": str(robustness_manifest),
+            "robustness_manifest_sha256": sha256_file(robustness_manifest),
+        },
+        "outputs": ccc_meta["outputs"],
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    report_path = _next_available_path(out_dir / "ccc_report.json")
+    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    sent_dir = run_dir / "sentinels"
+    sent_dir.mkdir(parents=True, exist_ok=True)
+    sent_path = None
+    if ok:
+        sent_path = _next_available_path(sent_dir / "ccc.done")
+        sent_path.write_text(
+            json.dumps({"stage": "ccc", "output": str(report_path), "sha256": sha256_file(report_path)}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 9 - build Common Compatible Core (CCC)",
+        status="PASS" if ok else "FAIL",
+        command=f"python3 sow.py build-ccc --run-id {args.run_id} --min-overall-retention {args.min_overall_retention} --min-per-domain-retention {args.min_per_domain_retention}",
+        inputs=[
+            HashedPath(path=str(baseline_manifest), sha256=sha256_file(baseline_manifest)),
+            HashedPath(path=str(robustness_manifest), sha256=sha256_file(robustness_manifest)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            HashedPath(path=str(ccc_meta["outputs"]["ccc_baseline_path"]), sha256=str(ccc_meta["outputs"]["ccc_baseline_sha256"])),
+            HashedPath(path=str(ccc_meta["outputs"]["ccc_robustness_path"]), sha256=str(ccc_meta["outputs"]["ccc_robustness_sha256"])),
+            HashedPath(path=str(report_path), sha256=sha256_file(report_path)),
+            *( [HashedPath(path=str(sent_path), sha256=sha256_file(sent_path))] if sent_path else [] ),
+        ],
+        validators=[HashedPath(path=str(report_path), sha256=sha256_file(report_path))],
+        notes="CCC is the intersection of per-model PCC sets; gates enforce >=0.80 overall and >=0.60 per-domain retention (per model).",
+        next_step="Stage 10 - PCA membership (already done) or Stage 11 - PCA sample extraction" if ok else "Fix PCC/thresholds before proceeding",
+    )
+
+    print(str(report_path))
+    return 0 if ok else 2
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="sow", description="Shape of Wisdom pipeline (Milestone 1)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -874,6 +1004,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_pcc.add_argument("--run-id", required=True)
     p_pcc.add_argument("--target-size", type=int, default=3000)
     p_pcc.set_defaults(func=cmd_build_pcc)
+
+    p_ccc = sub.add_parser("build-ccc", help="Stage 9: build Common Compatible Core (CCC) across models")
+    p_ccc.add_argument("--run-id", required=True)
+    p_ccc.add_argument("--min-overall-retention", type=float, default=0.80)
+    p_ccc.add_argument("--min-per-domain-retention", type=float, default=0.60)
+    p_ccc.set_defaults(func=cmd_build_ccc)
 
     return ap
 
