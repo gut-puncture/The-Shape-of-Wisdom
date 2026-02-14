@@ -172,3 +172,31 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/stage0_report.json: 6f84741349d95d6980e9b4c47b400d2beb33701a0333ada092a31e2b23701968
 - notes: Smoke test attempts: tokenizer+model load, forward pass w/ hidden states, token bucket scoring, greedy generate.
 - next: Stage 7 - pilot inference
+
+### 2026-02-14 14:37 (local) - Stage 7 - pilot inference (one-token compliance + viability) - FAIL
+- command: python3 sow.py pilot-inference --run-id m1_20260214_124722 --model-name qwen2.5-7b-instruct --sample-size 200 --min-one-token-compliance 0.8 --min-parser-resolved 0.9 --device mps
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/token_buckets/Qwen__Qwen2.5-7B-Instruct.json: 598bc72008d0e3fee9842a1c1b78a2c28acaa9fcd34314e882387bbd2d1270d2
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/Qwen__Qwen2.5-7B-Instruct_pilot_outputs.jsonl: 5fc57a3b5863ecfb17d211b977c1e8aa7380f572b3272c8861853388eb109b4a
+- validators (paths + PASS/FAIL):
+  - (none; crashed before writing stage-level pilot report)
+- notes: crashed during metrics aggregation with KeyError('parsed_choice'); bugfix: compute metrics from row['parser']['parsed_choice'] and avoid overwriting previous pilot outputs via attempt-suffixed atomic writes.
+- next: Patch pilot inference metrics + rerun Stage 7 (should produce pilot reports + stage-level sentinel)
+
+### 2026-02-14 14:45 (local) - Stage 7 - pilot inference (one-token compliance + viability) - PASS
+- command: python3 sow.py pilot-inference --run-id m1_20260214_124722 --model-name qwen2.5-7b-instruct --sample-size 200 --min-one-token-compliance 0.8 --min-parser-resolved 0.9 --device mps
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/Qwen__Qwen2.5-7B-Instruct_pilot_outputs.attempt2.jsonl: 5fc57a3b5863ecfb17d211b977c1e8aa7380f572b3272c8861853388eb109b4a
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/pilot/Qwen__Qwen2.5-7B-Instruct_pilot_report.json: 8f14598352faa097c828de1b1001f30554307d8d8d99d5f16e178ce171d6015d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.json: de8d190c09510c5f6bb178fab8bc74b41b33850de5cc8e7aa8f419f78c0cc78e
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/pilot.done: 40378212c46b2e454960bbb1ac429dd61b81c6537cc29629a80f3f4e830b86cd
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.json: de8d190c09510c5f6bb178fab8bc74b41b33850de5cc8e7aa8f419f78c0cc78e
+- notes: Pilot measures first-token one-token compliance and deterministic parser resolution/accuracy on a stratified sample.
+- next: Stage 8 - build PCC

@@ -10,13 +10,54 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from sow.hashing import sha256_file
 from sow.hashing import sha256_text
-from sow.io_jsonl import iter_jsonl, write_jsonl
+from sow.io_jsonl import iter_jsonl
 from sow.judging.deterministic_parser import parse_choice
 from sow.token_buckets.option_buckets import model_fs_id, piece_to_letter
 
 
 def _domain_key(row: Dict[str, Any]) -> str:
     return str(row.get("coarse_domain") or "unknown")
+
+
+def _next_available_path(path: Path) -> Path:
+    """
+    Return `path` if it doesn't exist; otherwise append a deterministic attempt suffix.
+    """
+    if not path.exists():
+        return path
+    suffix = path.suffix
+    base = path.name[: -len(suffix)] if suffix else path.name
+    for i in range(2, 10_000):
+        cand = path.with_name(f"{base}.attempt{i}{suffix}")
+        if not cand.exists():
+            return cand
+    raise RuntimeError(f"could not find available attempt path for: {path}")
+
+
+def _write_jsonl_atomic_new(path: Path, rows: Iterable[Dict[str, Any]]) -> None:
+    """
+    Write JSONL to a brand new path (refuse to overwrite) using a temp file + atomic rename.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise FileExistsError(f"refusing to overwrite existing file: {path}")
+    tmp = path.with_name(f".{path.name}.tmp")
+    if tmp.exists():
+        raise FileExistsError(f"refusing to overwrite existing tmp file: {tmp}")
+    with tmp.open("w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+    tmp.replace(path)
+
+
+def _parsed_choice(row: Dict[str, Any]) -> Optional[str]:
+    p = row.get("parser")
+    if isinstance(p, dict):
+        v = p.get("parsed_choice")
+        if v is None:
+            return None
+        return str(v)
+    return None
 
 
 def select_pilot_rows(
@@ -83,7 +124,7 @@ def _accumulate_metrics(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     if n == 0:
         return {}
     one_token = sum(1 for r in rows if r["one_token_compliance"])
-    resolved = sum(1 for r in rows if r["parsed_choice"] is not None)
+    resolved = sum(1 for r in rows if _parsed_choice(r) is not None)
     unresolved = n - resolved
     resolved_correct = sum(1 for r in rows if (r["is_correct"] is True))
     resolved_total = sum(1 for r in rows if r["is_correct"] in (True, False))
@@ -149,8 +190,8 @@ def run_pilot_for_model(
 
     out_dir = run_dir / "pilot"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_jsonl = out_dir / f"{model_fs_id(model_id)}_pilot_outputs.jsonl"
-    out_report = out_dir / f"{model_fs_id(model_id)}_pilot_report.json"
+    out_jsonl = _next_available_path(out_dir / f"{model_fs_id(model_id)}_pilot_outputs.jsonl")
+    out_report = _next_available_path(out_dir / f"{model_fs_id(model_id)}_pilot_report.json")
 
     outputs: List[Dict[str, Any]] = []
 
@@ -226,7 +267,7 @@ def run_pilot_for_model(
                 }
             )
 
-    write_jsonl(out_jsonl, outputs)
+    _write_jsonl_atomic_new(out_jsonl, outputs)
     t_done = time.perf_counter()
 
     # Aggregate metrics.

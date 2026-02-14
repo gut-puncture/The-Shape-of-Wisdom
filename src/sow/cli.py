@@ -486,6 +486,9 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
     baseline_manifest = run_dir / "manifests" / "baseline_manifest.jsonl"
     if not baseline_manifest.exists():
         raise SystemExit("baseline manifest must be built before pilot inference")
+    sentinel_existing = run_dir / "sentinels" / "pilot.done"
+    if sentinel_existing.exists():
+        raise SystemExit(f"pilot already completed for run_id={args.run_id} (sentinel exists): {sentinel_existing}")
 
     # Deterministic prompt sample (stratified by coarse_domain).
     sample_rows = select_pilot_rows(
