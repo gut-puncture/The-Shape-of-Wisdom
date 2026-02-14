@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from sow.config import default_run_config, read_yaml, validate_run_config, write_yaml
-from sow.hashing import sha256_file
+from sow.hashing import sha256_file, sha256_text
 from sow.io_jsonl import iter_jsonl
 from sow.judging.deterministic_parser import parse_choice
 from sow.manifest.canonicalize import canonicalize_baseline_manifest, canonicalize_robustness_manifest_v2
@@ -863,9 +863,23 @@ def cmd_build_ccc(args: argparse.Namespace) -> int:
         domain_by_example[str(r["example_id"])] = str(r.get("coarse_domain") or "unknown")
 
     for m in cfg["models"]:
-        pcc_baseline = run_dir / "manifests" / f"pcc_baseline.{m['name']}.jsonl"
+        mk = model_fs_id(m["model_id"])
+        pcc_sentinel = run_dir / "sentinels" / f"pcc.{mk}.done"
+        if not pcc_sentinel.exists():
+            raise SystemExit(f"missing per-model PCC sentinel: {pcc_sentinel}")
+        s_obj = json.loads(pcc_sentinel.read_text(encoding="utf-8"))
+        pcc_report_path = Path(str(s_obj.get("output") or ""))
+        if not pcc_report_path.exists():
+            raise SystemExit(f"per-model PCC report referenced by sentinel does not exist: {pcc_report_path}")
+        if sha256_file(pcc_report_path) != str(s_obj.get("sha256") or ""):
+            raise SystemExit(f"per-model PCC report sha256 mismatch for: {pcc_report_path}")
+        pcc_report = json.loads(pcc_report_path.read_text(encoding="utf-8"))
+        pcc_baseline = Path(str(pcc_report.get("pcc_baseline_path") or ""))
         if not pcc_baseline.exists():
             raise SystemExit(f"missing per-model PCC baseline manifest: {pcc_baseline}")
+        if sha256_file(pcc_baseline) != str(pcc_report.get("pcc_baseline_sha256") or ""):
+            raise SystemExit(f"per-model PCC baseline sha256 mismatch for: {pcc_baseline}")
+
         obj = read_pcc_example_ids_and_domain_counts(pcc_baseline)
         per_model_example_ids[m["name"]] = obj["example_ids"]
         per_model_counts_by_domain[m["name"]] = obj["counts_by_domain"]
@@ -886,14 +900,56 @@ def cmd_build_ccc(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Always write CCC manifests + report for audit; only write sentinel on PASS.
-    ccc_meta = build_ccc_manifests(
-        run_id=args.run_id,
-        ccc_example_ids=ccc_example_ids,
-        baseline_manifest_path=baseline_manifest,
-        robustness_manifest_path=robustness_manifest,
-        expected_wrapper_ids=expected_wrappers,
-        out_dir=out_dir,
-    )
+    ccc_baseline_existing = out_dir / "ccc_baseline.jsonl"
+    ccc_robust_existing = out_dir / "ccc_robustness.jsonl"
+    ccc_meta: Dict[str, Any]
+    if ccc_baseline_existing.exists() and ccc_robust_existing.exists():
+        try:
+            base_rows = list(iter_jsonl(ccc_baseline_existing))
+            rob_rows = list(iter_jsonl(ccc_robust_existing))
+            from sow.pcc.build_pcc import validate_pcc_baseline_manifest as _vpb  # noqa: PLC0415
+            from sow.pcc.build_pcc import validate_pcc_robustness_manifest as _vpr  # noqa: PLC0415
+
+            _vpb(base_rows, expected_n=len(ccc_example_ids))
+            _vpr(rob_rows, expected_n_examples=len(ccc_example_ids), expected_wrapper_ids=expected_wrappers)
+            ex_existing = sorted({str(r["example_id"]) for r in base_rows})
+            if ex_existing != ccc_example_ids:
+                raise ValueError("existing CCC baseline example_id set does not match computed intersection")
+            ccc_meta = {
+                "run_id": args.run_id,
+                "ccc_size": int(len(ccc_example_ids)),
+                "selected_example_ids_sha256": sha256_text("\n".join(ccc_example_ids) + "\n"),
+                "baseline_manifest_path": str(baseline_manifest),
+                "baseline_manifest_sha256": sha256_file(baseline_manifest),
+                "robustness_manifest_path": str(robustness_manifest),
+                "robustness_manifest_sha256": sha256_file(robustness_manifest),
+                "outputs": {
+                    "ccc_baseline_path": str(ccc_baseline_existing),
+                    "ccc_baseline_sha256": sha256_file(ccc_baseline_existing),
+                    "ccc_robustness_path": str(ccc_robust_existing),
+                    "ccc_robustness_sha256": sha256_file(ccc_robust_existing),
+                },
+                "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                "reused_existing_outputs": True,
+            }
+        except Exception:
+            ccc_meta = build_ccc_manifests(
+                run_id=args.run_id,
+                ccc_example_ids=ccc_example_ids,
+                baseline_manifest_path=baseline_manifest,
+                robustness_manifest_path=robustness_manifest,
+                expected_wrapper_ids=expected_wrappers,
+                out_dir=out_dir,
+            )
+    else:
+        ccc_meta = build_ccc_manifests(
+            run_id=args.run_id,
+            ccc_example_ids=ccc_example_ids,
+            baseline_manifest_path=baseline_manifest,
+            robustness_manifest_path=robustness_manifest,
+            expected_wrapper_ids=expected_wrappers,
+            out_dir=out_dir,
+        )
 
     report = {
         "pass": bool(ok),
