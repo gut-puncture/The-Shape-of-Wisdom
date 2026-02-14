@@ -53,7 +53,7 @@ Canonical docs:
   - Artifacts: `runs/<run_id>/manifests/pcc_baseline.<model>.jsonl`, `runs/<run_id>/manifests/pcc_robustness.<model>.jsonl`, `runs/<run_id>/manifests/pcc_report.json`
   - Gate: stratification + invariants PASS
 
-- [ ] Stage 9 - Build Common Compatible Core (CCC)
+- [x] Stage 9 - Build Common Compatible Core (CCC)
   - Artifacts: `runs/<run_id>/manifests/ccc_*.jsonl`, `runs/<run_id>/manifests/ccc_report.json`
   - Gate: retention thresholds met PASS
 

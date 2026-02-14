@@ -253,3 +253,19 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_report.json: 6f0132cfaf59b977ddb32b3711b51b2128d4b820f490cd902df007ab579f623a
 - notes: PCC filters: prompt-length safety (per-model context length), wrapper completeness (20/20), and pilot-gate PASS prerequisite.
 - next: Stage 9 - build CCC
+
+### 2026-02-14 16:58 (local) - Stage 9 - build Common Compatible Core (CCC) - PASS
+- command: python3 sow.py build-ccc --run-id m1_20260214_124722 --min-overall-retention 0.8 --min-per-domain-retention 0.6
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/ccc_baseline.jsonl: bfe2557316cb1e0eae6a684eb8de84885f74e446ac72f1847a7da80baf2de56c
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/ccc_robustness.jsonl: f237d2054cff4a15ae2cef78ca1caa9344564c1098a5ca8382c084b5dc91a1dd
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/ccc_report.json: 0e7db661b12f5c6a637b82d7722b2dbf52acb5b9a20c3603593446787a51154d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/ccc.done: c10cc0d504d2a18797d1088ad9e4ef7c4bcc0c5f4290fc3fa59772fa03a6959a
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/ccc_report.json: 0e7db661b12f5c6a637b82d7722b2dbf52acb5b9a20c3603593446787a51154d
+- notes: CCC is the intersection of per-model PCC sets; gates enforce >=0.80 overall and >=0.60 per-domain retention (per model).
+- next: Stage 10 - PCA membership (already done) or Stage 11 - PCA sample extraction
