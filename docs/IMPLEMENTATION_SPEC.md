@@ -540,9 +540,12 @@ Policy:
 - Then sample to a fixed size target (for example 3,000) stratified across coarse domains.
 
 Outputs:
-- `runs/<run_id>/manifests/pcc_baseline.jsonl`
-- `runs/<run_id>/manifests/pcc_robustness.jsonl`
-- `runs/<run_id>/manifests/pcc_report.json`
+- Per-model PCC manifests (so Stage 9 can intersect across models):
+  - `runs/<run_id>/manifests/pcc_baseline.<model>.jsonl`
+  - `runs/<run_id>/manifests/pcc_robustness.<model>.jsonl`
+  - `runs/<run_id>/manifests/pcc_meta.<model>.json` (selection + length-safety audit)
+- Stage report:
+  - `runs/<run_id>/manifests/pcc_report.json`
 
 Validator:
 - Stratification meets minimum per-domain counts.

@@ -49,8 +49,8 @@ Canonical docs:
   - Artifacts: `runs/<run_id>/pilot/*`
   - Gate: viability + one-token compliance thresholds met PASS
 
-- [ ] Stage 8 - Build Primary Core Corpus (PCC)
-  - Artifacts: `runs/<run_id>/manifests/pcc_*.jsonl`, `runs/<run_id>/manifests/pcc_report.json`
+- [x] Stage 8 - Build Primary Core Corpus (PCC)
+  - Artifacts: `runs/<run_id>/manifests/pcc_baseline.<model>.jsonl`, `runs/<run_id>/manifests/pcc_robustness.<model>.jsonl`, `runs/<run_id>/manifests/pcc_report.json`
   - Gate: stratification + invariants PASS
 
 - [ ] Stage 9 - Build Common Compatible Core (CCC)

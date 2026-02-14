@@ -230,3 +230,26 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/validation/pilot_report.attempt3.json: 70fed81ef99aea2edbba912c219eab3a11a30675d5fdc9e5c075d27fa50befdf
 - notes: Pilot measures first-token one-token compliance and deterministic parser resolution/accuracy on a stratified sample.
 - next: Stage 8 - build PCC
+
+### 2026-02-14 16:06 (local) - Stage 8 - build Primary Core Corpus (PCC) - PASS
+- command: python3 sow.py build-pcc --run-id m1_20260214_124722 --target-size 3000
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/run_config.yaml: 7134bcc6bc996d696ec152e0a9113775e430d34f45c7a4fec71caa15cc77e096
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_baseline.qwen2.5-7b-instruct.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_baseline.llama-3.1-8b-instruct.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_baseline.mistral-7b-instruct-v0.3.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_robustness.qwen2.5-7b-instruct.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_robustness.llama-3.1-8b-instruct.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_robustness.mistral-7b-instruct-v0.3.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_meta.qwen2.5-7b-instruct.json: 0b430e117a30b02900ad5041994172f4a777a5bde59495917815742ab6c066a6
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_meta.llama-3.1-8b-instruct.json: 2eee68696d99c4d5164044dca5ce186146a412a8d3099fdc2b289cc31535189b
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_meta.mistral-7b-instruct-v0.3.json: f4d170b950792a55bf8f602d4715b2398e1ca7de6bdffa00fc8985939d42aed0
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_report.json: 6f0132cfaf59b977ddb32b3711b51b2128d4b820f490cd902df007ab579f623a
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/sentinels/pcc.done: 56450400014b62854cd786d96b27827603d0daa0f882620d33d0386e1eb219ba
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/m1_20260214_124722/manifests/pcc_report.json: 6f0132cfaf59b977ddb32b3711b51b2128d4b820f490cd902df007ab579f623a
+- notes: PCC filters: prompt-length safety (per-model context length), wrapper completeness (20/20), and pilot-gate PASS prerequisite.
+- next: Stage 9 - build CCC
