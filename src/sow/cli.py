@@ -39,6 +39,21 @@ def _config_snapshot_sha256(run_dir: Path) -> str | None:
     return sha256_file(p) if p.exists() else None
 
 
+def _next_available_path(path: Path) -> Path:
+    """
+    Return `path` if it doesn't exist; otherwise append a deterministic attempt suffix.
+    """
+    if not path.exists():
+        return path
+    suffix = path.suffix
+    base = path.name[: -len(suffix)] if suffix else path.name
+    for i in range(2, 10_000):
+        cand = path.with_name(f"{base}.attempt{i}{suffix}")
+        if not cand.exists():
+            return cand
+    raise RuntimeError(f"could not find available attempt path for: {path}")
+
+
 def cmd_init_run(args: argparse.Namespace) -> int:
     run_dir = _run_dir(args.run_id)
     if run_dir.exists():
@@ -486,9 +501,6 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
     baseline_manifest = run_dir / "manifests" / "baseline_manifest.jsonl"
     if not baseline_manifest.exists():
         raise SystemExit("baseline manifest must be built before pilot inference")
-    sentinel_existing = run_dir / "sentinels" / "pilot.done"
-    if sentinel_existing.exists():
-        raise SystemExit(f"pilot already completed for run_id={args.run_id} (sentinel exists): {sentinel_existing}")
 
     # Deterministic prompt sample (stratified by coarse_domain).
     sample_rows = select_pilot_rows(
@@ -512,6 +524,21 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
     ok_all = True
     gate_reasons_all = []
     for m in models:
+        model_key = model_fs_id(m["model_id"])
+        model_sentinel = run_dir / "sentinels" / f"pilot.{model_key}.done"
+        if model_sentinel.exists():
+            # Append-only: don't rerun a model's pilot unless user explicitly forces (not implemented yet).
+            per_model.append(
+                {
+                    "model_name": m["name"],
+                    "model_id": m["model_id"],
+                    "model_revision": m["revision"],
+                    "skipped": True,
+                    "skip_reason": f"sentinel exists: {model_sentinel}",
+                }
+            )
+            continue
+
         res = run_pilot_for_model(
             run_id=args.run_id,
             run_dir=run_dir,
@@ -547,6 +574,7 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
             ok_all = False
             gate_reasons_all.extend([f"{m['name']}: {r}" for r in reasons])
 
+    # Stage-level report is append-only; never overwrite.
     v_report = {
         "pass": bool(ok_all),
         "run_id": args.run_id,
@@ -564,10 +592,24 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
         "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
-    v_path = run_dir / "validation" / "pilot_report.json"
+    v_path = _next_available_path(run_dir / "validation" / "pilot_report.json")
     v_path.write_text(json.dumps(v_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-    s_path = run_dir / "sentinels" / "pilot.done"
+    s_path = _next_available_path(run_dir / "sentinels" / "pilot.done")
     s_path.write_text(json.dumps({"stage": "pilot", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n")
+
+    # Per-model sentinels for gating other stages.
+    for entry in per_model:
+        if entry.get("skipped"):
+            continue
+        model_key = model_fs_id(entry["model_id"])
+        per_model_report = _next_available_path(run_dir / "validation" / f"pilot_report.{model_key}.json")
+        per_model_report.write_text(json.dumps(entry, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        per_model_sentinel = _next_available_path(run_dir / "sentinels" / f"pilot.{model_key}.done")
+        per_model_sentinel.write_text(
+            json.dumps({"stage": "pilot", "model_id": entry["model_id"], "output": str(per_model_report), "sha256": sha256_file(per_model_report)}, indent=2)
+            + "\n",
+            encoding="utf-8",
+        )
 
     append_state_entry(
         state_path=_state_path(),
@@ -585,8 +627,8 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
             HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
         ],
         outputs=[
-            *(HashedPath(path=m["outputs_path"], sha256=m["outputs_sha256"]) for m in per_model),
-            *(HashedPath(path=m["report_path"], sha256=m["report_sha256"]) for m in per_model),
+            *(HashedPath(path=m["outputs_path"], sha256=m["outputs_sha256"]) for m in per_model if "outputs_path" in m),
+            *(HashedPath(path=m["report_path"], sha256=m["report_sha256"]) for m in per_model if "report_path" in m),
             HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
             HashedPath(path=str(s_path), sha256=sha256_file(s_path)),
         ],
