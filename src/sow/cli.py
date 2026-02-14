@@ -14,7 +14,7 @@ from sow.manifest.canonicalize import canonicalize_baseline_manifest, canonicali
 from sow.manifest.schema import validate_baseline_manifest, validate_robustness_manifest
 from sow.pca.membership import select_pca_membership, write_membership_file
 from sow.state import HashedPath, append_state_entry
-from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models
+from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models, model_fs_id
 from sow.stage0_env import collect_environment, run_smoke_test
 from sow.pilot.pilot_inference import run_pilot_for_model, select_pilot_rows, stage7_gate
 
