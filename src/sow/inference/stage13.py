@@ -556,8 +556,9 @@ def run_stage13_inference_for_model(
 
     t0 = time.perf_counter()
     tok = AutoTokenizer.from_pretrained(model_id, revision=revision, use_fast=True, trust_remote_code=False)
-    # For decoder-only batched generation, left padding is the safest default.
-    tok.padding_side = "left"
+    # Right padding avoids known left-padding pathologies (e.g., NaNs for some models)
+    # and keeps position indices for real tokens invariant without needing explicit position_ids.
+    tok.padding_side = "right"
     if tok.pad_token_id is None and tok.eos_token_id is not None:
         tok.pad_token_id = tok.eos_token_id
 
@@ -567,9 +568,6 @@ def run_stage13_inference_for_model(
         torch_dtype=torch_dtype,
         low_cpu_mem_usage=True,
         trust_remote_code=False,
-        # Force eager attention for batch-size invariance determinism.
-        # SDPA kernels can be shape-dependent (padding/batch) and break strict gates.
-        attn_implementation="eager",
     )
     model_obj.eval()
     if device != "cpu":
@@ -699,22 +697,15 @@ def run_stage13_inference_for_model(
             if attn is None:
                 raise RuntimeError("tokenizer did not return attention_mask")
             prompt_lens = attn.sum(dim=1).to(dtype=torch.long).tolist()
-            # Provide explicit position_ids to avoid any model-specific quirks around
-            # left padding and to improve batch-size invariance.
-            position_ids = attn.to(dtype=torch.long).cumsum(dim=1) - 1
-            position_ids = position_ids.clamp_min(0)
-            position_ids = position_ids.to(dtype=torch.long)
             if device != "cpu":
                 input_ids = input_ids.to(device)
                 attn = attn.to(device)
-                position_ids = position_ids.to(device)
 
             try:
                 # Trace forward pass (hidden states).
                 out = model_obj(
                     input_ids=input_ids,
                     attention_mask=attn,
-                    position_ids=position_ids,
                     use_cache=False,
                     output_hidden_states=True,
                     return_dict=True,
@@ -749,7 +740,6 @@ def run_stage13_inference_for_model(
                 gen_ids = model_obj.generate(
                     input_ids=input_ids,
                     attention_mask=attn,
-                    position_ids=position_ids,
                     do_sample=False,
                     max_new_tokens=int(generation.get("max_new_tokens", 24)),
                     temperature=float(generation.get("temperature", 1.0)),
