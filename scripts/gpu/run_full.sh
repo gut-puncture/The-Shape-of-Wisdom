@@ -15,11 +15,11 @@ sow_preflight
 echo "[gpu] run_id=${RUN_ID}"
 
 # Full baseline + robustness inference (Stage 13a/13b).
-python3 sow.py inference-baseline --run-id "${RUN_ID}" --device cuda --batch-size auto
-python3 sow.py inference-robustness --run-id "${RUN_ID}" --device cuda --batch-size auto
+"${SOW_PYTHON}" sow.py inference-baseline --run-id "${RUN_ID}" --device cuda --batch-size auto
+"${SOW_PYTHON}" sow.py inference-robustness --run-id "${RUN_ID}" --device cuda --batch-size auto
 
 # Analysis (Stage 14).
-python3 sow.py analyze --run-id "${RUN_ID}"
+"${SOW_PYTHON}" sow.py analyze --run-id "${RUN_ID}"
 
 # Bundle small artifacts for download (analysis + validation + meta + sentinels).
 bash scripts/gpu/pack_analysis_bundle.sh "${RUN_ID}"

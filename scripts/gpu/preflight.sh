@@ -10,6 +10,18 @@ sow_preflight() {
     return 2
   fi
 
+  # Prefer a repo-local virtualenv if present (RunPod base images can lack transformers).
+  # Callers should use $SOW_PYTHON for all sow CLI invocations.
+  if [[ -z "${SOW_PYTHON:-}" ]]; then
+    if [[ -x "./.venv/bin/python" ]]; then
+      SOW_PYTHON="./.venv/bin/python"
+      export SOW_PYTHON
+    else
+      SOW_PYTHON="python3"
+      export SOW_PYTHON
+    fi
+  fi
+
   # HuggingFace gated models: prefer a local token file on GPU VMs.
   # Do NOT echo the token.
   if [[ -z "${HF_TOKEN:-}" ]]; then
@@ -28,6 +40,13 @@ sow_preflight() {
     : "${TRANSFORMERS_CACHE:=${HF_HOME}/transformers}"
     : "${HUGGINGFACE_HUB_CACHE:=${HF_HOME}/hub}"
     : "${TORCH_HOME:=/data/torch}"
+    export HF_HOME TRANSFORMERS_CACHE HUGGINGFACE_HUB_CACHE TORCH_HOME
+  elif [[ -d "/workspace" ]]; then
+    # RunPod often mounts attached storage at /workspace.
+    : "${HF_HOME:=/workspace/hf}"
+    : "${TRANSFORMERS_CACHE:=${HF_HOME}/transformers}"
+    : "${HUGGINGFACE_HUB_CACHE:=${HF_HOME}/hub}"
+    : "${TORCH_HOME:=/workspace/torch}"
     export HF_HOME TRANSFORMERS_CACHE HUGGINGFACE_HUB_CACHE TORCH_HOME
   fi
 
@@ -69,7 +88,7 @@ sow_preflight() {
   nvidia-smi || true
 
   # Verify python + torch cuda availability.
-  python3 - <<'PY'
+  "${SOW_PYTHON}" - <<'PY'
 import torch
 print("[gpu] torch", torch.__version__)
 print("[gpu] torch.version.cuda", getattr(torch.version, "cuda", None))
