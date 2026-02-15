@@ -724,11 +724,20 @@ def run_stage13_inference_for_model(
                 n_layers = len(hs_layers)
                 hidden_dim = int(hs_layers[0].shape[-1])
 
-                # Decision position p is the last non-pad token per sequence.
-                lengths = attn.sum(dim=1).to(dtype=torch.long)
-                idx = (lengths - 1).to(hs_layers[0].device)
-                ar = torch.arange(int(hs_layers[0].shape[0]), device=hs_layers[0].device)
-                hidden_last = torch.stack([h[ar, idx, :] for h in hs_layers], dim=1)  # (batch, n_layers, hidden)
+                # Decision position p is the last *real* prompt token right before generation begins.
+                #
+                # We always set tokenizer.padding_side="left" for decoder-only batching, which means
+                # real tokens are right-aligned and the last position (index -1) is always a real token.
+                #
+                # For completeness, handle the "right padding" case as well (last real token index
+                # is lengths-1 in that case).
+                if str(getattr(tok, "padding_side", "left")) == "right":
+                    lengths = attn.sum(dim=1).to(dtype=torch.long)
+                    idx = (lengths - 1).to(hs_layers[0].device)
+                    ar = torch.arange(int(hs_layers[0].shape[0]), device=hs_layers[0].device)
+                    hidden_last = torch.stack([h[ar, idx, :] for h in hs_layers], dim=1)  # (batch, n_layers, hidden)
+                else:
+                    hidden_last = torch.stack([h[:, -1, :] for h in hs_layers], dim=1)  # (batch, n_layers, hidden)
 
                 readout = compute_candidate_readout(hidden_last=hidden_last, final_norm=comps.final_norm, lm_head=comps.lm_head, bucket_index=bidx)
                 proj = project_hidden_pca(hidden_last=hidden_last, mean=mean_t, components=comps_t)
