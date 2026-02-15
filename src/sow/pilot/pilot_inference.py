@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from sow.hashing import sha256_file
 from sow.hashing import sha256_text
+from sow.inference.cleanup import cleanup_torch
 from sow.io_jsonl import iter_jsonl
 from sow.judging.deterministic_parser import parse_choice
 from sow.token_buckets.option_buckets import model_fs_id, piece_to_letter
@@ -318,13 +319,21 @@ def run_pilot_for_model(
     }
     out_report.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
-    return {
+    out = {
         "outputs_path": out_jsonl,
         "outputs_sha256": sha256_file(out_jsonl),
         "report_path": out_report,
         "report_sha256": sha256_file(out_report),
         "metrics_overall": report["metrics_overall"],
     }
+    # Free GPU memory before returning (important when running multiple models sequentially).
+    try:
+        del model_obj
+        del tok
+    except Exception:
+        pass
+    cleanup_torch(device=str(device))
+    return out
 
 
 def stage7_gate(

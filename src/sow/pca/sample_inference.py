@@ -441,13 +441,21 @@ def run_pca_sample_inference_for_model(
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
             "note": "final outputs already existed; pass determined from stored meta repro_check.pass",
         }
-        return {
+        out = {
             "report": report,
             "hidden_path": out_npz,
             "hidden_sha256": sha256_file(out_npz),
             "meta_path": out_meta,
             "meta_sha256": sha256_file(out_meta),
         }
+        # Free GPU memory before returning (important when running multiple models sequentially).
+        try:
+            del model_obj
+            del tok
+        except Exception:
+            pass
+        _empty_device_cache(device=device)
+        return out
 
     # Forward-only extraction with checkpointing (hidden.npy + progress.json).
     bs_cur = int(init_bs)
@@ -716,10 +724,18 @@ def run_pca_sample_inference_for_model(
             # Best effort cleanup only.
             pass
 
-    return {
+    out = {
         "report": report,
         "hidden_path": out_npz,
         "hidden_sha256": sha256_file(out_npz),
         "meta_path": out_meta,
         "meta_sha256": sha256_file(out_meta),
     }
+    # Free GPU memory before returning (important when running multiple models sequentially).
+    try:
+        del model_obj
+        del tok
+    except Exception:
+        pass
+    _empty_device_cache(device=device)
+    return out

@@ -14,6 +14,7 @@ from sow.hashing import sha256_file, sha256_text
 from sow.io_jsonl import iter_jsonl
 from sow.judging.deterministic_parser import parse_choice
 from sow.token_buckets.option_buckets import model_fs_id, piece_to_letter
+from sow.inference.cleanup import cleanup_torch
 from sow.inference.determinism import configure_torch_determinism
 from sow.inference.model_adapter import resolve_model_components
 from sow.inference.readout import BucketIndex, build_bucket_index, compute_candidate_readout, idx_to_letter, project_hidden_pca
@@ -772,7 +773,7 @@ def run_stage13_inference_for_model(
 
                 if stop_after_rows is not None and outputs_written >= int(stop_after_rows):
                     _write_jsonl_append(out_jsonl, out_rows)
-                    return {
+                    out = {
                         "pass": False,
                         "stopped_early": True,
                         "stop_after_rows": int(stop_after_rows),
@@ -780,6 +781,14 @@ def run_stage13_inference_for_model(
                         "output_sha256": sha256_file(out_jsonl),
                         "batching": {"resolved": int(bs), "batch_sizes_used": sorted(int(x) for x in bs_used)},
                     }
+                    # Free GPU memory before returning (important when running multiple models sequentially).
+                    try:
+                        del model_obj
+                        del tok
+                    except Exception:
+                        pass
+                    cleanup_torch(device=str(device))
+                    return out
 
             _write_jsonl_append(out_jsonl, out_rows)
 
@@ -799,7 +808,7 @@ def run_stage13_inference_for_model(
     v["batching"] = {"requested": str(batch_size), "resolved": int(bs), "batch_sizes_used": sorted(int(x) for x in bs_used)}
     v["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
 
-    return {
+    out = {
         "pass": bool(v["pass"]),
         "stopped_early": False,
         "output_path": str(out_jsonl),
@@ -807,6 +816,14 @@ def run_stage13_inference_for_model(
         "validator": v,
         "batching": v["batching"],
     }
+    # Free GPU memory before returning (important when running multiple models sequentially).
+    try:
+        del model_obj
+        del tok
+    except Exception:
+        pass
+    cleanup_torch(device=str(device))
+    return out
 
 
 def batch_consistency_gate(
