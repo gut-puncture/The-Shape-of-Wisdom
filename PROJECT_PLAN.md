@@ -70,7 +70,7 @@ Canonical docs:
   - Artifacts: `runs/<run_id>/pca/<model_id>_pca_basis.*`
   - Gate: basis hash reproducible for same input PASS
 
-- [ ] Stage 13a - Baseline inference runs with layerwise readouts + PCA projection (local-friendly)
+- [ ] Stage 13a - Baseline inference runs with layerwise readouts + PCA projection (GPU recommended; local possible)
   - Artifacts: `runs/<run_id>/outputs/<model_id>/baseline_outputs.jsonl`, `runs/<run_id>/outputs/<model_id>/run_meta.json`
   - Gates: batch-consistency + resume simulation + schema validation PASS
 
