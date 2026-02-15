@@ -38,11 +38,20 @@ def _load_manifest_uids(path: Path) -> List[str]:
     return uids
 
 
-def _load_inference_sentinel(run_dir: Path, *, condition: str, model_id: str) -> Dict[str, Any]:
+def _load_inference_sentinel(run_dir: Path, *, condition: str, model_id: str, model_revision: str, run_id: str) -> Dict[str, Any]:
     p = run_dir / "sentinels" / f"inference_{condition}.{model_fs_id(model_id)}.done"
     if not p.exists():
         raise FileNotFoundError(f"missing inference sentinel: {p}")
     obj = _load_json(p)
+    # Fail-fast: analysis must be anchored to stage-owned, self-describing sentinels.
+    if obj.get("stage") != f"inference_{condition}":
+        raise ValueError(f"inference sentinel stage mismatch: expected inference_{condition}")
+    if obj.get("run_id") != str(run_id):
+        raise ValueError("inference sentinel run_id mismatch")
+    if obj.get("model_id") != str(model_id):
+        raise ValueError("inference sentinel model_id mismatch")
+    if obj.get("model_revision") != str(model_revision):
+        raise ValueError("inference sentinel model_revision mismatch")
     out_path = Path(str(obj.get("output_path") or ""))
     if not out_path.exists():
         raise FileNotFoundError(f"missing output referenced by sentinel: {out_path}")
@@ -159,6 +168,7 @@ def run_stage14_analysis(
 
     per_model_summary: Dict[str, Any] = {}
     validation: Dict[str, Any] = {"models": []}
+    errors: List[str] = []
 
     with per_prompt_csv.open("w", newline="", encoding="utf-8") as f_pp, layerwise_csv.open("w", newline="", encoding="utf-8") as f_lw, robust_delta_csv.open("w", newline="", encoding="utf-8") as f_rd, commit_csv.open("w", newline="", encoding="utf-8") as f_ch:
         w_pp = csv.DictWriter(f_pp, fieldnames=pp_cols)
@@ -175,8 +185,8 @@ def run_stage14_analysis(
             revision = str(m["revision"])
 
             # Load inference outputs from sentinels.
-            s_base = _load_inference_sentinel(run_dir, condition="baseline", model_id=model_id)
-            s_rob = _load_inference_sentinel(run_dir, condition="robustness", model_id=model_id)
+            s_base = _load_inference_sentinel(run_dir, condition="baseline", model_id=model_id, model_revision=revision, run_id=run_id)
+            s_rob = _load_inference_sentinel(run_dir, condition="robustness", model_id=model_id, model_revision=revision, run_id=run_id)
             p_base = Path(s_base["output_path"])
             p_rob = Path(s_rob["output_path"])
 
@@ -213,6 +223,8 @@ def run_stage14_analysis(
                 mar = np.asarray([float(x["top2_margin_prob"]) for x in lw], dtype=np.float64)
 
                 if condition == "baseline":
+                    if wrapper != str(baseline_wrapper_id):
+                        raise ValueError(f"unexpected wrapper_id in baseline outputs: {wrapper}")
                     if wrapper not in lw_sum_ent_base:
                         lw_sum_ent_base[wrapper] = np.zeros((n_layers,), dtype=np.float64)
                         lw_sum_mar_base[wrapper] = np.zeros((n_layers,), dtype=np.float64)
@@ -277,6 +289,17 @@ def run_stage14_analysis(
             extra_base = sorted(seen_base - base_uid_set)
             missing_rob = sorted(rob_uid_set - seen_rob)
             extra_rob = sorted(seen_rob - rob_uid_set)
+
+            if missing_base or extra_base:
+                errors.append(
+                    f"{model_id}@{revision} baseline coverage mismatch: "
+                    f"missing={len(missing_base)} extra={len(extra_base)}"
+                )
+            if missing_rob or extra_rob:
+                errors.append(
+                    f"{model_id}@{revision} robustness coverage mismatch: "
+                    f"missing={len(missing_rob)} extra={len(extra_rob)}"
+                )
 
             validation["models"].append(
                 {
@@ -358,9 +381,10 @@ def run_stage14_analysis(
 
             per_model_summary[model_id] = {"baseline_overall": _finalize_agg(agg_base_overall), "robustness_overall": _finalize_agg(agg_rob_overall)}
 
+    ok = not errors
     # Final report JSON.
     report = {
-        "pass": True,
+        "pass": bool(ok),
         "run_id": run_id,
         "thresholds": [float(x) for x in thresholds],
         "inputs": {
@@ -381,6 +405,7 @@ def run_stage14_analysis(
         },
         "per_model_summary": per_model_summary,
         "validation": validation,
+        "errors": errors[:50],
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     return report

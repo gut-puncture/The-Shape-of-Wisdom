@@ -424,3 +424,18 @@ Canonical references:
 - command: python3 -m unittest discover -s tests -p 'test_*.py' -v
 - result: PASS (25 tests)
 - next: Re-run GPU Stage 13 smoke gate, then full baseline+robustness inference + analysis.
+
+### 2026-02-15 22:46 (local) - Maintenance - Plan + Stage 13/14 Hardening - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/PROJECT_PLAN.md: 07265a6727e4136dde6e7bec63aaefa9a57b533492e6454c2ef69d519ed7c65c
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/inference/stage13.py: 7271bacf44933e4ac20815dcf917ca73a5fb1a263f52d94707da2f3a2dde9db0
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/analysis/stage14.py: 60bed75be2e0eec16654f17c01cf9cc3b760c1681c0d9ad14d6d1717aa25d934
+  - /Users/shaileshrana/shape-of-wisdom/tests/test_stage14_analysis.py: 66af2908f35b94ce4884f87db6d588d5694af8b49af712bd1d4dd500a5093de7
+- validators:
+  - repo unit tests: PASS (25 tests)
+- notes:
+  - PROJECT_PLAN.md: removed run-specific AUTO_STATUS block (plan is now run-agnostic again).
+  - Stage 13: fail-fast if existing output JSONL has duplicate/missing resume keys; output validator now enforces join integrity vs manifest (example_id/wrapper_id/manifest_sha256/prompt_text_sha256) and checks projected_hidden_128 length.
+  - Stage 14: analysis now fails fast if inference sentinels are not self-describing (stage/run_id/model_id/model_revision) and if baseline wrapper_id is unexpected; report includes explicit `errors`.
+- next: Unpause GPU and re-run Stage 13 smoke gate, then run full baseline+robustness inference + Stage 14 analysis on GPU.

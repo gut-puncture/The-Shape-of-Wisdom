@@ -222,12 +222,22 @@ def _load_completed_resume_keys(path: Path) -> Dict[str, int]:
     Return mapping resume_key -> line_no (1-based) for already-written rows.
     """
     seen: Dict[str, int] = {}
+    seen_uids: Dict[str, int] = {}
     if not path.exists():
         return seen
     for ln_no, row in enumerate(iter_jsonl(path), start=1):
         rk = row.get("resume_key")
-        if isinstance(rk, str):
-            seen[rk] = ln_no
+        puid = row.get("prompt_uid")
+        if not isinstance(rk, str) or not rk:
+            raise ValueError(f"existing output row missing resume_key on line {ln_no}: {path}")
+        if not isinstance(puid, str) or not puid:
+            raise ValueError(f"existing output row missing prompt_uid on line {ln_no}: {path}")
+        if rk in seen:
+            raise ValueError(f"duplicate resume_key in existing output: {rk} first_line={seen[rk]} dup_line={ln_no} path={path}")
+        if puid in seen_uids:
+            raise ValueError(f"duplicate prompt_uid in existing output: {puid} first_line={seen_uids[puid]} dup_line={ln_no} path={path}")
+        seen[rk] = ln_no
+        seen_uids[puid] = ln_no
     return seen
 
 
@@ -356,6 +366,7 @@ def validate_stage13_output(
     *,
     output_path: Path,
     manifest_rows: List[Dict[str, Any]],
+    run_id: str,
     model_id: str,
     model_revision: str,
     basis_hash: str,
@@ -371,6 +382,7 @@ def validate_stage13_output(
         "prompt_uid",
         "example_id",
         "wrapper_id",
+        "manifest_sha256",
         "prompt_text_sha256",
         "prompt_length_tokens",
         "resume_key",
@@ -387,8 +399,13 @@ def validate_stage13_output(
         "basis_hash",
     ]
 
-    exp_uids = [str(r["prompt_uid"]) for r in manifest_rows]
-    exp_set = set(exp_uids)
+    manifest_by_uid: Dict[str, Dict[str, Any]] = {}
+    for r in manifest_rows:
+        puid = str(r["prompt_uid"])
+        if puid in manifest_by_uid:
+            raise ValueError(f"duplicate prompt_uid in manifest_rows passed to validator: {puid}")
+        manifest_by_uid[puid] = r
+    exp_set = set(manifest_by_uid.keys())
 
     seen_keys: set[str] = set()
     seen_uids: set[str] = set()
@@ -402,6 +419,8 @@ def validate_stage13_output(
             if k not in row:
                 bad.append(f"missing key {k} on row {n_rows}")
                 break
+        if row.get("run_id") != str(run_id):
+            bad.append(f"run_id mismatch on row {n_rows}")
         if row.get("model_id") != model_id or row.get("model_revision") != model_revision:
             bad.append(f"model id/revision mismatch on row {n_rows}")
         if row.get("basis_hash") != basis_hash:
@@ -422,6 +441,24 @@ def validate_stage13_output(
             bad.append(f"duplicate prompt_uid on row {n_rows}")
         else:
             seen_uids.add(puid)
+            # Validate join integrity vs manifest.
+            src = manifest_by_uid.get(puid)
+            if src is None:
+                bad.append(f"prompt_uid not found in manifest on row {n_rows}")
+            else:
+                if str(row.get("example_id")) != str(src.get("example_id")):
+                    bad.append(f"example_id mismatch vs manifest on row {n_rows}")
+                if str(row.get("wrapper_id")) != str(src.get("wrapper_id")):
+                    bad.append(f"wrapper_id mismatch vs manifest on row {n_rows}")
+                if str(row.get("manifest_sha256")) != str(src.get("manifest_sha256")):
+                    bad.append(f"manifest_sha256 mismatch vs manifest on row {n_rows}")
+                # Resume key is defined and frozen; enforce exactly.
+                exp_rk = resume_key_for(model_id=model_id, prompt_uid=puid)
+                if str(row.get("resume_key")) != exp_rk:
+                    bad.append(f"resume_key mismatch vs definition on row {n_rows}")
+                exp_prompt_sha = sha256_text(str(src.get("prompt_text") or ""))
+                if str(row.get("prompt_text_sha256")) != exp_prompt_sha:
+                    bad.append(f"prompt_text_sha256 mismatch vs manifest on row {n_rows}")
 
         lw = row.get("layerwise")
         if not isinstance(lw, list) or not lw:
@@ -439,6 +476,9 @@ def validate_stage13_output(
                     if k not in ent:
                         bad.append(f"layerwise missing {k} on row {n_rows}")
                         break
+                proj = ent.get("projected_hidden_128")
+                if isinstance(proj, list) and len(proj) != 128:
+                    bad.append(f"projected_hidden_128 wrong length on row {n_rows} (got {len(proj)})")
 
     missing = sorted(exp_set - seen_uids)
     extra = sorted(seen_uids - exp_set)
@@ -821,6 +861,7 @@ def run_stage13_inference_for_model(
     v = validate_stage13_output(
         output_path=out_jsonl,
         manifest_rows=rows,
+        run_id=run_id,
         model_id=model_id,
         model_revision=revision,
         basis_hash=str(pca["basis_hash"]),

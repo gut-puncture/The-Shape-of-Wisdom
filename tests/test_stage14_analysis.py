@@ -72,10 +72,30 @@ class TestStage14Analysis(unittest.TestCase):
 
             # Sentinels with sha256 checks.
             (run_dir / "sentinels" / "inference_baseline.fake__model.done").write_text(
-                json.dumps({"output_path": str(out_base), "output_sha256": sha256_file(out_base)}), encoding="utf-8"
+                json.dumps(
+                    {
+                        "stage": "inference_baseline",
+                        "run_id": "test",
+                        "model_id": "fake/model",
+                        "model_revision": "r0",
+                        "output_path": str(out_base),
+                        "output_sha256": sha256_file(out_base),
+                    }
+                ),
+                encoding="utf-8",
             )
             (run_dir / "sentinels" / "inference_robustness.fake__model.done").write_text(
-                json.dumps({"output_path": str(out_rob), "output_sha256": sha256_file(out_rob)}), encoding="utf-8"
+                json.dumps(
+                    {
+                        "stage": "inference_robustness",
+                        "run_id": "test",
+                        "model_id": "fake/model",
+                        "model_revision": "r0",
+                        "output_path": str(out_rob),
+                        "output_sha256": sha256_file(out_rob),
+                    }
+                ),
+                encoding="utf-8",
             )
 
             rep = run_stage14_analysis(
@@ -95,4 +115,3 @@ class TestStage14Analysis(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
