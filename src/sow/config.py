@@ -10,6 +10,9 @@ from sow.constants import EXPECTED_ROBUSTNESS_WRAPPER_IDS_V2
 
 
 def default_run_config(*, run_id: str, random_seed: int) -> Dict[str, Any]:
+    import platform
+
+    is_macos = platform.system() == "Darwin"
     return {
         "run_id": run_id,
         "random_seed": int(random_seed),
@@ -45,7 +48,7 @@ def default_run_config(*, run_id: str, random_seed: int) -> Dict[str, Any]:
         # Operational safety for local Apple Silicon runs.
         # Uses macOS "thermal pressure" signals (via powermetrics) to trigger cool-downs.
         "thermal_hygiene": {
-            "enabled": True,
+            "enabled": bool(is_macos),
             "provider": "powermetrics_thermal_pressure",
             # Approximate "start cooling around ~80-90C" by triggering before "Critical".
             "cutoff_level": "serious",
@@ -61,6 +64,13 @@ def default_run_config(*, run_id: str, random_seed: int) -> Dict[str, Any]:
             "sample_size": 1000,
             "n_components": 128,
             "sampling_policy": "stratified(wrapper_id, coarse_domain) uniform-over-strata",
+        },
+        "inference": {
+            # Commitment is computed for multiple fixed margin thresholds (prob top1 - prob top2).
+            # These are scientific decisions and must be frozen for the run.
+            "commitment_margin_thresholds": [0.05, 0.1, 0.2],
+            # Batch-consistency gate tolerance for candidate logits (float16 -> float32).
+            "batch_consistency_atol_candidate_logits": 1e-3,
         },
         "resume_key": {
             "definition": "sha256(model_id + ':' + prompt_uid)",
@@ -100,6 +110,22 @@ def validate_run_config(cfg: Dict[str, Any]) -> None:
     wrappers = cfg["prompting"].get("robustness_wrapper_ids_v2")
     if wrappers != EXPECTED_ROBUSTNESS_WRAPPER_IDS_V2:
         raise ValueError("robustness wrapper list must match the expected v2 wrapper_id list exactly")
+
+    # Optional: inference gates/metrics settings (Stage 13/14).
+    inf = cfg.get("inference")
+    if inf is not None:
+        if not isinstance(inf, dict):
+            raise ValueError("inference must be a mapping")
+        thrs = inf.get("commitment_margin_thresholds")
+        if thrs is not None:
+            if not isinstance(thrs, list) or (not thrs):
+                raise ValueError("inference.commitment_margin_thresholds must be a non-empty list")
+            vals = [float(x) for x in thrs]
+            if any((x <= 0.0 or x >= 1.0) for x in vals):
+                raise ValueError("inference.commitment_margin_thresholds must be in (0,1)")
+        atol = inf.get("batch_consistency_atol_candidate_logits")
+        if atol is not None and float(atol) <= 0.0:
+            raise ValueError("inference.batch_consistency_atol_candidate_logits must be positive")
 
     # Optional (back-compat): thermal hygiene block.
     th = cfg.get("thermal_hygiene")

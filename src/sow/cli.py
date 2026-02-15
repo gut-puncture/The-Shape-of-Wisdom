@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
@@ -28,13 +29,31 @@ from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
 from sow.token_buckets.option_buckets import build_and_write_option_buckets_for_models, model_fs_id
 from sow.stage0_env import collect_environment, run_smoke_test
 from sow.pilot.pilot_inference import run_pilot_for_model, select_pilot_rows, stage7_gate
+from sow.inference.stage13 import (
+    batch_consistency_gate,
+    run_stage13_inference_for_model,
+)
+from sow.analysis.stage14 import run_stage14_analysis
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _runs_root() -> Path:
+    """
+    Allow placing run artifacts on a separate disk (e.g., GPU VM attached volume).
+
+    If `SOW_RUNS_ROOT` is set, it is treated as an absolute/relative path to the
+    directory containing run subdirectories (i.e., `<runs_root>/<run_id>/...`).
+    """
+    env = os.environ.get("SOW_RUNS_ROOT")
+    if env:
+        return Path(env).expanduser().resolve()
+    return REPO_ROOT / "runs"
+
+
 def _run_dir(run_id: str) -> Path:
-    return REPO_ROOT / "runs" / run_id
+    return _runs_root() / run_id
 
 
 def _state_path() -> Path:
@@ -925,6 +944,457 @@ def cmd_pilot_inference(args: argparse.Namespace) -> int:
     return 0 if v_report["pass"] else 2
 
 
+def _require_sentinels(*, run_dir: Path, names: List[str]) -> None:
+    for s in names:
+        p = run_dir / "sentinels" / s
+        if not p.exists():
+            raise SystemExit(f"missing dependency sentinel: {p}")
+
+
+def _write_jsonl_atomic_new(path: Path, rows: List[Dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        raise FileExistsError(f"refusing to overwrite existing file: {path}")
+    tmp = path.with_name(f".{path.name}.tmp")
+    if tmp.exists():
+        raise FileExistsError(f"refusing to overwrite existing tmp file: {tmp}")
+    with tmp.open("w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
+    tmp.replace(path)
+
+
+def cmd_stage13_smoke(args: argparse.Namespace) -> int:
+    """
+    GPU-friendly smoke for Stage 13: run 20 prompts and enforce gates.
+
+    This is intentionally tiny so we can validate CUDA/MPS correctness before scaling to 60k.
+    """
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    # Dependencies: at minimum we need token buckets + PCA basis.
+    _require_sentinels(
+        run_dir=run_dir,
+        names=[
+            "stage0.done",
+            "manifests.done",
+            "token_buckets.done",
+            "parser_regression.done",
+            "ccc.done",
+            "pca_fit.done",
+        ],
+    )
+
+    ccc_baseline = run_dir / "manifests" / "ccc_baseline.jsonl"
+    ccc_robust = run_dir / "manifests" / "ccc_robustness.jsonl"
+    if not ccc_baseline.exists() or not ccc_robust.exists():
+        raise SystemExit("CCC manifests missing; run Stage 9 first")
+
+    # Smoke row selection.
+    baseline_rows = select_pilot_rows(
+        baseline_manifest_path=ccc_baseline,
+        sample_size=int(args.sample_size),
+        seed=int(cfg["random_seed"]),
+    )
+    # Robustness smoke: choose 1 example_id and take all 20 wrappers.
+    expected_wrappers = list(cfg["prompting"]["robustness_wrapper_ids_v2"])
+    rob_rows_all = list(iter_jsonl(ccc_robust))
+    by_ex = {}
+    for r in rob_rows_all:
+        by_ex.setdefault(str(r["example_id"]), {})[str(r["wrapper_id"])] = r
+    ex = sorted(by_ex.keys())[0]
+    robustness_rows = [by_ex[ex][wid] for wid in expected_wrappers]
+
+    inf_cfg = cfg.get("inference") or {}
+    thresholds = inf_cfg.get("commitment_margin_thresholds") or [0.05, 0.1, 0.2]
+    atol = float(inf_cfg.get("batch_consistency_atol_candidate_logits") or 1e-3)
+
+    model_names = [args.model_name] if args.model_name else [m["name"] for m in cfg["models"]]
+    models = [m for m in cfg["models"] if m["name"] in set(model_names)]
+    if len(models) != len(model_names):
+        known = sorted([m["name"] for m in cfg["models"]])
+        raise SystemExit(f"unknown model_name in {model_names}; known={known}")
+
+    v_dir = run_dir / "validation"
+    v_dir.mkdir(parents=True, exist_ok=True)
+
+    per_model = []
+    ok_all = True
+    for m in models:
+        mk = model_fs_id(m["model_id"])
+
+        # Gate 1: batch consistency on baseline sample (bs=1 vs bs=4).
+        gate = batch_consistency_gate(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            manifest_path=ccc_baseline,
+            condition="baseline",
+            rows=baseline_rows,
+            device_override=args.device,
+            atol_logits=atol,
+        )
+
+        # Gate 2: resume simulation (stop-after then resume) on baseline + robustness.
+        base_manifest_smoke = _next_available_path(v_dir / f"stage13_smoke_manifest.baseline.{mk}.jsonl")
+        _write_jsonl_atomic_new(base_manifest_smoke, baseline_rows)
+        base_out = _next_available_path(v_dir / f"stage13_smoke_outputs.baseline.{mk}.jsonl")
+        r_stop = run_stage13_inference_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            manifest_path=base_manifest_smoke,
+            condition="baseline",
+            batch_size=args.batch_size,
+            device_override=args.device,
+            output_path_override=base_out,
+            stop_after_rows=min(7, int(args.sample_size)),
+            limit_rows=None,
+            commitment_margin_thresholds=[float(x) for x in thresholds],
+            thermal_hygiene_cfg=None,
+        )
+        r_resume = run_stage13_inference_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            manifest_path=base_manifest_smoke,
+            condition="baseline",
+            batch_size=args.batch_size,
+            device_override=args.device,
+            output_path_override=base_out,
+            stop_after_rows=None,
+            limit_rows=None,
+            commitment_margin_thresholds=[float(x) for x in thresholds],
+            thermal_hygiene_cfg=None,
+        )
+
+        rob_manifest_smoke = _next_available_path(v_dir / f"stage13_smoke_manifest.robustness.{mk}.jsonl")
+        _write_jsonl_atomic_new(rob_manifest_smoke, robustness_rows)
+        rob_out = _next_available_path(v_dir / f"stage13_smoke_outputs.robustness.{mk}.jsonl")
+        rob_res = run_stage13_inference_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            manifest_path=rob_manifest_smoke,
+            condition="robustness",
+            batch_size=args.batch_size,
+            device_override=args.device,
+            output_path_override=rob_out,
+            stop_after_rows=None,
+            limit_rows=None,
+            commitment_margin_thresholds=[float(x) for x in thresholds],
+            thermal_hygiene_cfg=None,
+        )
+
+        ok = bool(gate["pass"] and r_resume.get("pass") and rob_res.get("pass"))
+        if not ok:
+            ok_all = False
+        per_model.append(
+            {
+                "model_name": m["name"],
+                "model_id": m["model_id"],
+                "model_revision": m["revision"],
+                "batch_consistency_gate": gate,
+                "resume_simulation": {"baseline_stop": r_stop, "baseline_resume": r_resume},
+                "robustness_smoke": rob_res,
+            }
+        )
+
+    report = {
+        "pass": bool(ok_all),
+        "run_id": args.run_id,
+        "sample_size": int(args.sample_size),
+        "models": per_model,
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+    out = _next_available_path(v_dir / "stage13_smoke_report.json")
+    out.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    sent = None
+    if report["pass"]:
+        sent = _next_available_path(run_dir / "sentinels" / "stage13_smoke.done")
+        sent.write_text(json.dumps({"stage": "stage13_smoke", "output": str(out), "sha256": sha256_file(out)}, indent=2) + "\n", encoding="utf-8")
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 13 - smoke (20 prompts, gates: batch-consistency + resume)",
+        status="PASS" if report["pass"] else "FAIL",
+        command="python3 sow.py stage13-smoke --run-id "
+        + args.run_id
+        + (f" --model-name {args.model_name}" if args.model_name else "")
+        + (f" --sample-size {args.sample_size}" if args.sample_size else "")
+        + (f" --batch-size {args.batch_size}" if args.batch_size else "")
+        + (f" --device {args.device}" if args.device else ""),
+        inputs=[
+            HashedPath(path=str(ccc_baseline), sha256=sha256_file(ccc_baseline)),
+            HashedPath(path=str(ccc_robust), sha256=sha256_file(ccc_robust)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            HashedPath(path=str(out), sha256=sha256_file(out)),
+            *( [HashedPath(path=str(sent), sha256=sha256_file(sent))] if sent else [] ),
+        ],
+        validators=[HashedPath(path=str(out), sha256=sha256_file(out))],
+        notes="Intended for GPU VMs: tiny run to validate Stage 13 correctness gates before scaling to 60k.",
+        next_step="Stage 13a - baseline inference" if report["pass"] else "Fix Stage 13 gates before full runs",
+    )
+
+    print(str(out))
+    return 0 if report["pass"] else 2
+
+
+def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    _require_sentinels(
+        run_dir=run_dir,
+        names=[
+            "stage0.done",
+            "manifests.done",
+            "token_buckets.done",
+            "parser_regression.done",
+            "pilot.done",
+            "pcc.done",
+            "ccc.done",
+            "pca_fit.done",
+        ],
+    )
+
+    manifest = run_dir / "manifests" / ("ccc_baseline.jsonl" if condition == "baseline" else "ccc_robustness.jsonl")
+    if not manifest.exists():
+        raise SystemExit(f"missing CCC manifest for condition={condition}: {manifest}")
+
+    inf_cfg = cfg.get("inference") or {}
+    thresholds = inf_cfg.get("commitment_margin_thresholds") or [0.05, 0.1, 0.2]
+
+    model_names = [args.model_name] if args.model_name else [m["name"] for m in cfg["models"]]
+    models = [m for m in cfg["models"] if m["name"] in set(model_names)]
+    if len(models) != len(model_names):
+        known = sorted([m["name"] for m in cfg["models"]])
+        raise SystemExit(f"unknown model_name in {model_names}; known={known}")
+
+    per_model = []
+    ok_all = True
+    for m in models:
+        res = run_stage13_inference_for_model(
+            run_id=args.run_id,
+            run_dir=run_dir,
+            model=m,
+            generation=cfg["generation"],
+            manifest_path=manifest,
+            condition=condition,
+            batch_size=args.batch_size,
+            device_override=args.device,
+            output_path_override=None,
+            stop_after_rows=None,
+            limit_rows=None,
+            commitment_margin_thresholds=[float(x) for x in thresholds],
+            thermal_hygiene_cfg=cfg.get("thermal_hygiene"),
+        )
+        per_model.append(
+            {
+                "model_name": m["name"],
+                "model_id": m["model_id"],
+                "model_revision": m["revision"],
+                **res,
+            }
+        )
+        if not res.get("pass"):
+            ok_all = False
+
+    v_report = {
+        "pass": bool(ok_all),
+        "run_id": args.run_id,
+        "condition": condition,
+        "manifest_path": str(manifest),
+        "manifest_sha256": sha256_file(manifest),
+        "models": per_model,
+        "run_config_path": str(cfg_path),
+        "run_config_sha256": sha256_file(cfg_path),
+        "config_snapshot_path": str(_config_snapshot_path(run_dir)),
+        "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+    v_path = _next_available_path(run_dir / "validation" / f"inference_{condition}_report.json")
+    v_path.write_text(json.dumps(v_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    # Per-model sentinels + stage-level sentinel.
+    sent_dir = run_dir / "sentinels"
+    sent_dir.mkdir(parents=True, exist_ok=True)
+    sent_paths: List[Path] = []
+    for entry in per_model:
+        mk = model_fs_id(entry["model_id"])
+        if not entry.get("pass"):
+            continue
+        s = _next_available_path(sent_dir / f"inference_{condition}.{mk}.done")
+        s.write_text(
+            json.dumps(
+                {
+                    "stage": f"inference_{condition}",
+                    "run_id": args.run_id,
+                    "model_id": entry["model_id"],
+                    "model_revision": entry["model_revision"],
+                    "output_path": entry["output_path"],
+                    "output_sha256": entry["output_sha256"],
+                    "report_path": str(v_path),
+                    "report_sha256": sha256_file(v_path),
+                    "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        sent_paths.append(s)
+
+    stage_sent = None
+    if ok_all:
+        stage_sent = _next_available_path(sent_dir / f"inference_{condition}.done")
+        stage_sent.write_text(json.dumps({"stage": f"inference_{condition}", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n")
+        sent_paths.append(stage_sent)
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage=f"Stage 13 - inference ({condition})",
+        status="PASS" if ok_all else "FAIL",
+        command=(
+            f"python3 sow.py inference-{condition} --run-id {args.run_id}"
+            + (f" --model-name {args.model_name}" if args.model_name else "")
+            + (f" --batch-size {args.batch_size}" if args.batch_size else "")
+            + (f" --device {args.device}" if args.device else "")
+        ),
+        inputs=[
+            HashedPath(path=str(manifest), sha256=sha256_file(manifest)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            *(HashedPath(path=str(Path(e["output_path"])), sha256=str(e["output_sha256"])) for e in per_model if e.get("output_path") and e.get("output_sha256")),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+            *(HashedPath(path=str(p), sha256=sha256_file(p)) for p in sent_paths),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Full inference outputs are append-only JSONL; this stage is resumable and must pass strict validation before analysis.",
+        next_step="Stage 13b - robustness inference" if condition == "baseline" and ok_all else ("Stage 14 - analysis" if ok_all else "Fix inference failures"),
+    )
+
+    print(str(v_path))
+    return 0 if ok_all else 2
+
+
+def cmd_inference_baseline(args: argparse.Namespace) -> int:
+    return _cmd_stage13_condition(args, condition="baseline")
+
+
+def cmd_inference_robustness(args: argparse.Namespace) -> int:
+    return _cmd_stage13_condition(args, condition="robustness")
+
+
+def cmd_analyze(args: argparse.Namespace) -> int:
+    run_dir = _run_dir(args.run_id)
+    cfg_path = run_dir / "run_config.yaml"
+    if not cfg_path.exists():
+        raise SystemExit(f"missing run config: {cfg_path}")
+    cfg = read_yaml(cfg_path)
+    validate_run_config(cfg)
+
+    _require_sentinels(
+        run_dir=run_dir,
+        names=[
+            "parser_regression.done",
+            "ccc.done",
+            "pca_fit.done",
+            "inference_baseline.done",
+            "inference_robustness.done",
+        ],
+    )
+
+    baseline_manifest = run_dir / "manifests" / "ccc_baseline.jsonl"
+    robustness_manifest = run_dir / "manifests" / "ccc_robustness.jsonl"
+    if not baseline_manifest.exists() or not robustness_manifest.exists():
+        raise SystemExit("CCC manifests missing; cannot analyze")
+
+    inf_cfg = cfg.get("inference") or {}
+    thresholds = [float(x) for x in (inf_cfg.get("commitment_margin_thresholds") or [0.05, 0.1, 0.2])]
+    base_wid = str((cfg.get("prompting") or {}).get("baseline_wrapper_id") or "plain_exam")
+
+    report = run_stage14_analysis(
+        run_id=args.run_id,
+        run_dir=run_dir,
+        cfg=cfg,
+        baseline_manifest=baseline_manifest,
+        robustness_manifest=robustness_manifest,
+        baseline_wrapper_id=base_wid,
+        thresholds=thresholds,
+    )
+
+    analysis_dir = run_dir / "analysis"
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+    out = _next_available_path(analysis_dir / "final_report.json")
+    out.write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    # Stage-level validator report in validation/.
+    v_dir = run_dir / "validation"
+    v_dir.mkdir(parents=True, exist_ok=True)
+    v = {
+        "pass": bool(report.get("pass")),
+        "run_id": args.run_id,
+        "final_report_path": str(out),
+        "final_report_sha256": sha256_file(out),
+        "artifacts": report.get("artifacts"),
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    v_path = _next_available_path(v_dir / "analysis_report.json")
+    v_path.write_text(json.dumps(v, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+
+    sent = None
+    if v["pass"]:
+        sent = _next_available_path(run_dir / "sentinels" / "analysis.done")
+        sent.write_text(json.dumps({"stage": "analysis", "output": str(v_path), "sha256": sha256_file(v_path)}, indent=2) + "\n", encoding="utf-8")
+
+    append_state_entry(
+        state_path=_state_path(),
+        stage="Stage 14 - analysis and reports",
+        status="PASS" if v["pass"] else "FAIL",
+        command=f"python3 sow.py analyze --run-id {args.run_id}",
+        inputs=[
+            HashedPath(path=str(baseline_manifest), sha256=sha256_file(baseline_manifest)),
+            HashedPath(path=str(robustness_manifest), sha256=sha256_file(robustness_manifest)),
+            HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
+        ],
+        outputs=[
+            HashedPath(path=str(out), sha256=sha256_file(out)),
+            HashedPath(path=str(v_path), sha256=sha256_file(v_path)),
+            *( [HashedPath(path=str(sent), sha256=sha256_file(sent))] if sent else [] ),
+        ],
+        validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
+        notes="Deterministic JSON/CSV analysis artifacts generated from Stage 13 outputs (no judge/adjudication applied here).",
+        next_step="(Optional) DeepSeek adjudication for unresolved-only, then re-run analysis; else proceed to paper writeup.",
+    )
+
+    print(str(out))
+    return 0 if v["pass"] else 2
+
+
 def _pilot_status_for_model(*, run_dir: Path, model_id: str) -> Dict[str, Any]:
     """
     Returns best-known pilot gate status for a model from run artifacts.
@@ -1345,6 +1815,32 @@ def build_parser() -> argparse.ArgumentParser:
     p_pcaf.add_argument("--run-id", required=True)
     p_pcaf.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
     p_pcaf.set_defaults(func=cmd_pca_fit)
+
+    p_s13s = sub.add_parser("stage13-smoke", help="Stage 13 smoke (20 prompts) + strict gates (batch-consistency + resume)")
+    p_s13s.add_argument("--run-id", required=True)
+    p_s13s.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
+    p_s13s.add_argument("--sample-size", type=int, default=20)
+    p_s13s.add_argument("--batch-size", default="auto", help="Integer batch size, or 'auto'")
+    p_s13s.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_s13s.set_defaults(func=cmd_stage13_smoke)
+
+    p_s13b = sub.add_parser("inference-baseline", help="Stage 13a: baseline full inference (CCC baseline)")
+    p_s13b.add_argument("--run-id", required=True)
+    p_s13b.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
+    p_s13b.add_argument("--batch-size", default="auto", help="Integer batch size, or 'auto'")
+    p_s13b.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_s13b.set_defaults(func=cmd_inference_baseline)
+
+    p_s13r = sub.add_parser("inference-robustness", help="Stage 13b: robustness full inference (CCC robustness)")
+    p_s13r.add_argument("--run-id", required=True)
+    p_s13r.add_argument("--model-name", default=None, help="Run for a single model name; default is all models")
+    p_s13r.add_argument("--batch-size", default="auto", help="Integer batch size, or 'auto'")
+    p_s13r.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_s13r.set_defaults(func=cmd_inference_robustness)
+
+    p_an = sub.add_parser("analyze", help="Stage 14: deterministic analysis + report artifacts (JSON/CSV)")
+    p_an.add_argument("--run-id", required=True)
+    p_an.set_defaults(func=cmd_analyze)
 
     p_pcc = sub.add_parser("build-pcc", help="Stage 8: build Primary Core Corpus (PCC) per model")
     p_pcc.add_argument("--run-id", required=True)
