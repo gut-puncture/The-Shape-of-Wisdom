@@ -7,10 +7,9 @@ if [[ -z "${RUN_ID}" ]]; then
   exit 2
 fi
 
-if [[ -z "${SOW_RUNS_ROOT:-}" ]]; then
-  echo "error: SOW_RUNS_ROOT must be set to a path on the attached disk (e.g. /data/shape-of-wisdom-runs)" >&2
-  exit 2
-fi
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/preflight.sh"
+sow_preflight
 
 mkdir -p "${SOW_RUNS_ROOT}"
 
@@ -33,4 +32,3 @@ python3 sow.py pca-fit --run-id "${RUN_ID}"
 python3 sow.py stage13-smoke --run-id "${RUN_ID}" --device cuda --sample-size 20 --batch-size auto
 
 echo "[gpu] smoke complete: run_id=${RUN_ID}"
-

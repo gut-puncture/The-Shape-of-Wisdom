@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ from sow.hashing import sha256_file, sha256_text
 from sow.io_jsonl import iter_jsonl
 from sow.judging.deterministic_parser import parse_choice
 from sow.token_buckets.option_buckets import model_fs_id, piece_to_letter
+from sow.inference.determinism import configure_torch_determinism
 from sow.inference.model_adapter import resolve_model_components
 from sow.inference.readout import BucketIndex, build_bucket_index, compute_candidate_readout, idx_to_letter, project_hidden_pca
 
@@ -478,12 +480,8 @@ def run_stage13_inference_for_model(
     bidx, tb_obj, tb_path = _load_token_buckets(run_dir=run_dir, model_id=model_id, model_revision=revision)
     pca = _load_pca_basis_from_sentinel(run_dir=run_dir, model_id=model_id)
 
-    # Determinism knobs (CUDA).
-    if device == "cuda" and torch.cuda.is_available():
-        torch.backends.cuda.matmul.allow_tf32 = False
-        torch.backends.cudnn.allow_tf32 = False
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    # Determinism knobs (best effort). Batch-consistency gate is the real guardrail.
+    det = configure_torch_determinism(device=device)
 
     torch_dtype = torch.float16 if device != "cpu" else torch.float32
 
@@ -554,6 +552,13 @@ def run_stage13_inference_for_model(
         "manifest_sha256": sha256_file(manifest_path),
         "commitment_margin_thresholds": [float(x) for x in thresholds],
         "batching": {"requested": str(batch_size), "resolved": int(bs)},
+        "determinism": {
+            "torch": det,
+            "env": {
+                "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED"),
+                "CUBLAS_WORKSPACE_CONFIG": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+            },
+        },
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     meta_path = paths.run_meta_json

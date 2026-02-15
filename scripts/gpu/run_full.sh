@@ -8,10 +8,9 @@ if [[ -z "${RUN_ID}" ]]; then
   exit 2
 fi
 
-if [[ -z "${SOW_RUNS_ROOT:-}" ]]; then
-  echo "error: SOW_RUNS_ROOT must be set to a path on the attached disk (e.g. /data/shape-of-wisdom-runs)" >&2
-  exit 2
-fi
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/preflight.sh"
+sow_preflight
 
 echo "[gpu] run_id=${RUN_ID}"
 
@@ -26,4 +25,3 @@ python3 sow.py analyze --run-id "${RUN_ID}"
 bash scripts/gpu/pack_analysis_bundle.sh "${RUN_ID}"
 
 echo "[gpu] full run complete: run_id=${RUN_ID}"
-

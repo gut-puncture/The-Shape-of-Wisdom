@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from sow.hashing import sha256_file, sha256_text
+from sow.inference.determinism import configure_torch_determinism
 from sow.token_buckets.option_buckets import build_buckets_from_tokenizer, validate_bucket_obj
 
 
@@ -104,6 +105,8 @@ def run_smoke_test(
 
     device = _pick_device(preferred=preferred_device)
     torch.manual_seed(int(seed))
+
+    det = configure_torch_determinism(device=device)
 
     prompt = (
         "Question: What is 2+2?\n"
@@ -209,6 +212,7 @@ def run_smoke_test(
         "model_revision": revision,
         "device": device,
         "torch_dtype": str(torch_dtype).replace("torch.", ""),
+        "determinism": det,
         "transformers_version": str(transformers.__version__),
         "torch_version": str(torch.__version__),
         "seed": int(seed),

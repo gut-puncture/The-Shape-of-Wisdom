@@ -13,6 +13,7 @@ import numpy as np
 
 from sow.hashing import sha256_file, sha256_text
 from sow.io_jsonl import iter_jsonl
+from sow.inference.determinism import configure_torch_determinism
 from sow.token_buckets.option_buckets import model_fs_id
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
 
@@ -288,6 +289,8 @@ def run_pca_sample_inference_for_model(
             device = "mps"
         else:
             device = "cpu"
+
+    det = configure_torch_determinism(device=device)
 
     mem = load_membership(membership_path)
     membership = mem["membership"]
@@ -628,6 +631,13 @@ def run_pca_sample_inference_for_model(
         "model_revision": revision,
         "device": device,
         "torch_dtype": str(torch_dtype).replace("torch.", ""),
+        "determinism": {
+            "torch": det,
+            "env": {
+                "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED"),
+                "CUBLAS_WORKSPACE_CONFIG": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+            },
+        },
         "membership_path": str(membership_path),
         "membership_sha256": membership_sha,
         "prompt_uids": prompt_uids,

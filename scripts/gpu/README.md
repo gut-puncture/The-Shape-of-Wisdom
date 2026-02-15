@@ -43,8 +43,18 @@ The repo does **not** include paid inputs (`data/` is gitignored). You must copy
 - `scripts/gpu/run_smoke_20.sh`: run Stage 0..12 + Stage 13 smoke (20 prompts)
 - `scripts/gpu/run_full.sh`: run full baseline + robustness inference + analysis
 - `scripts/gpu/pack_analysis_bundle.sh`: bundle analysis artifacts for download
+- `scripts/gpu/fetch_analysis_bundle.sh`: run locally to scp the small analysis bundle back from the GPU VM
 
 All scripts assume:
 - you run them from the repo root
 - `SOW_RUNS_ROOT` is set to a location on the attached disk
 
+## Download Only Analysis Artifacts
+After `run_full.sh` finishes, a bundle is written under:
+- `$SOW_RUNS_ROOT/<run_id>/bundles/analysis_bundle_<run_id>.tar.gz`
+
+Fetch it to the Mac mini (or any local machine) with:
+```bash
+bash scripts/gpu/fetch_analysis_bundle.sh ubuntu@<gpu-ip> <run_id> /data/shape-of-wisdom-runs .
+tar -xzf "analysis_bundle_<run_id>.tar.gz"
+```
