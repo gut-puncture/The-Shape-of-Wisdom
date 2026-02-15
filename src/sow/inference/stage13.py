@@ -20,6 +20,34 @@ from sow.inference.model_adapter import resolve_model_components
 from sow.inference.readout import BucketIndex, build_bucket_index, compute_candidate_readout, idx_to_letter, project_hidden_pca
 
 
+@dataclass
+class _AdaptiveBatchState:
+    """
+    Small state machine for adaptive batch sizing.
+
+    Critical invariant: we only advance `offset` after a successful batch. If we hit OOM
+    and reduce `batch_size`, we retry the same `offset` with a smaller slice.
+    """
+
+    total: int
+    batch_size: int
+    offset: int = 0
+
+    def done(self) -> bool:
+        return int(self.offset) >= int(self.total)
+
+    def slice_len(self) -> int:
+        if self.done():
+            return 0
+        return min(int(self.batch_size), int(self.total) - int(self.offset))
+
+    def on_success(self, *, slice_len: int) -> None:
+        self.offset = int(self.offset) + int(slice_len)
+
+    def on_oom(self) -> None:
+        self.batch_size = max(1, int(self.batch_size) // 2)
+
+
 def _next_available_path(path: Path) -> Path:
     if not path.exists():
         return path
@@ -600,21 +628,16 @@ def run_stage13_inference_for_model(
             meta_path.write_text(json.dumps(run_meta2, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
     # Inference loop.
-    wrote = 0
     total = len(rows)
-    bs_cur = bs
     bs_used: set[int] = set()
 
-    def batch_iter() -> Iterable[Tuple[int, List[Dict[str, Any]]]]:
-        off = 0
-        while off < total:
-            batch = rows[off : off + int(bs_cur)]
-            yield off, batch
-            off += int(bs_cur)
-
     outputs_written = 0
+    st = _AdaptiveBatchState(total=int(total), batch_size=int(bs))
     with torch.inference_mode():
-        for off, batch in batch_iter():
+        while not st.done():
+            off = int(st.offset)
+            slen = int(st.slice_len())
+            batch = rows[off : off + slen]
             # Skip already completed by resume_key (append-only resume).
             batch2 = []
             for r in batch:
@@ -623,6 +646,7 @@ def run_stage13_inference_for_model(
                     continue
                 batch2.append(r)
             if not batch2:
+                st.on_success(slice_len=slen)
                 continue
 
             prompts = [str(r["prompt_text"]) for r in batch2]
@@ -671,13 +695,13 @@ def run_stage13_inference_for_model(
                     use_cache=True,
                 )
             except RuntimeError as exc:
-                if _is_oom_error(exc) and int(bs_cur) > 1:
-                    bs_cur = max(1, int(bs_cur) // 2)
+                if _is_oom_error(exc) and int(st.batch_size) > 1:
+                    st.on_oom()
                     _empty_device_cache(device=device)
                     continue
                 raise
 
-            bs_used.add(int(bs_cur))
+            bs_used.add(int(st.batch_size))
 
             # Slice generated tokens after the (padded) input length.
             in_len = int(input_ids.shape[1])
@@ -791,6 +815,7 @@ def run_stage13_inference_for_model(
                     return out
 
             _write_jsonl_append(out_jsonl, out_rows)
+            st.on_success(slice_len=slen)
 
     t1 = time.perf_counter()
     v = validate_stage13_output(

@@ -414,3 +414,13 @@ Canonical references:
 - command: python3 -m unittest discover -s tests -p 'test_*.py' -v
 - result: PASS (22 tests)
 - next: Stage 13 - full inference runs with resume + strict batch-consistency gate
+
+### 2026-02-15 19:10 (local) - Fix Stage 13 adaptive batch OOM bug (GPU smoke blocker) - PASS
+- context: GPU Stage 13 smoke for run_id `smoke_20260215_1537` wrote a `stage13_smoke_report.json` but did not write `sentinels/stage13_smoke.done` (i.e., report `pass=false`), so the full inference driver aborted.
+- root cause: `src/sow/inference/stage13.py` advanced the manifest slice offset incorrectly when a CUDA OOM triggered batch-size reduction (it used a generator that updated `off += bs_cur` after `bs_cur` was mutated), which could skip or duplicate rows and cause deterministic validation failure.
+- change:
+  - `src/sow/inference/stage13.py`: replace the generator-based batching with an explicit offset state machine so offset only advances on successful batches; OOM reduces batch size and retries the same offset.
+  - `tests/test_stage13_inference_checkpoint.py`: add a regression test that simulates OOM on larger batch sizes and asserts no rows are skipped.
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- result: PASS (25 tests)
+- next: Re-run GPU Stage 13 smoke gate, then full baseline+robustness inference + analysis.
