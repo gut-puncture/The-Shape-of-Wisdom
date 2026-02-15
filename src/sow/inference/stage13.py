@@ -567,6 +567,9 @@ def run_stage13_inference_for_model(
         torch_dtype=torch_dtype,
         low_cpu_mem_usage=True,
         trust_remote_code=False,
+        # Force eager attention for batch-size invariance determinism.
+        # SDPA kernels can be shape-dependent (padding/batch) and break strict gates.
+        attn_implementation="eager",
     )
     model_obj.eval()
     if device != "cpu":
