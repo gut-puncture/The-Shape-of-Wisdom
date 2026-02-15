@@ -62,11 +62,11 @@ Canonical docs:
   - Artifacts: `runs/<run_id>/pca/<model_id>_sample_membership.json`
   - Gate: deterministic membership for fixed seed PASS
 
-- [ ] Stage 11 - PCA sample extraction inference
+- [x] Stage 11 - PCA sample extraction inference
   - Artifacts: `runs/<run_id>/pca/<model_id>_sample_hidden.*`
   - Gate: shape + reproducibility checks PASS
 
-- [ ] Stage 12 - Fit PCA basis once per model
+- [x] Stage 12 - Fit PCA basis once per model
   - Artifacts: `runs/<run_id>/pca/<model_id>_pca_basis.*`
   - Gate: basis hash reproducible for same input PASS
 

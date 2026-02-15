@@ -347,3 +347,70 @@ Canonical references:
   - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.json: 33d40febbcfc627e8f220969184bc1ebcf117e0ceccf8404deca631c5a36c95e
 - notes: Extracted last-position hidden vectors for every transformer layer on the frozen PCA membership set. Includes a small reproducibility spot-check.
 - next: Stage 12 - pca-fit
+
+### 2026-02-15 00:38 (local) - Stage 11 - PCA sample extraction inference - FAIL
+- command: python3 sow.py pca-sample-inference --run-id pca_20260214_180200 --model-name llama-3.1-8b-instruct --device mps --batch-size auto --repro-check-k 8 --repro-atol 0.001
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/meta-llama__Llama-3.1-8B-Instruct_sample_hidden.npz: 51ce1205367fcb1e81772216b28ffe2a1322fcace8e9f431cfb96ce2491c3cf0
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/meta-llama__Llama-3.1-8B-Instruct_sample_hidden.meta.json: 30bc92179d91fd4d76d7e6eda022bfd88b3658f642f7a7a2b0678030ead3a0f8
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.attempt2.json: 6706dbeed433ff76c9cbec1a684e254368003f143362fe4e2daf7bfdf7e6fb88
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.attempt2.json: 6706dbeed433ff76c9cbec1a684e254368003f143362fe4e2daf7bfdf7e6fb88
+- notes: Extracted last-position hidden vectors for every transformer layer on the frozen PCA membership set. Includes a small reproducibility spot-check.
+- next: Fix PCA extraction until reproducibility/shape checks pass
+
+### 2026-02-15 00:47 (local) - Stage 11 - PCA sample extraction inference - PASS
+- command: python3 sow.py pca-sample-inference --run-id pca_20260214_180200 --model-name llama-3.1-8b-instruct --device mps --batch-size auto --repro-check-k 8 --repro-atol 0.001
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/meta-llama__Llama-3.1-8B-Instruct_sample_hidden.attempt2.npz: 51ce1205367fcb1e81772216b28ffe2a1322fcace8e9f431cfb96ce2491c3cf0
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/meta-llama__Llama-3.1-8B-Instruct_sample_hidden.meta.attempt2.json: 78bafd7676dad154d4885b942e421e23c09a47a056a685839d42b62c5493d9ba
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.attempt3.json: a4144fde23d19cf861996a96e64dcb4d6eccc4bf1d666dd80b8af03bf5b9e4b9
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.attempt3.json: a4144fde23d19cf861996a96e64dcb4d6eccc4bf1d666dd80b8af03bf5b9e4b9
+- notes: Extracted last-position hidden vectors for every transformer layer on the frozen PCA membership set. Includes a small reproducibility spot-check.
+- next: Stage 12 - pca-fit
+
+### 2026-02-15 15:26 (local) - Stage 11 - PCA sample extraction inference - PASS
+- command: python3 sow.py pca-sample-inference --run-id pca_20260214_180200 --model-name mistral-7b-instruct-v0.3 --device mps --batch-size 8 --repro-check-k 8 --repro-atol 0.001
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/baseline_manifest.jsonl: 90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/manifests/robustness_manifest_v2.jsonl: 57c676b3ead7627b5d720c0aacdba1284925cc84fee83bff063d724c87ce085d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/mistralai__Mistral-7B-Instruct-v0.3_sample_hidden.npz: 78e0917e6f118b892a4931344497b96a8118d0806ecc7b9b32678b87611777cf
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/mistralai__Mistral-7B-Instruct-v0.3_sample_hidden.meta.json: 4c16293ce5683f23e81a0828b5da0f033f06532a4b7bc1bfe8d8079ec34a06f0
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.attempt4.json: 4705c0e36a1d1ed509ad6c974682d2e259e5f8ea7d26c9c72244e439e7439ae2
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_sample_inference_report.attempt4.json: 4705c0e36a1d1ed509ad6c974682d2e259e5f8ea7d26c9c72244e439e7439ae2
+- notes: Extracted last-position hidden vectors for every transformer layer on the frozen PCA membership set. Includes a small reproducibility spot-check.
+- next: Stage 12 - pca-fit
+
+### 2026-02-15 18:21 (local) - Stage 12 - fit PCA basis per model (pooled across layers) - PASS
+- command: python3 sow.py pca-fit --run-id pca_20260214_180200
+- inputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/run_config.yaml: bf284e1d21c639a4f6308046b11e84267d6727862e60ec0831e0c618d0b502b8
+- outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/Qwen__Qwen2.5-7B-Instruct_pca_basis.npz: c4ec6506d50b63f663482ae3c5e70b7bad2a29ca081983cc11485d4c77ff894d
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/meta-llama__Llama-3.1-8B-Instruct_pca_basis.npz: c0f107d3b96caa1ced2179146d286af479c31884efec5e49e8b54138f690fe04
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/mistralai__Mistral-7B-Instruct-v0.3_pca_basis.npz: ac69ec5861e4c18ff76813b69b4f61cd657c70c5da8090270215cfa9c981bdf7
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/Qwen__Qwen2.5-7B-Instruct_pca_basis.meta.json: 63d46d3509ef600691877e9556116a10e2dbd353796e1834533d9ddacf7261ba
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/meta-llama__Llama-3.1-8B-Instruct_pca_basis.meta.json: b605e7ecd73f23d8ce27f5b02434199839ce39cf1281a23e3c9468a3afa308b5
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/pca/mistralai__Mistral-7B-Instruct-v0.3_pca_basis.meta.json: eb61ba08bf893e965b87c3dc106172e22942441ac592592126f123f7a100bcfa
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_fit_report.json: 0df12bef0fcc741304b7c0d183884e3a9aa620b3df06afa59ade2cc051686046
+- validators (paths + PASS/FAIL):
+  - /Users/shaileshrana/shape-of-wisdom/runs/pca_20260214_180200/validation/pca_fit_report.json: 0df12bef0fcc741304b7c0d183884e3a9aa620b3df06afa59ade2cc051686046
+- notes: Fit one PCA basis per model from pooled layer vectors and canonicalize component signs; includes an in-process reproducibility test (fit twice).
+- next: Stage 13 - full inference w/ on-the-fly PCA projection
+
+### 2026-02-15 18:24 (local) - Repo unit tests (deterministic gates) - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- result: PASS (22 tests)
+- next: Stage 13 - full inference runs with resume + strict batch-consistency gate
