@@ -456,3 +456,15 @@ Canonical references:
   - HF token is required for Llama; do not run Stage 13 smoke/full inference on GPU without preflight (or equivalent env auth).
   - Next fix is to make Stage 13 batch-consistency gate pass without `attn_implementation="eager"` for Qwen (no tolerance loosening).
 - next: Re-run GPU Stage 13 smoke (single-model) after Stage 13 batching/padding/determinism is corrected; then re-run full 3-model Stage 13 smoke.
+
+### 2026-02-16 02:36 (local) - GPU HF gated model access check (Llama config download) - PASS
+- context:
+  - gpu ssh: root@195.26.233.98:56140 (RunPod)
+  - HF cache: /workspace/hf (hub under /workspace/hf/hub)
+- command (gpu):
+  - ./.venv/bin/python -c 'huggingface_hub.snapshot_download(repo_id="meta-llama/Llama-3.1-8B-Instruct", revision="0e9e39f249a16976918f6564b8830bc894c89659", allow_patterns=["config.json"])'
+- outputs (gpu, paths + SHA-256):
+  - /workspace/hf/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659/config.json: 29e4c210b0d6ac178b16b2a255a568bdb23b581e50ca1ef6a6d071dd85704e6e
+- notes:
+  - Token sourced from /root/.secrets/hf_token.txt (content not logged). Confirms the token has access to the gated repo.
+- next: Stage 13 smoke (only after batch-consistency gate is fixed); then full baseline+robustness inference on GPU.
