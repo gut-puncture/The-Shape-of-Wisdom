@@ -696,15 +696,22 @@ def run_stage13_inference_for_model(
             if attn is None:
                 raise RuntimeError("tokenizer did not return attention_mask")
             prompt_lens = attn.sum(dim=1).to(dtype=torch.long).tolist()
+            # Provide explicit position_ids to avoid any model-specific quirks around
+            # left padding and to improve batch-size invariance.
+            position_ids = attn.to(dtype=torch.long).cumsum(dim=1) - 1
+            position_ids = position_ids.clamp_min(0)
+            position_ids = position_ids.to(dtype=torch.long)
             if device != "cpu":
                 input_ids = input_ids.to(device)
                 attn = attn.to(device)
+                position_ids = position_ids.to(device)
 
             try:
                 # Trace forward pass (hidden states).
                 out = model_obj(
                     input_ids=input_ids,
                     attention_mask=attn,
+                    position_ids=position_ids,
                     use_cache=False,
                     output_hidden_states=True,
                     return_dict=True,
@@ -717,8 +724,11 @@ def run_stage13_inference_for_model(
                 n_layers = len(hs_layers)
                 hidden_dim = int(hs_layers[0].shape[-1])
 
-                # Left padding => decision position p is the last token for all sequences.
-                hidden_last = torch.stack([h[:, -1, :] for h in hs_layers], dim=1)  # (batch, n_layers, hidden)
+                # Decision position p is the last non-pad token per sequence.
+                lengths = attn.sum(dim=1).to(dtype=torch.long)
+                idx = (lengths - 1).to(hs_layers[0].device)
+                ar = torch.arange(int(hs_layers[0].shape[0]), device=hs_layers[0].device)
+                hidden_last = torch.stack([h[ar, idx, :] for h in hs_layers], dim=1)  # (batch, n_layers, hidden)
 
                 readout = compute_candidate_readout(hidden_last=hidden_last, final_norm=comps.final_norm, lm_head=comps.lm_head, bucket_index=bidx)
                 proj = project_hidden_pca(hidden_last=hidden_last, mean=mean_t, components=comps_t)
@@ -727,6 +737,7 @@ def run_stage13_inference_for_model(
                 gen_ids = model_obj.generate(
                     input_ids=input_ids,
                     attention_mask=attn,
+                    position_ids=position_ids,
                     do_sample=False,
                     max_new_tokens=int(generation.get("max_new_tokens", 24)),
                     temperature=float(generation.get("temperature", 1.0)),

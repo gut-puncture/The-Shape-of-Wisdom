@@ -97,7 +97,7 @@ class _FakeModel:
         self._device = str(device)
         return self
 
-    def __call__(self, *, input_ids, attention_mask, use_cache, output_hidden_states, return_dict):
+    def __call__(self, *, input_ids, attention_mask, use_cache, output_hidden_states, return_dict, position_ids=None):
         import torch
 
         # Build (embeddings + layers) hidden_states tuple; each layer output is a simple function of input_ids.
@@ -110,7 +110,19 @@ class _FakeModel:
             hs.append(base.unsqueeze(-1) + dim + (li * 0.1))
         return _FakeOut(hidden_states=tuple(hs))
 
-    def generate(self, *, input_ids, attention_mask, do_sample, max_new_tokens, temperature, top_p, pad_token_id, use_cache):
+    def generate(
+        self,
+        *,
+        input_ids,
+        attention_mask,
+        do_sample,
+        max_new_tokens,
+        temperature,
+        top_p,
+        pad_token_id,
+        use_cache,
+        position_ids=None,
+    ):
         import torch
 
         bsz, seqlen = int(input_ids.shape[0]), int(input_ids.shape[1])
@@ -131,7 +143,7 @@ class _OomFakeModel(_FakeModel):
         super().__init__(n_layers=n_layers, hidden_dim=hidden_dim, vocab_size=vocab_size)
         self._max_ok_batch = int(max_ok_batch)
 
-    def __call__(self, *, input_ids, attention_mask, use_cache, output_hidden_states, return_dict):
+    def __call__(self, *, input_ids, attention_mask, use_cache, output_hidden_states, return_dict, position_ids=None):
         bsz = int(input_ids.shape[0])
         if bsz > int(self._max_ok_batch):
             raise RuntimeError("CUDA out of memory")
@@ -141,9 +153,22 @@ class _OomFakeModel(_FakeModel):
             use_cache=use_cache,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            position_ids=position_ids,
         )
 
-    def generate(self, *, input_ids, attention_mask, do_sample, max_new_tokens, temperature, top_p, pad_token_id, use_cache):
+    def generate(
+        self,
+        *,
+        input_ids,
+        attention_mask,
+        do_sample,
+        max_new_tokens,
+        temperature,
+        top_p,
+        pad_token_id,
+        use_cache,
+        position_ids=None,
+    ):
         bsz = int(input_ids.shape[0])
         if bsz > int(self._max_ok_batch):
             raise RuntimeError("CUDA out of memory")
@@ -156,6 +181,7 @@ class _OomFakeModel(_FakeModel):
             top_p=top_p,
             pad_token_id=pad_token_id,
             use_cache=use_cache,
+            position_ids=position_ids,
         )
 
 
