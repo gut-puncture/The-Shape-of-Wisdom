@@ -439,3 +439,20 @@ Canonical references:
   - Stage 13: fail-fast if existing output JSONL has duplicate/missing resume keys; output validator now enforces join integrity vs manifest (example_id/wrapper_id/manifest_sha256/prompt_text_sha256) and checks projected_hidden_128 length.
   - Stage 14: analysis now fails fast if inference sentinels are not self-describing (stage/run_id/model_id/model_revision) and if baseline wrapper_id is unexpected; report includes explicit `errors`.
 - next: Unpause GPU and re-run Stage 13 smoke gate, then run full baseline+robustness inference + Stage 14 analysis on GPU.
+
+### 2026-02-16 02:20 (local) - GPU Stage 13 smoke blockers triage (Qwen eager+left-pad NaNs; HF gated model auth) - IN PROGRESS
+- context:
+  - GPU run_id: `gpu_smoke_20260215_1739` (RTX 6000 Ada 48GB; runs_root `/workspace/shape-of-wisdom-runs`)
+  - Stage 13 smoke failing (no `sentinels/stage13_smoke.done`)
+- findings:
+  - Qwen (`Qwen/Qwen2.5-7B-Instruct`) produces all-NaN next-token logits for samples that include left padding when loaded with `attn_implementation="eager"` under `transformers==5.1.0` (NaNs propagate to `argmax -> token_id=0` which decodes as `'!'`, causing batch-consistency failures).
+  - Stage 13 smoke run crashed on Llama load due to missing Hugging Face auth for gated model (`meta-llama/Llama-3.1-8B-Instruct`): 401 gated repo access.
+- command (gpu, auth check):
+  - source scripts/gpu/preflight.sh && sow_preflight (sets `HF_TOKEN` / `HUGGINGFACE_HUB_TOKEN` from `/root/.secrets/hf_token.txt`, and caches under `/workspace/hf`)
+  - python: `huggingface_hub.hf_hub_download(repo_id="meta-llama/Llama-3.1-8B-Instruct", revision="0e9e39f249a16976918f6564b8830bc894c89659", filename="config.json")`
+- outputs (gpu, paths + SHA-256):
+  - /workspace/hf/hub/models--meta-llama--Llama-3.1-8B-Instruct/snapshots/0e9e39f249a16976918f6564b8830bc894c89659/config.json: 29e4c210b0d6ac178b16b2a255a568bdb23b581e50ca1ef6a6d071dd85704e6e
+- notes:
+  - HF token is required for Llama; do not run Stage 13 smoke/full inference on GPU without preflight (or equivalent env auth).
+  - Next fix is to make Stage 13 batch-consistency gate pass without `attn_implementation="eager"` for Qwen (no tolerance loosening).
+- next: Re-run GPU Stage 13 smoke (single-model) after Stage 13 batching/padding/determinism is corrected; then re-run full 3-model Stage 13 smoke.
