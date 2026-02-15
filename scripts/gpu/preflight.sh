@@ -10,6 +10,18 @@ sow_preflight() {
     return 2
   fi
 
+  # HuggingFace gated models: prefer a local token file on GPU VMs.
+  # Do NOT echo the token.
+  if [[ -z "${HF_TOKEN:-}" ]]; then
+    if [[ -f "/root/.secrets/hf_token.txt" ]]; then
+      HF_TOKEN="$(tr -d '\n' < /root/.secrets/hf_token.txt)"
+      export HF_TOKEN
+    fi
+  fi
+  if [[ -z "${HUGGINGFACE_HUB_TOKEN:-}" && -n "${HF_TOKEN:-}" ]]; then
+    export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
+  fi
+
   # Default caches onto /data if present, but do not override user-provided values.
   if [[ -d "/data" ]]; then
     : "${HF_HOME:=/data/hf}"
@@ -22,7 +34,9 @@ sow_preflight() {
   # Determinism / reproducibility knobs (must be exported before Python starts).
   : "${PYTHONHASHSEED:=0}"
   : "${CUBLAS_WORKSPACE_CONFIG:=:4096:8}"
+  : "${PYTORCH_CUDA_ALLOC_CONF:=expandable_segments:True}"
   export PYTHONHASHSEED CUBLAS_WORKSPACE_CONFIG
+  export PYTORCH_CUDA_ALLOC_CONF
 
   # Keep CPU noise down (spec section 23).
   : "${OMP_NUM_THREADS:=1}"
@@ -88,4 +102,3 @@ PY
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
   sow_preflight
 fi
-
