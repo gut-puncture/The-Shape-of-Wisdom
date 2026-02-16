@@ -74,13 +74,15 @@ Canonical docs:
   - Artifacts: `runs/<run_id>/outputs/<model_id>/baseline_outputs.jsonl`, `runs/<run_id>/outputs/<model_id>/run_meta.json`
   - Gates: batch-consistency + resume simulation + schema validation PASS
 
-- [ ] Stage 13b - Robustness inference runs with layerwise readouts + PCA projection (GPU recommended)
+- [ ] Stage 13b - Robustness inference runs with layerwise readouts + PCA projection (optional / deferred)
   - Artifacts: `runs/<run_id>/outputs/<model_id>/robustness_outputs.jsonl`, `runs/<run_id>/outputs/<model_id>/run_meta.json`
   - Gates: batch-consistency + resume simulation + schema validation PASS
+  - Note: current fast-track execution skips this stage unless robustness deltas are explicitly required.
 
-- [ ] Stage 14 - Analysis and report generation
-  - Artifacts: `runs/<run_id>/analysis/*` (final reports + figures)
-  - Gate: manifest row-count parity + no missing layers + basis-hash match PASS
+- [ ] Stage 14 - Mechanistic analysis and report generation (commitment + convergence + domain topology)
+  - Required artifacts: `runs/<run_id>/analysis/per_prompt_metrics.csv`, `runs/<run_id>/analysis/layerwise_aggregates.csv`, `runs/<run_id>/analysis/convergence_by_layer.csv`, `runs/<run_id>/analysis/commitment_hist.csv`, `runs/<run_id>/analysis/domain_topology_centroids.csv`, `runs/<run_id>/analysis/domain_topology_pairwise_distances.csv`, `runs/<run_id>/analysis/figures/*.png`, `runs/<run_id>/analysis/final_report.json`
+  - Optional artifacts (only when robustness mode is enabled): `runs/<run_id>/analysis/robustness_deltas.csv`
+  - Gate: baseline manifest row-count parity + no missing layers + basis-hash match + topology/figure artifacts present PASS
 
 ## After Each Stage (required bookkeeping)
 - Append a dated entry to `STATE.md` containing:

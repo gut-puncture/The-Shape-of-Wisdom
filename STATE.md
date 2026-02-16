@@ -468,3 +468,46 @@ Canonical references:
 - notes:
   - Token sourced from /root/.secrets/hf_token.txt (content not logged). Confirms the token has access to the gated repo.
 - next: Stage 13 smoke (only after batch-consistency gate is fixed); then full baseline+robustness inference on GPU.
+
+### 2026-02-16 16:34 (local) - Maintenance - Baseline-only analysis fast path + domain topology plots - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/PROJECT_PLAN.md: c0d6502c0195da25260e123a6e118f652f9b467f65b06a483369d49c9b0e27c5
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/analysis/stage14.py: c7a45d3e47a6aacce799be729ee08217ad2761052ca546ee511508bd0157e5bd
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/cli.py: 7060881fcfcd137d49dcce2fc7664b14707e26aa23bbb23d00493671a92df2db
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/run_smoke_20.sh: 6de3baa54f1a75c8e1d83f445289ecf35ea47ca229df481688552a3ae9a2c8f5
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/run_full.sh: 732ff85e39920980233551a88f3290c1566d252b521eaba7749c7cee9a48cfcd
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/README.md: 3611a7eb809f8d6fb24368d7d8abdb3c1cd9b2cc37c78b3e3d25eb9c12e1b180
+  - /Users/shaileshrana/shape-of-wisdom/tests/test_stage14_analysis.py: 760cbebe7f1a07d424d97fed3d6124f566f5539cee2f113e85054b298ca806bb
+- validators:
+  - repo unit tests: PASS (26 tests)
+  - shell syntax checks: PASS (`bash -n scripts/gpu/run_smoke_20.sh`, `bash -n scripts/gpu/run_full.sh`, `bash -n scripts/gpu/preflight.sh`)
+- notes:
+  - Added baseline-only Stage 14 mode (`sow.py analyze --skip-robustness`) to produce convergence/commitment artifacts and domain topology artifacts + PNG plots for all three models.
+  - Stage 13 smoke now supports `--skip-robustness` so GPU smoke can validate baseline gates only when robustness analysis is deferred.
+  - GPU run scripts now support mode selection (`full` or `baseline_only`).
+  - PROJECT_PLAN updated: robustness inference marked optional/deferred for current fast-track and Stage 14 now explicitly targets commitment/convergence + domain topology outputs.
+- next: On RTX 6000 Ada run Stage 13 smoke in baseline_only mode, then baseline inference + baseline-only analysis to generate plots.
+
+### 2026-02-16 17:05 (local) - Maintenance - Baseline Stage 13 GPU hardening + old Qwen baseline artifact cleanup - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/inference/stage13.py: dcef7c8f3cb5bf302b774c69e3f6c447d938872aa3411e384e7d33d13e2fe9d6
+  - /Users/shaileshrana/shape-of-wisdom/tests/test_stage13_inference_checkpoint.py: 4f783facb42b59610a66ea2cf7b92c705b470bf64eb450873de9d91514848d1f
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/preflight.sh: ca5bd19825de8656998ac60b98cc97521d2874b412ed9394a42b8c1a887a51fd
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/run_smoke_20.sh: e11cbe4512cccae58f424d8856cfa265c1892ddf9239ee24770937f361613511
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/run_full.sh: c0e31a8490ed6f642a776a69d862b0adb72273572c085a50d9724655603f8a12
+- validators:
+  - repo unit tests: PASS (27 tests)
+  - shell syntax checks: PASS (`bash -n scripts/gpu/preflight.sh`, `bash -n scripts/gpu/run_smoke_20.sh`, `bash -n scripts/gpu/run_full.sh`)
+- notes:
+  - Stage 13 now checks for non-finite readout/projection values and adaptively reduces batch size (same retry semantics as OOM) to avoid silent NaN corruption on larger GPU batches.
+  - Stage 13 auto-batch calibration now rejects candidate batch sizes that produce non-finite hidden states during probe.
+  - Added regression coverage for non-finite large-batch behavior to ensure no skipped rows under retry.
+  - GPU preflight now fail-fast checks gated Llama access (`meta-llama/Llama-3.1-8B-Instruct@0e9e39f249a16976918f6564b8830bc894c89659`, `config.json`) before long runs.
+  - GPU run scripts now fail fast on invalid mode values.
+  - Deleted old Qwen baseline-analysis artifacts (previous methodology):
+    - removed `/Users/shaileshrana/shape-of-wisdom/artifacts/inference/qwen_main`
+    - removed `/Users/shaileshrana/shape-of-wisdom/artifacts/inference_v2_canonical/qwen_baseline`
+    - residual parent dirs now minimal (`artifacts/inference` and `artifacts/inference_v2_canonical` at 8.0K each)
+- next: Run GPU baseline-only smoke then baseline-only full inference + analysis for all 3 models.

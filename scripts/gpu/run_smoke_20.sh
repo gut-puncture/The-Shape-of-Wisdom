@@ -2,8 +2,13 @@
 set -euo pipefail
 
 RUN_ID="${1:-}"
+MODE="${2:-full}"
 if [[ -z "${RUN_ID}" ]]; then
-  echo "usage: $0 <run_id>" >&2
+  echo "usage: $0 <run_id> [full|baseline_only]" >&2
+  exit 2
+fi
+if [[ "${MODE}" != "full" && "${MODE}" != "baseline_only" ]]; then
+  echo "error: invalid mode '${MODE}' (expected full or baseline_only)" >&2
   exit 2
 fi
 
@@ -15,6 +20,7 @@ mkdir -p "${SOW_RUNS_ROOT}"
 
 echo "[gpu] runs_root=${SOW_RUNS_ROOT}"
 echo "[gpu] run_id=${RUN_ID}"
+echo "[gpu] mode=${MODE}"
 
 "${SOW_PYTHON}" sow.py init-run --run-id "${RUN_ID}" --seed 12345
 "${SOW_PYTHON}" sow.py stage0 --run-id "${RUN_ID}" --device cuda
@@ -29,6 +35,10 @@ echo "[gpu] run_id=${RUN_ID}"
 "${SOW_PYTHON}" sow.py pca-fit --run-id "${RUN_ID}"
 
 # Stage 13 gates + smoke (20 prompts).
-"${SOW_PYTHON}" sow.py stage13-smoke --run-id "${RUN_ID}" --device cuda --sample-size 20 --batch-size auto
+if [[ "${MODE}" == "baseline_only" ]]; then
+  "${SOW_PYTHON}" sow.py stage13-smoke --run-id "${RUN_ID}" --device cuda --sample-size 20 --batch-size auto --skip-robustness
+else
+  "${SOW_PYTHON}" sow.py stage13-smoke --run-id "${RUN_ID}" --device cuda --sample-size 20 --batch-size auto
+fi
 
 echo "[gpu] smoke complete: run_id=${RUN_ID}"

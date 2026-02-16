@@ -41,7 +41,9 @@ The repo does **not** include paid inputs (`data/` is gitignored). You must copy
 
 ## Run Scripts
 - `scripts/gpu/run_smoke_20.sh`: run Stage 0..12 + Stage 13 smoke (20 prompts)
+  - Optional mode: `baseline_only` skips robustness smoke.
 - `scripts/gpu/run_full.sh`: run full baseline + robustness inference + analysis
+  - Optional mode: `baseline_only` runs only baseline inference + baseline-only mechanistic analysis.
 - `scripts/gpu/pack_analysis_bundle.sh`: bundle analysis artifacts for download
 - `scripts/gpu/fetch_analysis_bundle.sh`: run locally to scp the small analysis bundle back from the GPU VM
 
@@ -52,6 +54,17 @@ All scripts assume:
 ## Download Only Analysis Artifacts
 After `run_full.sh` finishes, a bundle is written under:
 - `$SOW_RUNS_ROOT/<run_id>/bundles/analysis_bundle_<run_id>.tar.gz`
+
+Examples:
+```bash
+# Full pipeline (baseline + robustness)
+bash scripts/gpu/run_smoke_20.sh <run_id> full
+bash scripts/gpu/run_full.sh <run_id> full
+
+# Faster mechanistic path (baseline only; convergence/commitment/topology)
+bash scripts/gpu/run_smoke_20.sh <run_id> baseline_only
+bash scripts/gpu/run_full.sh <run_id> baseline_only
+```
 
 Fetch it to the Mac mini (or any local machine) with:
 ```bash

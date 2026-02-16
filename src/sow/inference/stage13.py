@@ -264,6 +264,27 @@ def _empty_device_cache(*, device: str) -> None:
         return
 
 
+def _tensor_has_non_finite(x: Any) -> bool:
+    """
+    Best-effort finite check for tensor-like objects.
+    """
+    try:
+        import torch  # noqa: PLC0415
+
+        if torch.is_tensor(x):
+            return bool(not torch.isfinite(x).all())
+    except Exception:
+        pass
+    return False
+
+
+def _batch_has_non_finite(*xs: Any) -> bool:
+    for x in xs:
+        if _tensor_has_non_finite(x):
+            return True
+    return False
+
+
 def _pick_device(*, preferred: Optional[str] = None) -> str:
     try:
         import torch  # noqa: PLC0415
@@ -326,7 +347,14 @@ def _auto_calibrate_batch_size(
                     input_ids = input_ids.to(device)
                     attn = attn.to(device)
 
-                _ = model_obj(input_ids=input_ids, attention_mask=attn, use_cache=False, output_hidden_states=True, return_dict=True)
+                out = model_obj(input_ids=input_ids, attention_mask=attn, use_cache=False, output_hidden_states=True, return_dict=True)
+                hs = getattr(out, "hidden_states", None)
+                if hs is None or len(hs) < 2:
+                    raise RuntimeError("model did not return hidden_states during batch-size calibration")
+                # Catch numerically unstable configs early (for example, NaNs that can appear only on larger batches).
+                if _batch_has_non_finite(hs[-1]):
+                    _empty_device_cache(device=device)
+                    continue
                 _ = model_obj.generate(
                     input_ids=input_ids,
                     attention_mask=attn,
@@ -718,13 +746,8 @@ def run_stage13_inference_for_model(
                 n_layers = len(hs_layers)
                 hidden_dim = int(hs_layers[0].shape[-1])
 
-                # Decision position p is the last *real* prompt token right before generation begins.
-                #
-                # We always set tokenizer.padding_side="left" for decoder-only batching, which means
-                # real tokens are right-aligned and the last position (index -1) is always a real token.
-                #
-                # For completeness, handle the "right padding" case as well (last real token index
-                # is lengths-1 in that case).
+                # Decision position p is the last real prompt token right before generation begins.
+                # With right padding (our default), this is lengths-1 per row.
                 if str(getattr(tok, "padding_side", "left")) == "right":
                     lengths = attn.sum(dim=1).to(dtype=torch.long)
                     idx = (lengths - 1).to(hs_layers[0].device)
@@ -735,6 +758,24 @@ def run_stage13_inference_for_model(
 
                 readout = compute_candidate_readout(hidden_last=hidden_last, final_norm=comps.final_norm, lm_head=comps.lm_head, bucket_index=bidx)
                 proj = project_hidden_pca(hidden_last=hidden_last, mean=mean_t, components=comps_t)
+
+                # Some model/runtime combinations can produce non-finite values only on larger batches.
+                # Treat this similarly to OOM: reduce batch size and retry the same offset.
+                if _batch_has_non_finite(
+                    readout.get("candidate_logits"),
+                    readout.get("candidate_probs"),
+                    readout.get("candidate_entropy"),
+                    readout.get("top2_margin_prob"),
+                    proj,
+                ):
+                    if int(st.batch_size) > 1:
+                        st.on_oom()
+                        _empty_device_cache(device=device)
+                        continue
+                    raise RuntimeError(
+                        f"non-finite readout/projection values at batch_size=1 "
+                        f"(model={model_id} condition={condition} offset={off})"
+                    )
 
                 # Generation (greedy, capped).
                 gen_ids = model_obj.generate(

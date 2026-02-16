@@ -185,6 +185,38 @@ class _OomFakeModel(_FakeModel):
         )
 
 
+class _NanBatchFakeModel(_FakeModel):
+    """
+    Fake model that emits NaNs in hidden states when batch size exceeds `max_ok_batch`.
+
+    This simulates numerical instability that can appear on larger GPU batches.
+    """
+
+    def __init__(self, *, n_layers: int, hidden_dim: int, vocab_size: int = 10, max_ok_batch: int = 1):
+        super().__init__(n_layers=n_layers, hidden_dim=hidden_dim, vocab_size=vocab_size)
+        self._max_ok_batch = int(max_ok_batch)
+
+    def __call__(self, *, input_ids, attention_mask, use_cache, output_hidden_states, return_dict, position_ids=None):
+        import torch
+
+        out = super().__call__(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            use_cache=use_cache,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+            position_ids=position_ids,
+        )
+        bsz = int(input_ids.shape[0])
+        if bsz > int(self._max_ok_batch):
+            hs = list(out.hidden_states)
+            bad = hs[-1].clone()
+            bad[:] = torch.nan
+            hs[-1] = bad
+            return _FakeOut(hidden_states=tuple(hs))
+        return out
+
+
 def _write_jsonl(path: Path, rows) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
@@ -392,6 +424,98 @@ class TestStage13InferenceCheckpoint(unittest.TestCase):
                     thermal_hygiene_cfg=None,
                 )
                 self.assertTrue(res["pass"])
+
+            rows_out = list(__import__("sow.io_jsonl", fromlist=["iter_jsonl"]).iter_jsonl(out))
+            self.assertEqual(len(rows_out), 6)
+            self.assertEqual({r["prompt_uid"] for r in rows_out}, {f"u{i}" for i in range(6)})
+
+    def test_non_finite_batch_reduction_does_not_skip_rows(self) -> None:
+        from sow.inference.stage13 import run_stage13_inference_for_model
+
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            run_dir = tmp / "run"
+            (run_dir / "token_buckets").mkdir(parents=True, exist_ok=True)
+            (run_dir / "sentinels").mkdir(parents=True, exist_ok=True)
+            (run_dir / "pca").mkdir(parents=True, exist_ok=True)
+
+            model = {"name": "fake", "model_id": "fake/model", "revision": "r0"}
+            model_key = "fake__model"
+
+            tb = {
+                "run_id": "test",
+                "model_id": model["model_id"],
+                "model_revision": model["revision"],
+                "buckets": {"A": [1], "B": [2], "C": [3], "D": [4]},
+            }
+            (run_dir / "token_buckets" / f"{model_key}.json").write_text(json.dumps(tb), encoding="utf-8")
+
+            mean = np.zeros((5,), dtype=np.float32)
+            components = np.zeros((128, 5), dtype=np.float32)
+            components[0, 0] = 1.0
+            basis = run_dir / "pca" / f"{model_key}_pca_basis.npz"
+            np.savez(basis, mean=mean, components=components, explained_variance_ratio=np.ones((128,), dtype=np.float64) * 0.0)
+            meta = run_dir / "pca" / f"{model_key}_pca_basis.meta.json"
+            meta.write_text(json.dumps({"basis_hash": "h0"}), encoding="utf-8")
+            sent = run_dir / "sentinels" / f"pca_fit.{model_key}.done"
+
+            from sow.hashing import sha256_file
+
+            sent.write_text(
+                json.dumps(
+                    {
+                        "stage": "pca_fit",
+                        "run_id": "test",
+                        "model_id": model["model_id"],
+                        "model_revision": model["revision"],
+                        "basis_path": str(basis),
+                        "basis_sha256": sha256_file(basis),
+                        "meta_path": str(meta),
+                        "meta_sha256": sha256_file(meta),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            manifest = run_dir / "manifests.jsonl"
+            rows = []
+            for i in range(6):
+                rows.append(
+                    {
+                        "prompt_uid": f"u{i}",
+                        "prompt_id": f"u{i}",
+                        "example_id": f"e{i}",
+                        "wrapper_id": "plain_exam",
+                        "prompt_text": f"Q{i}?\\nA. x\\nB. y\\nC. z\\nD. w\\nAnswer: ",
+                        "options": {"A": "x", "B": "y", "C": "z", "D": "w"},
+                        "correct_key": "A",
+                        "manifest_sha256": "m0",
+                        "coarse_domain": "d0",
+                    }
+                )
+            _write_jsonl(manifest, rows)
+
+            out = run_dir / "out.jsonl"
+
+            with patch("transformers.AutoTokenizer.from_pretrained", return_value=_FakeTokenizer()), patch(
+                "transformers.AutoModelForCausalLM.from_pretrained", return_value=_NanBatchFakeModel(n_layers=3, hidden_dim=5, max_ok_batch=1)
+            ):
+                res = run_stage13_inference_for_model(
+                    run_id="test",
+                    run_dir=run_dir,
+                    model=model,
+                    generation={"do_sample": False, "max_new_tokens": 24, "temperature": 1.0, "top_p": 1.0},
+                    manifest_path=manifest,
+                    condition="baseline",
+                    batch_size=4,
+                    device_override="cpu",
+                    output_path_override=out,
+                    stop_after_rows=None,
+                    commitment_margin_thresholds=[0.1],
+                    thermal_hygiene_cfg=None,
+                )
+                self.assertTrue(res["pass"])
+                self.assertIn(1, res["batching"]["batch_sizes_used"])
 
             rows_out = list(__import__("sow.io_jsonl", fromlist=["iter_jsonl"]).iter_jsonl(out))
             self.assertEqual(len(rows_out), 6)

@@ -992,8 +992,10 @@ def cmd_stage13_smoke(args: argparse.Namespace) -> int:
 
     ccc_baseline = run_dir / "manifests" / "ccc_baseline.jsonl"
     ccc_robust = run_dir / "manifests" / "ccc_robustness.jsonl"
-    if not ccc_baseline.exists() or not ccc_robust.exists():
-        raise SystemExit("CCC manifests missing; run Stage 9 first")
+    if not ccc_baseline.exists():
+        raise SystemExit("CCC baseline manifest missing; run Stage 9 first")
+    if (not bool(args.skip_robustness)) and (not ccc_robust.exists()):
+        raise SystemExit("CCC robustness manifest missing; run Stage 9 first")
 
     # Smoke row selection.
     baseline_rows = select_pilot_rows(
@@ -1002,13 +1004,15 @@ def cmd_stage13_smoke(args: argparse.Namespace) -> int:
         seed=int(cfg["random_seed"]),
     )
     # Robustness smoke: choose 1 example_id and take all 20 wrappers.
-    expected_wrappers = list(cfg["prompting"]["robustness_wrapper_ids_v2"])
-    rob_rows_all = list(iter_jsonl(ccc_robust))
-    by_ex = {}
-    for r in rob_rows_all:
-        by_ex.setdefault(str(r["example_id"]), {})[str(r["wrapper_id"])] = r
-    ex = sorted(by_ex.keys())[0]
-    robustness_rows = [by_ex[ex][wid] for wid in expected_wrappers]
+    robustness_rows: List[Dict[str, Any]] = []
+    if not bool(args.skip_robustness):
+        expected_wrappers = list(cfg["prompting"]["robustness_wrapper_ids_v2"])
+        rob_rows_all = list(iter_jsonl(ccc_robust))
+        by_ex = {}
+        for r in rob_rows_all:
+            by_ex.setdefault(str(r["example_id"]), {})[str(r["wrapper_id"])] = r
+        ex = sorted(by_ex.keys())[0]
+        robustness_rows = [by_ex[ex][wid] for wid in expected_wrappers]
 
     inf_cfg = cfg.get("inference") or {}
     thresholds = inf_cfg.get("commitment_margin_thresholds") or [0.05, 0.1, 0.2]
@@ -1076,26 +1080,29 @@ def cmd_stage13_smoke(args: argparse.Namespace) -> int:
             thermal_hygiene_cfg=None,
         )
 
-        rob_manifest_smoke = _next_available_path(v_dir / f"stage13_smoke_manifest.robustness.{mk}.jsonl")
-        _write_jsonl_atomic_new(rob_manifest_smoke, robustness_rows)
-        rob_out = _next_available_path(v_dir / f"stage13_smoke_outputs.robustness.{mk}.jsonl")
-        rob_res = run_stage13_inference_for_model(
-            run_id=args.run_id,
-            run_dir=run_dir,
-            model=m,
-            generation=cfg["generation"],
-            manifest_path=rob_manifest_smoke,
-            condition="robustness",
-            batch_size=args.batch_size,
-            device_override=args.device,
-            output_path_override=rob_out,
-            stop_after_rows=None,
-            limit_rows=None,
-            commitment_margin_thresholds=[float(x) for x in thresholds],
-            thermal_hygiene_cfg=None,
-        )
+        if bool(args.skip_robustness):
+            rob_res = {"skipped": True}
+        else:
+            rob_manifest_smoke = _next_available_path(v_dir / f"stage13_smoke_manifest.robustness.{mk}.jsonl")
+            _write_jsonl_atomic_new(rob_manifest_smoke, robustness_rows)
+            rob_out = _next_available_path(v_dir / f"stage13_smoke_outputs.robustness.{mk}.jsonl")
+            rob_res = run_stage13_inference_for_model(
+                run_id=args.run_id,
+                run_dir=run_dir,
+                model=m,
+                generation=cfg["generation"],
+                manifest_path=rob_manifest_smoke,
+                condition="robustness",
+                batch_size=args.batch_size,
+                device_override=args.device,
+                output_path_override=rob_out,
+                stop_after_rows=None,
+                limit_rows=None,
+                commitment_margin_thresholds=[float(x) for x in thresholds],
+                thermal_hygiene_cfg=None,
+            )
 
-        ok = bool(gate["pass"] and r_resume.get("pass") and rob_res.get("pass"))
+        ok = bool(gate["pass"] and r_resume.get("pass") and (bool(rob_res.get("pass")) if not bool(args.skip_robustness) else True))
         if not ok:
             ok_all = False
         per_model.append(
@@ -1141,7 +1148,11 @@ def cmd_stage13_smoke(args: argparse.Namespace) -> int:
         + (f" --device {args.device}" if args.device else ""),
         inputs=[
             HashedPath(path=str(ccc_baseline), sha256=sha256_file(ccc_baseline)),
-            HashedPath(path=str(ccc_robust), sha256=sha256_file(ccc_robust)),
+            *(
+                [HashedPath(path=str(ccc_robust), sha256=sha256_file(ccc_robust))]
+                if (ccc_robust.exists() and (not bool(args.skip_robustness)))
+                else []
+            ),
             HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
         ],
         outputs=[
@@ -1149,7 +1160,8 @@ def cmd_stage13_smoke(args: argparse.Namespace) -> int:
             *( [HashedPath(path=str(sent), sha256=sha256_file(sent))] if sent else [] ),
         ],
         validators=[HashedPath(path=str(out), sha256=sha256_file(out))],
-        notes="Intended for GPU VMs: tiny run to validate Stage 13 correctness gates before scaling to 60k.",
+        notes="Intended for GPU VMs: tiny run to validate Stage 13 correctness gates before scaling to 60k."
+        + (" Robustness smoke skipped (baseline-only mode)." if bool(args.skip_robustness) else ""),
         next_step="Stage 13a - baseline inference" if report["pass"] else "Fix Stage 13 gates before full runs",
     )
 
@@ -1317,21 +1329,22 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     cfg = read_yaml(cfg_path)
     validate_run_config(cfg)
 
-    _require_sentinels(
-        run_dir=run_dir,
-        names=[
-            "parser_regression.done",
-            "ccc.done",
-            "pca_fit.done",
-            "inference_baseline.done",
-            "inference_robustness.done",
-        ],
-    )
+    dep_sentinels = [
+        "parser_regression.done",
+        "ccc.done",
+        "pca_fit.done",
+        "inference_baseline.done",
+    ]
+    if not bool(args.skip_robustness):
+        dep_sentinels.append("inference_robustness.done")
+    _require_sentinels(run_dir=run_dir, names=dep_sentinels)
 
     baseline_manifest = run_dir / "manifests" / "ccc_baseline.jsonl"
     robustness_manifest = run_dir / "manifests" / "ccc_robustness.jsonl"
-    if not baseline_manifest.exists() or not robustness_manifest.exists():
-        raise SystemExit("CCC manifests missing; cannot analyze")
+    if not baseline_manifest.exists():
+        raise SystemExit("CCC baseline manifest missing; cannot analyze")
+    if (not bool(args.skip_robustness)) and (not robustness_manifest.exists()):
+        raise SystemExit("CCC robustness manifest missing; cannot analyze")
 
     inf_cfg = cfg.get("inference") or {}
     thresholds = [float(x) for x in (inf_cfg.get("commitment_margin_thresholds") or [0.05, 0.1, 0.2])]
@@ -1342,9 +1355,11 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         run_dir=run_dir,
         cfg=cfg,
         baseline_manifest=baseline_manifest,
-        robustness_manifest=robustness_manifest,
+        robustness_manifest=(robustness_manifest if not bool(args.skip_robustness) else None),
         baseline_wrapper_id=base_wid,
         thresholds=thresholds,
+        include_robustness=(not bool(args.skip_robustness)),
+        topology_layer=int(args.topology_layer),
     )
 
     analysis_dir = run_dir / "analysis"
@@ -1375,10 +1390,16 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         state_path=_state_path(),
         stage="Stage 14 - analysis and reports",
         status="PASS" if v["pass"] else "FAIL",
-        command=f"python3 sow.py analyze --run-id {args.run_id}",
+        command=f"python3 sow.py analyze --run-id {args.run_id}"
+        + (" --skip-robustness" if bool(args.skip_robustness) else "")
+        + (f" --topology-layer {args.topology_layer}" if int(args.topology_layer) != -1 else ""),
         inputs=[
             HashedPath(path=str(baseline_manifest), sha256=sha256_file(baseline_manifest)),
-            HashedPath(path=str(robustness_manifest), sha256=sha256_file(robustness_manifest)),
+            *(
+                [HashedPath(path=str(robustness_manifest), sha256=sha256_file(robustness_manifest))]
+                if (not bool(args.skip_robustness))
+                else []
+            ),
             HashedPath(path=str(cfg_path), sha256=sha256_file(cfg_path)),
         ],
         outputs=[
@@ -1387,7 +1408,8 @@ def cmd_analyze(args: argparse.Namespace) -> int:
             *( [HashedPath(path=str(sent), sha256=sha256_file(sent))] if sent else [] ),
         ],
         validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
-        notes="Deterministic JSON/CSV analysis artifacts generated from Stage 13 outputs (no judge/adjudication applied here).",
+        notes="Deterministic JSON/CSV analysis artifacts generated from Stage 13 outputs (no judge/adjudication applied here)."
+        + (" Baseline-only mode: robustness analysis skipped." if bool(args.skip_robustness) else ""),
         next_step="(Optional) DeepSeek adjudication for unresolved-only, then re-run analysis; else proceed to paper writeup.",
     )
 
@@ -1822,6 +1844,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_s13s.add_argument("--sample-size", type=int, default=20)
     p_s13s.add_argument("--batch-size", default="auto", help="Integer batch size, or 'auto'")
     p_s13s.add_argument("--device", default=None, help="Override device (cuda/mps/cpu); default auto-pick")
+    p_s13s.add_argument("--skip-robustness", action="store_true", help="Skip robustness smoke and validate only baseline gates")
     p_s13s.set_defaults(func=cmd_stage13_smoke)
 
     p_s13b = sub.add_parser("inference-baseline", help="Stage 13a: baseline full inference (CCC baseline)")
@@ -1840,6 +1863,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_an = sub.add_parser("analyze", help="Stage 14: deterministic analysis + report artifacts (JSON/CSV)")
     p_an.add_argument("--run-id", required=True)
+    p_an.add_argument("--skip-robustness", action="store_true", help="Baseline-only mechanistic analysis (skip robustness deltas)")
+    p_an.add_argument("--topology-layer", type=int, default=-1, help="Layer index for domain topology centroids (-1 means final layer)")
     p_an.set_defaults(func=cmd_analyze)
 
     p_pcc = sub.add_parser("build-pcc", help="Stage 8: build Primary Core Corpus (PCC) per model")

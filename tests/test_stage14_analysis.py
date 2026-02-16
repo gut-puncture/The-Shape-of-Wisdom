@@ -112,6 +112,105 @@ class TestStage14Analysis(unittest.TestCase):
                 p = Path(rep["artifacts"][k])
                 self.assertTrue(p.exists())
 
+    def test_analysis_baseline_only_writes_topology_and_figures(self) -> None:
+        from sow.analysis.stage14 import run_stage14_analysis
+        from sow.hashing import sha256_file
+
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = Path(td) / "run"
+            (run_dir / "sentinels").mkdir(parents=True, exist_ok=True)
+            (run_dir / "manifests").mkdir(parents=True, exist_ok=True)
+
+            cfg = {
+                "models": [{"name": "fake", "model_id": "fake/model", "revision": "r0", "dtype": "float16", "device": "cpu"}],
+            }
+
+            base_manifest = run_dir / "manifests" / "ccc_baseline.jsonl"
+            _write_jsonl(base_manifest, [{"prompt_uid": "u0"}, {"prompt_uid": "u1"}])
+
+            out_base = run_dir / "outputs" / "fake__model" / "baseline_outputs.jsonl"
+            out_base.parent.mkdir(parents=True, exist_ok=True)
+
+            def mk_row(uid: str, domain: str, shift: float):
+                return {
+                    "run_id": "test",
+                    "model_id": "fake/model",
+                    "model_revision": "r0",
+                    "prompt_uid": uid,
+                    "example_id": "e0",
+                    "wrapper_id": "plain_exam",
+                    "coarse_domain": domain,
+                    "first_token_is_option_letter": True,
+                    "parser_status": "resolved",
+                    "parsed_choice": "A",
+                    "is_correct": True,
+                    "flip_count": 0,
+                    "commitment_layer_by_margin_threshold": {"0.1": 0},
+                    "layerwise": [
+                        {
+                            "layer_index": 0,
+                            "candidate_entropy": 0.2,
+                            "top2_margin_prob": 0.8,
+                            "candidate_logits": {"A": 1.0, "B": 0.0, "C": 0.0, "D": 0.0},
+                            "candidate_probs": {"A": 1.0, "B": 0.0, "C": 0.0, "D": 0.0},
+                            "top_candidate": "A",
+                            "projected_hidden_128": [0.0 + shift, 0.0, 0.0, 0.0],
+                        },
+                        {
+                            "layer_index": 1,
+                            "candidate_entropy": 0.1,
+                            "top2_margin_prob": 0.9,
+                            "candidate_logits": {"A": 1.0, "B": 0.0, "C": 0.0, "D": 0.0},
+                            "candidate_probs": {"A": 1.0, "B": 0.0, "C": 0.0, "D": 0.0},
+                            "top_candidate": "A",
+                            "projected_hidden_128": [1.0 + shift, 0.0, 0.0, 0.0],
+                        },
+                    ],
+                }
+
+            _write_jsonl(
+                out_base,
+                [
+                    mk_row("u0", "d0", 0.0),
+                    mk_row("u1", "d1", 2.0),
+                ],
+            )
+
+            (run_dir / "sentinels" / "inference_baseline.fake__model.done").write_text(
+                json.dumps(
+                    {
+                        "stage": "inference_baseline",
+                        "run_id": "test",
+                        "model_id": "fake/model",
+                        "model_revision": "r0",
+                        "output_path": str(out_base),
+                        "output_sha256": sha256_file(out_base),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            rep = run_stage14_analysis(
+                run_id="test",
+                run_dir=run_dir,
+                cfg=cfg,
+                baseline_manifest=base_manifest,
+                robustness_manifest=None,
+                baseline_wrapper_id="plain_exam",
+                thresholds=[0.1],
+                include_robustness=False,
+                topology_layer=-1,
+            )
+            self.assertTrue(rep["pass"])
+            for k in [
+                "convergence_by_layer_csv",
+                "domain_topology_centroids_csv",
+                "domain_topology_pairwise_distances_csv",
+            ]:
+                p = Path(rep["artifacts"][k])
+                self.assertTrue(p.exists())
+            self.assertTrue(rep["artifacts"]["figure_files"])
+
 
 if __name__ == "__main__":
     unittest.main()

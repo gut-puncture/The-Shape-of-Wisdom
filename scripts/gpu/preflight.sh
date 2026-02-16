@@ -102,6 +102,19 @@ except Exception as e:
     print("[gpu] cuda_device_name_error", type(e).__name__, str(e))
 PY
 
+  # Fail fast on gated-model auth/access problems (Llama).
+  "${SOW_PYTHON}" - <<'PY'
+from huggingface_hub import hf_hub_download
+
+repo = "meta-llama/Llama-3.1-8B-Instruct"
+rev = "0e9e39f249a16976918f6564b8830bc894c89659"
+try:
+    p = hf_hub_download(repo_id=repo, revision=rev, filename="config.json")
+    print(f"[gpu] hf_access_ok {repo}@{rev} {p}")
+except Exception as e:
+    raise SystemExit(f"HF gated model access check failed for {repo}@{rev}: {type(e).__name__}: {e}")
+PY
+
   # Paid inputs must be present on the GPU VM (repo clone does not include data/).
   local required_inputs=(
     "data/experiment_inputs/main_prompts.jsonl"
