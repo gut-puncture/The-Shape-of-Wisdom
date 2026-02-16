@@ -558,3 +558,17 @@ Canonical references:
     - keep raw candidate-logit delta as telemetry unless `enforce_candidate_logits_atol=true`
   - Added runbook note that missing `SOW_RUNS_ROOT` causes preflight hard-fail in GPU scripts and must be exported to attached disk path before smoke/full runs.
 - next: let active GPU smoke run (`rtx6000ada_baseline_20260216_1354b`) finish with the new gate logic; if PASS, immediately start baseline-only full inference + baseline-only analysis.
+
+### 2026-02-16 14:31 (local) - Maintenance - No-idle GPU hardening (attached-disk default + OOM batch backoff) - IN PROGRESS
+- command: bash -n scripts/gpu/preflight.sh && bash -n scripts/gpu/run_full.sh
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/preflight.sh: 18fbb96dab7c414160061e77cb07998dfbbdb07b82f11ac3cf8112a0e3b328b1
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/run_full.sh: 5035abccbd48321ad3f1b9ceaaff84825379e8e1318b277bea436a63ca4d0380
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/README.md: 9496d82e195b94d3d75d1ba3263bd1c844b064fc98d6f8d8151f47ac703ac4c0
+- validators:
+  - shell syntax checks: PASS (`bash -n` on updated scripts)
+- notes:
+  - `sow_preflight` now auto-defaults `SOW_RUNS_ROOT` to attached-disk paths if unset (`/data/shape-of-wisdom-runs` else `/workspace/shape-of-wisdom-runs`).
+  - `run_full.sh` now uses OOM-aware batch backoff for inference steps with default chain `16,12,8,6,4,2,1` (`SOW_BATCH_RETRY_CHAIN` override supported).
+  - Added watchdog on GPU for active run `rtx6000ada_baseline_20260216_1354b` to relaunch `run_full.sh baseline_only` automatically if process exits before bundle creation.
+- next: keep monitoring active inference and verify bundle generation; commit these hardening changes after run stabilizes.

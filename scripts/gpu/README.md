@@ -63,7 +63,22 @@ Also required for parser regression stage:
 
 All scripts assume:
 - you run them from the repo root
-- `SOW_RUNS_ROOT` is set to a location on the attached disk
+- runs are written on attached disk (`SOW_RUNS_ROOT`)
+  - if unset, preflight now defaults to:
+    - `/data/shape-of-wisdom-runs` when `/data` exists
+    - otherwise `/workspace/shape-of-wisdom-runs`
+
+## OOM Backoff (No-Idle Full Runs)
+`scripts/gpu/run_full.sh` now uses OOM-aware batch backoff for inference stages:
+- default retry chain: `16,12,8,6,4,2,1`
+- on CUDA OOM, it retries automatically with the next smaller batch
+- non-OOM failures still stop immediately (to avoid hiding real bugs)
+
+Override chain if needed:
+```bash
+export SOW_BATCH_RETRY_CHAIN=12,8,6,4,2,1
+bash scripts/gpu/run_full.sh <run_id> baseline_only
+```
 
 ## Do Not Skip Preflight
 Always run through `scripts/gpu/run_smoke_20.sh` / `scripts/gpu/run_full.sh` (or `source scripts/gpu/preflight.sh && sow_preflight`) before manual stage commands.

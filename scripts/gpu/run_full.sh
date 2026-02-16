@@ -20,14 +20,55 @@ sow_preflight
 echo "[gpu] run_id=${RUN_ID}"
 echo "[gpu] mode=${MODE}"
 
+run_with_oom_backoff() {
+  # Usage: run_with_oom_backoff <step-name> <baseline|robustness>
+  local step_name="$1"
+  local condition="$2"
+  local chain="${SOW_BATCH_RETRY_CHAIN:-16,12,8,6,4,2,1}"
+  local logs_dir="${SOW_RUNS_ROOT}/${RUN_ID}/logs"
+  mkdir -p "${logs_dir}"
+
+  local success=0
+  local bs
+  IFS=',' read -r -a _BATCHES <<< "${chain}"
+  for bs in "${_BATCHES[@]}"; do
+    bs="$(echo "${bs}" | xargs)"
+    if [[ -z "${bs}" ]]; then
+      continue
+    fi
+    local attempt_log="${logs_dir}/${step_name}.bs${bs}.log"
+    echo "[gpu] ${step_name}: attempt batch_size=${bs}"
+    set +e
+    "${SOW_PYTHON}" sow.py "inference-${condition}" --run-id "${RUN_ID}" --device cuda --batch-size "${bs}" 2>&1 | tee "${attempt_log}"
+    local rc=${PIPESTATUS[0]}
+    set -e
+    if [[ ${rc} -eq 0 ]]; then
+      echo "[gpu] ${step_name}: success at batch_size=${bs}"
+      success=1
+      break
+    fi
+    if grep -Eqi "cuda out of memory|outofmemoryerror|cublas_status_alloc_failed" "${attempt_log}"; then
+      echo "[gpu] ${step_name}: OOM at batch_size=${bs}; retrying lower batch"
+      continue
+    fi
+    echo "[gpu] ${step_name}: non-OOM failure at batch_size=${bs}; see ${attempt_log}" >&2
+    return "${rc}"
+  done
+
+  if [[ ${success} -ne 1 ]]; then
+    echo "[gpu] ${step_name}: exhausted SOW_BATCH_RETRY_CHAIN=${chain} without a successful run" >&2
+    return 1
+  fi
+}
+
 if [[ "${MODE}" == "baseline_only" ]]; then
   # Faster path: run baseline inference and baseline-only analysis.
-  "${SOW_PYTHON}" sow.py inference-baseline --run-id "${RUN_ID}" --device cuda --batch-size auto
+  run_with_oom_backoff "inference-baseline" "baseline"
   "${SOW_PYTHON}" sow.py analyze --run-id "${RUN_ID}" --skip-robustness
 else
   # Full baseline + robustness inference (Stage 13a/13b).
-  "${SOW_PYTHON}" sow.py inference-baseline --run-id "${RUN_ID}" --device cuda --batch-size auto
-  "${SOW_PYTHON}" sow.py inference-robustness --run-id "${RUN_ID}" --device cuda --batch-size auto
+  run_with_oom_backoff "inference-baseline" "baseline"
+  run_with_oom_backoff "inference-robustness" "robustness"
 
   # Analysis (Stage 14).
   "${SOW_PYTHON}" sow.py analyze --run-id "${RUN_ID}"

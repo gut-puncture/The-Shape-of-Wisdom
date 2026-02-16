@@ -5,9 +5,18 @@ set -euo pipefail
 # Exports sane defaults for keeping caches + runs on the attached disk.
 
 sow_preflight() {
+  # Runs root must live on attached disk. If caller did not set it, choose a safe default.
   if [[ -z "${SOW_RUNS_ROOT:-}" ]]; then
-    echo "error: SOW_RUNS_ROOT must be set to a path on the attached disk (e.g. /data/shape-of-wisdom-runs)" >&2
-    return 2
+    if [[ -d "/data" ]]; then
+      SOW_RUNS_ROOT="/data/shape-of-wisdom-runs"
+    elif [[ -d "/workspace" ]]; then
+      SOW_RUNS_ROOT="/workspace/shape-of-wisdom-runs"
+    else
+      echo "error: could not resolve attached-disk runs root (missing /data and /workspace)" >&2
+      return 2
+    fi
+    export SOW_RUNS_ROOT
+    echo "[gpu] SOW_RUNS_ROOT not set; defaulting to ${SOW_RUNS_ROOT}"
   fi
 
   # Prefer a repo-local virtualenv if present (RunPod base images can lack transformers).
