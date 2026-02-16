@@ -511,3 +511,32 @@ Canonical references:
     - removed `/Users/shaileshrana/shape-of-wisdom/artifacts/inference_v2_canonical/qwen_baseline`
     - residual parent dirs now minimal (`artifacts/inference` and `artifacts/inference_v2_canonical` at 8.0K each)
 - next: Run GPU baseline-only smoke then baseline-only full inference + analysis for all 3 models.
+
+### 2026-02-16 18:35 (local) - Maintenance - GPU SSH runbook documentation + Stage 13 padding/position-id hardening - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/inference/stage13.py: 013d9cbe0f19722296a410083c6b9de070f47197808e051dab4a92861e88ee77
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/README.md: 35730d8bce54fa604a5cf5a8387ca213b83baf178b1f751c73d34562c9fbd688
+  - /Users/shaileshrana/shape-of-wisdom/skills/gpu-ssh-experiment/SKILL.md: e483fdf0d9de8bbe2ecbbde73b422ec67990ddfa0cdb496c39b6769f8beb3882
+- validators:
+  - repo unit tests: PASS (27 tests)
+- notes:
+  - Added GPU dependency/bootstrap and failure-mode guidance to `scripts/gpu/README.md`, including required parser fixture and strict preflight usage.
+  - Added reusable skill blueprint at `skills/gpu-ssh-experiment/SKILL.md` with explicit SSH process, attached-disk layout, dependency install flow, token/auth handling, smoke/full sequence, recovery playbook, and local-first workflow.
+  - Hardened Stage 13 deterministic batching behavior for decoder-only models by combining left padding with explicit `position_ids` derived from `attention_mask` for both forward and generate calls.
+  - Documented the concrete determinism lesson: right padding can drift generation across batch sizes; left padding without explicit `position_ids` can drift hidden-state readouts.
+- next: Re-run GPU Stage 13 smoke and confirm `batch_consistency_gate.pass=true` before full baseline-only inference + analysis.
+
+### 2026-02-16 18:44 (local) - Maintenance - Skill naming + installed GPU experiment skill in Codex skills dir - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/README.md: 35730d8bce54fa604a5cf5a8387ca213b83baf178b1f751c73d34562c9fbd688
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/inference/stage13.py: 013d9cbe0f19722296a410083c6b9de070f47197808e051dab4a92861e88ee77
+  - /Users/shaileshrana/shape-of-wisdom/skills/run-gpu-experiment-ssh/SKILL.md: 35bf44d9c0d4fa5035754ce4aa9d2b39c04bfc742425c346ec0a56844138f31c
+- validators:
+  - repo unit tests: PASS (27 tests)
+- notes:
+  - Installed a named skill in Codex skills home: `/Users/shaileshrana/.codex/skills/run-gpu-experiment-ssh/SKILL.md`.
+  - Repository skill folder renamed to match canonical skill name: `skills/run-gpu-experiment-ssh/SKILL.md`.
+  - Reminder: skill filename is conventionally `SKILL.md`; the meaningful skill identity is the folder name + frontmatter `name`.
+- next: Trigger this skill directly for future GPU SSH experiment runs and continue smoke/failure triage on GPU.

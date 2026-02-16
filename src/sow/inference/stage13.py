@@ -285,6 +285,17 @@ def _batch_has_non_finite(*xs: Any) -> bool:
     return False
 
 
+def _position_ids_from_attention_mask(attn: Any) -> Any:
+    """
+    Build explicit position_ids from attention_mask so decoder-only models are stable
+    under left padding and across batch sizes.
+    """
+    attn_i = attn.long()
+    pos = attn_i.cumsum(dim=1) - 1
+    pos = pos.masked_fill(attn_i == 0, 0)
+    return pos.long()
+
+
 def _pick_device(*, preferred: Optional[str] = None) -> str:
     try:
         import torch  # noqa: PLC0415
@@ -346,8 +357,16 @@ def _auto_calibrate_batch_size(
                 if device != "cpu":
                     input_ids = input_ids.to(device)
                     attn = attn.to(device)
+                pos_ids = _position_ids_from_attention_mask(attn)
 
-                out = model_obj(input_ids=input_ids, attention_mask=attn, use_cache=False, output_hidden_states=True, return_dict=True)
+                out = model_obj(
+                    input_ids=input_ids,
+                    attention_mask=attn,
+                    position_ids=pos_ids,
+                    use_cache=False,
+                    output_hidden_states=True,
+                    return_dict=True,
+                )
                 hs = getattr(out, "hidden_states", None)
                 if hs is None or len(hs) < 2:
                     raise RuntimeError("model did not return hidden_states during batch-size calibration")
@@ -358,6 +377,7 @@ def _auto_calibrate_batch_size(
                 _ = model_obj.generate(
                     input_ids=input_ids,
                     attention_mask=attn,
+                    position_ids=pos_ids,
                     do_sample=False,
                     max_new_tokens=max_new,
                     temperature=float(generation.get("temperature", 1.0)),
@@ -584,9 +604,9 @@ def run_stage13_inference_for_model(
 
     t0 = time.perf_counter()
     tok = AutoTokenizer.from_pretrained(model_id, revision=revision, use_fast=True, trust_remote_code=False)
-    # Right padding avoids known left-padding pathologies (e.g., NaNs for some models)
-    # and keeps position indices for real tokens invariant without needing explicit position_ids.
-    tok.padding_side = "right"
+    # Decoder-only batched generation should use left padding; right padding causes first-token drift
+    # across batch sizes and breaks Stage 13 consistency gates on the smoke path.
+    tok.padding_side = "left"
     if tok.pad_token_id is None and tok.eos_token_id is not None:
         tok.pad_token_id = tok.eos_token_id
 
@@ -728,12 +748,14 @@ def run_stage13_inference_for_model(
             if device != "cpu":
                 input_ids = input_ids.to(device)
                 attn = attn.to(device)
+            pos_ids = _position_ids_from_attention_mask(attn)
 
             try:
                 # Trace forward pass (hidden states).
                 out = model_obj(
                     input_ids=input_ids,
                     attention_mask=attn,
+                    position_ids=pos_ids,
                     use_cache=False,
                     output_hidden_states=True,
                     return_dict=True,
@@ -747,7 +769,7 @@ def run_stage13_inference_for_model(
                 hidden_dim = int(hs_layers[0].shape[-1])
 
                 # Decision position p is the last real prompt token right before generation begins.
-                # With right padding (our default), this is lengths-1 per row.
+                # With left padding (our default), this is always the final sequence position.
                 if str(getattr(tok, "padding_side", "left")) == "right":
                     lengths = attn.sum(dim=1).to(dtype=torch.long)
                     idx = (lengths - 1).to(hs_layers[0].device)
@@ -781,6 +803,7 @@ def run_stage13_inference_for_model(
                 gen_ids = model_obj.generate(
                     input_ids=input_ids,
                     attention_mask=attn,
+                    position_ids=pos_ids,
                     do_sample=False,
                     max_new_tokens=int(generation.get("max_new_tokens", 24)),
                     temperature=float(generation.get("temperature", 1.0)),
