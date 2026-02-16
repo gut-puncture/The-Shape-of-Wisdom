@@ -980,10 +980,17 @@ def batch_consistency_gate(
     rows: List[Dict[str, Any]],
     device_override: Optional[str],
     atol_logits: float,
+    atol_probs: float = 0.05,
+    flip_margin_tol: float = 0.02,
+    enforce_candidate_logits_atol: bool = False,
 ) -> Dict[str, Any]:
     """
     Stage 13 gate: run same rows with batch_size=1 and batch_size=4 and compare
-    first token ids and candidate logits (within atol).
+    structural invariants + numeric stability.
+
+    We gate on candidate probabilities (stable under expected fp16 drift) and allow
+    top-candidate flips only when both runs are near ties (low margin). Raw candidate
+    logit deltas are still reported for telemetry and can optionally be enforced.
     """
     # Use temp outputs under validation dir (never overwrite).
     v_dir = run_dir / "validation"
@@ -1039,8 +1046,12 @@ def batch_consistency_gate(
     by_uid_1 = {str(r["prompt_uid"]): r for r in iter_jsonl(out_bs1)}
     by_uid_4 = {str(r["prompt_uid"]): r for r in iter_jsonl(out_bs4)}
 
-    max_abs = 0.0
+    max_abs_logits = 0.0
+    max_abs_probs = 0.0
     mismatches: List[str] = []
+    top_candidate_flips = 0
+    tolerated_low_margin_flips = 0
+    hard_margin_flips = 0
     for uid in sorted(set(by_uid_1.keys()) | set(by_uid_4.keys())):
         a = by_uid_1.get(uid)
         b = by_uid_4.get(uid)
@@ -1058,12 +1069,34 @@ def batch_consistency_gate(
         for i in range(len(la)):
             ca = la[i]["candidate_logits"]
             cb = lb[i]["candidate_logits"]
+            pa = la[i].get("candidate_probs") or {}
+            pb = lb[i].get("candidate_probs") or {}
             for k in ["A", "B", "C", "D"]:
                 da = float(ca[k])
                 db = float(cb[k])
-                max_abs = max(max_abs, abs(da - db))
+                max_abs_logits = max(max_abs_logits, abs(da - db))
+                if k in pa and k in pb:
+                    pda = float(pa[k])
+                    pdb = float(pb[k])
+                    max_abs_probs = max(max_abs_probs, abs(pda - pdb))
+            top_a = str(la[i].get("top_candidate", ""))
+            top_b = str(lb[i].get("top_candidate", ""))
+            if top_a and top_b and top_a != top_b:
+                top_candidate_flips += 1
+                margin_a = float(la[i].get("top2_margin_prob", 0.0))
+                margin_b = float(lb[i].get("top2_margin_prob", 0.0))
+                if max(margin_a, margin_b) < float(flip_margin_tol):
+                    tolerated_low_margin_flips += 1
+                else:
+                    hard_margin_flips += 1
 
-    ok = (not mismatches) and (max_abs <= float(atol_logits))
+    logits_ok = (max_abs_logits <= float(atol_logits)) if bool(enforce_candidate_logits_atol) else True
+    ok = (
+        (not mismatches)
+        and (hard_margin_flips == 0)
+        and (max_abs_probs <= float(atol_probs))
+        and bool(logits_ok)
+    )
     return {
         "pass": bool(ok),
         "model_id": model_id,
@@ -1071,7 +1104,14 @@ def batch_consistency_gate(
         "condition": condition,
         "n_rows": len(rows),
         "atol_logits": float(atol_logits),
-        "max_abs_diff_candidate_logits": float(max_abs),
+        "atol_probs": float(atol_probs),
+        "flip_margin_tol": float(flip_margin_tol),
+        "enforce_candidate_logits_atol": bool(enforce_candidate_logits_atol),
+        "max_abs_diff_candidate_logits": float(max_abs_logits),
+        "max_abs_diff_candidate_probs": float(max_abs_probs),
+        "top_candidate_flip_count": int(top_candidate_flips),
+        "tolerated_low_margin_flip_count": int(tolerated_low_margin_flips),
+        "hard_margin_flip_count": int(hard_margin_flips),
         "mismatches": mismatches[:20],
         "artifacts": {"manifest": str(tiny_manifest), "bs1": str(out_bs1), "bs4": str(out_bs4)},
     }

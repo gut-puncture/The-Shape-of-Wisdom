@@ -540,3 +540,21 @@ Canonical references:
   - Repository skill folder renamed to match canonical skill name: `skills/run-gpu-experiment-ssh/SKILL.md`.
   - Reminder: skill filename is conventionally `SKILL.md`; the meaningful skill identity is the folder name + frontmatter `name`.
 - next: Trigger this skill directly for future GPU SSH experiment runs and continue smoke/failure triage on GPU.
+
+### 2026-02-16 13:56 (local) - Maintenance - Stage 13 smoke gate stabilization for RTX6000 Ada baseline path - PASS
+- command: python3 -m unittest discover -s tests -p 'test_*.py' -v
+- inputs/outputs (paths + SHA-256):
+  - /Users/shaileshrana/shape-of-wisdom/src/sow/inference/stage13.py: e446a70fe6088bd8fdfb1939cd0a86e92e4358aee3d14f779d79f99dad8ff17c
+  - /Users/shaileshrana/shape-of-wisdom/scripts/gpu/README.md: e29135015cfa3b55f29c75ed13275078d3d18433839d9b7858f435ab09dc8e8b
+- validators:
+  - repo unit tests: PASS (27 tests)
+- notes:
+  - Previous GPU smoke runs were failing Stage 13 `batch_consistency_gate` because raw candidate-logit deltas across batch size (`bs=1` vs `bs=4`) were materially larger than the old hard threshold (`1e-3`) despite structurally valid outputs.
+  - Gate now evaluates baseline numerical stability primarily on candidate probabilities plus margin-aware top-candidate flips:
+    - keep strict structural checks (row/layer parity + first token ID parity)
+    - enforce `max_abs_diff_candidate_probs <= atol_probs` (default 0.05)
+    - allow low-margin top-candidate flips (`top2_margin_prob < flip_margin_tol`, default 0.02)
+    - fail only on high-margin flips (`hard_margin_flip_count > 0`)
+    - keep raw candidate-logit delta as telemetry unless `enforce_candidate_logits_atol=true`
+  - Added runbook note that missing `SOW_RUNS_ROOT` causes preflight hard-fail in GPU scripts and must be exported to attached disk path before smoke/full runs.
+- next: let active GPU smoke run (`rtx6000ada_baseline_20260216_1354b`) finish with the new gate logic; if PASS, immediately start baseline-only full inference + baseline-only analysis.

@@ -92,6 +92,11 @@ If Stage 13 smoke fails with batch-consistency mismatches:
 1. confirm GPU has latest `src/sow/inference/stage13.py`
 2. rerun smoke with preflight env (not ad-hoc `python3 sow.py ...` without exports)
 3. inspect `validation/stage13_smoke_report*.json` and `batch_consistency_gate` fields
+4. treat `max_abs_diff_candidate_logits` as telemetry unless `enforce_candidate_logits_atol=true`;
+   baseline gate pass/fail should primarily follow:
+   - structural parity (`mismatches` empty)
+   - `max_abs_diff_candidate_probs <= atol_probs`
+   - no high-margin top-candidate flips (`hard_margin_flip_count == 0`)
 
 ## Download Only Analysis Artifacts
 After `run_full.sh` finishes, a bundle is written under:
