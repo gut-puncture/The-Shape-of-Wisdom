@@ -22,6 +22,8 @@ After following this process, you should have:
 3. Never run long inference without HF token + runs root + cache path set.
 4. Keep the remote payload minimal and explicit.
 5. Treat smoke as a hard gate before full runs.
+6. Use OOM-safe batch backoff for full inference; do not rely on a single `--batch-size auto`.
+7. Keep a queue/watchdog so GPU never sits idle between runs.
 
 ## Local-First Workflow
 
@@ -112,6 +114,8 @@ sow_preflight
 
 Preflight enforces:
 - `SOW_RUNS_ROOT` exists on attached disk
+  - if unset, preflight defaults it to `/data/shape-of-wisdom-runs`
+  - otherwise `/workspace/shape-of-wisdom-runs`
 - GPU + CUDA availability
 - gated Llama access
 - required input files
@@ -132,8 +136,12 @@ bash scripts/gpu/run_smoke_20.sh <run_id> baseline_only
 ```bash
 cd /workspace/shape-of-wisdom
 export SOW_RUNS_ROOT=/workspace/shape-of-wisdom-runs
+export SOW_BATCH_RETRY_CHAIN=16,12,8,6,4,2,1
 bash scripts/gpu/run_full.sh <run_id> baseline_only
 ```
+
+`run_full.sh` retries inference with lower batch sizes on CUDA OOM.
+Do not remove this when running long jobs.
 
 ### 3) Bundle and fetch only small artifacts
 
@@ -195,6 +203,42 @@ Required mitigation:
 - run latest `src/sow/inference/stage13.py`
 - run through preflight env
 - verify `validation/stage13_smoke_report*.json`
+- interpret gate fields correctly:
+  - `max_abs_diff_candidate_logits` is telemetry by default
+  - hard gate is driven by structural parity, probability drift, and high-margin flip checks
+
+### 6) Full run OOM after smoke passes
+
+Cause:
+- long baseline inference can OOM at model-specific points even when smoke passes
+
+Fix:
+- run via `scripts/gpu/run_full.sh` with backoff chain enabled:
+  - `SOW_BATCH_RETRY_CHAIN=16,12,8,6,4,2,1` (or stricter if needed)
+- keep `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
+- avoid ad-hoc single-shot `inference-baseline --batch-size auto` for production runs
+
+### 7) SSH command interpolation bugs (`$SOW_PYTHON` expanded locally)
+
+Cause:
+- mixed local/remote quoting expands env vars on the wrong machine
+
+Fix:
+- prefer checked-in scripts over long one-liners
+- if using inline SSH, ensure remote-side expansion only:
+  - use single-quoted remote command blocks
+  - or upload a `.sh` file and execute it remotely
+
+### 8) Queue launcher fails and leaves GPU idle
+
+Cause:
+- complex multi-line SSH launch command fails with quoting/exit issues
+
+Fix:
+- upload queue script with `scp`, then run it in a separate simple SSH command
+- confirm with:
+  - `pgrep -af run_queue_baseline_only.sh`
+  - `tail -n 50 /workspace/run_queue_baseline_only.log`
 
 ## Padding/Determinism Lesson (Important)
 
@@ -222,6 +266,44 @@ Useful checks:
 ```bash
 ls -1 /workspace/shape-of-wisdom-runs/<run_id>/validation
 ls -1 /workspace/shape-of-wisdom-runs/<run_id>/sentinels
+ls -lah /workspace/shape-of-wisdom-runs/<run_id>/outputs
+ls -lah /workspace/shape-of-wisdom-runs/<run_id>/analysis
+```
+
+If inference stopped mid-model, first try resuming the same run with lower backoff chain:
+
+```bash
+cd /workspace/shape-of-wisdom
+export SOW_RUNS_ROOT=/workspace/shape-of-wisdom-runs
+export SOW_BATCH_RETRY_CHAIN=12,8,6,4,2,1
+bash scripts/gpu/run_full.sh <run_id> baseline_only
+```
+
+## No-Idle Queue Pattern
+
+For back-to-back runs, use a queue driver:
+- each run does `smoke -> stage13 pass check -> full baseline_only`
+- if one run fails smoke/full, continue to next run
+- keep one queue log and per-run smoke/full logs
+- on this pod image, queue logs are written under `/workspace/*.log` (not `/workspace/shape-of-wisdom/logs`)
+
+Expected behavior:
+- `baseline_only` still runs prerequisite stages (manifests, parser regression, PCC/CCC, PCA membership/sample fit)
+- this can look like "extra work", but it is required to keep Stage 13/14 inputs consistent and auditable
+
+Minimum queue observability:
+
+```bash
+pgrep -af run_queue_baseline_only.sh
+tail -n 100 /workspace/run_queue_baseline_only.log
+nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,power.draw --format=csv,noheader,nounits
+```
+
+If `rg` is not installed on the GPU image, use `grep`/`find`:
+
+```bash
+ls -lah /workspace | grep -E 'queue|smoke|full|log|shape'
+find /workspace/shape-of-wisdom-runs/<run_id> -maxdepth 3 -type f | head
 ```
 
 ## Efficient Transfer Pattern
