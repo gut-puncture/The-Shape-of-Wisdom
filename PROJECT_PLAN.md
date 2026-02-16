@@ -84,6 +84,19 @@ Canonical docs:
   - Optional artifacts (only when robustness mode is enabled): `runs/<run_id>/analysis/robustness_deltas.csv`
   - Gate: baseline manifest row-count parity + no missing layers + basis-hash match + topology/figure artifacts present PASS
 
+## Baseline-Only Paper Readiness Gate (Robustness Deferred)
+
+- Use this gate when publishing baseline-only mechanistic findings (commitment + convergence + domain topology) without robustness claims.
+- Required stop condition for a run:
+  - `runs/<run_id>/sentinels/inference_baseline.done` exists (Stage 13 baseline completion sentinel).
+  - `runs/<run_id>/sentinels/analysis.done` exists.
+  - `runs/<run_id>/analysis/final_report.json` has `pass=true` and no unresolved errors.
+  - `runs/<run_id>/bundles/analysis_bundle_<run_id>.tar.gz` exists for download.
+- If any condition fails, resume the same run with `scripts/gpu/run_full.sh <run_id> baseline_only` (do not start a new run_id unless artifacts are irrecoverable).
+- Reporting discipline:
+  - Clearly state that robustness analysis was deferred.
+  - Limit claims to baseline mechanistic results and sample size used in that run.
+
 ## After Each Stage (required bookkeeping)
 - Append a dated entry to `STATE.md` containing:
   - command line

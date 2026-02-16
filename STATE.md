@@ -572,3 +572,68 @@ Canonical references:
   - `run_full.sh` now uses OOM-aware batch backoff for inference steps with default chain `16,12,8,6,4,2,1` (`SOW_BATCH_RETRY_CHAIN` override supported).
   - Added watchdog on GPU for active run `rtx6000ada_baseline_20260216_1354b` to relaunch `run_full.sh baseline_only` automatically if process exits before bundle creation.
 - next: keep monitoring active inference and verify bundle generation; commit these hardening changes after run stabilizes.
+
+### 2026-02-16 21:03 (local) - Execution Control - Baseline-only lock to run `rtx6000ada_baseline_20260216_1452_a` - IN PROGRESS
+- command:
+  - GPU queue stop: `kill -9 8293` (stopped `run_queue_baseline_only.sh` so `1452_b`/`1452_c` cannot start)
+  - Run status check:
+    - `pgrep -af "run_full.sh rtx6000ada_baseline_20260216_1452_a|sow.py inference-baseline --run-id rtx6000ada_baseline_20260216_1452_a|sow.py analyze --run-id rtx6000ada_baseline_20260216_1452_a"`
+    - row counts from `outputs/*/baseline_outputs.jsonl`
+  - Recovery guard: launched `/workspace/watchdog_1452_a.sh` (nohupped) to auto-restart `run_full.sh <run_id> baseline_only` if the active process exits before `analysis.done` + bundle.
+- inputs (paths):
+  - GPU run config: `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/run_config.yaml`
+  - run driver: `/workspace/shape-of-wisdom/scripts/gpu/run_full.sh`
+- outputs (runtime state observed at check time):
+  - active process: `python3 sow.py inference-baseline --run-id rtx6000ada_baseline_20260216_1452_a --device cuda --batch-size 16`
+  - per-model baseline row counts:
+    - `Qwen__Qwen2.5-7B-Instruct`: 3000/3000
+    - `meta-llama__Llama-3.1-8B-Instruct`: 3000/3000
+    - `mistralai__Mistral-7B-Instruct-v0.3`: 1152/3000 (in progress at check time)
+  - watchdog artifacts:
+    - `/workspace/watchdog_1452_a.sh`
+    - `/workspace/watchdog_rtx6000ada_baseline_20260216_1452_a.log`
+    - `/workspace/watchdog_1452_a.stdout`
+- validators:
+  - Queue lock: PASS (`run_queue_baseline_only.sh` not running after kill)
+  - GPU utilization: PASS (non-idle during active inference)
+- notes:
+  - This run is intentionally baseline-only. Robustness inference and robustness claims are deferred.
+  - Paper readiness stop condition for this run is now explicit:
+    - `sentinels/stage13.done`
+    - `sentinels/analysis.done`
+    - `analysis/final_report.json` with `pass=true` and no unresolved errors
+    - `bundles/analysis_bundle_<run_id>.tar.gz`
+- next:
+  - Wait for `run_full.sh` to complete and verify the four baseline-only paper readiness artifacts.
+  - Download the analysis bundle immediately after verification.
+
+### 2026-02-16 21:08 (local) - Stage 13a + Stage 14 (baseline-only) - PASS
+- command (gpu):
+  - `bash scripts/gpu/run_full.sh rtx6000ada_baseline_20260216_1452_a baseline_only`
+- inputs:
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/run_config.yaml`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/manifests/ccc_baseline.jsonl`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/pca/*_pca_basis.npz`
+- outputs (gpu paths + SHA-256):
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/sentinels/inference_baseline.done`: `d4a3ce8c8cccdcde48de5198a87818344b04a58a5ab8741b93052c0a5a3bec98`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/sentinels/analysis.done`: `3054d9ee336d9093614bc3a1c928fd450e501c9dd8e86e5a966068243b635f5a`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/final_report.json`: `591351eabc059e864a5f6b2fea8cd32a9baa4008e8419565d74ee51a31285e58`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/per_prompt_metrics.csv`: `7d00a88c1202140ae6fd68d8eecfcffc8b6f3266bb08073b15970a16f51684a9`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/layerwise_aggregates.csv`: `a808793ed69b6e23280d49db283575df3b4c8b62993599caf470ae2c12da1cfa`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/convergence_by_layer.csv`: `13487ad4b2e6dff9076218a8f6fec5a6354cc8ef81b7f70567857e9f12cfdc04`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/commitment_hist.csv`: `dc9e34b1bd27a98f44c2f2329ddf093d28515411fa3e7179525c97e99fbcfbff`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/domain_topology_centroids.csv`: `e92e08be2db3f6998e991915a169439035517c3fc0274a6f2f957b581a06788e`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/analysis/domain_topology_pairwise_distances.csv`: `2f7f96653ce763782a4df8dd414106a406713ca44b69adc658134aaacc4fe71c`
+  - `/workspace/shape-of-wisdom-runs/rtx6000ada_baseline_20260216_1452_a/bundles/analysis_bundle_rtx6000ada_baseline_20260216_1452_a.tar.gz`: `1288d2bfd02655c39a26f22818e08a54d8a9cfb7e8d060c2ac45da2a34b6fcc2`
+- validators:
+  - final report gate: PASS (`pass=true`, `errors=[]`, `include_robustness=false`)
+  - baseline row parity at completion: PASS (3000 rows per model in `outputs/*/baseline_outputs.jsonl`)
+  - queue lock objective: PASS (`1452_b`/`1452_c` were prevented from starting)
+- notes:
+  - Baseline-only paper readiness gate satisfied for run `rtx6000ada_baseline_20260216_1452_a`.
+  - Bundle fetched locally:
+    - `/Users/shaileshrana/shape-of-wisdom/downloads/analysis_bundle_rtx6000ada_baseline_20260216_1452_a.tar.gz`
+    - local SHA-256 matches remote: `1288d2bfd02655c39a26f22818e08a54d8a9cfb7e8d060c2ac45da2a34b6fcc2`
+- next:
+  - Use this run as the baseline-only paper artifact set (commitment/convergence/domain topology).
+  - If needed later, run a separate robustness track under a new run_id and report it separately.
