@@ -637,3 +637,52 @@ Canonical references:
 - next:
   - Use this run as the baseline-only paper artifact set (commitment/convergence/domain topology).
   - If needed later, run a separate robustness track under a new run_id and report it separately.
+
+### 2026-02-17 20:43 (local) - Stage 14 (deep convergence baseline analysis, run `1452_a`) - IN PROGRESS
+- command:
+  - `python3 scripts/analysis/deep_convergence_1452a.py --run-dir downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a --out-dir downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a`
+- inputs (paths + SHA-256):
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/manifests/baseline_manifest.jsonl`: pending (to log after run)
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/outputs/*/baseline_outputs.jsonl`: pending (to log after run)
+- outputs (paths + SHA-256):
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/*`: pending
+- validators (paths + PASS/FAIL):
+  - baseline row parity (3000/model): PASS (pre-check)
+  - manifest row count (3000): PASS (pre-check)
+- notes:
+  - Scope locked to baseline-only evidence; robustness analysis explicitly excluded for this session.
+  - Analysis definitions will keep metric-space calculations separate from display-space transforms.
+  - Primary analyses will include all baseline prompts (3000/model), then stratify by outcome.
+- next:
+  - run deep convergence analysis script, verify known headline baseline observations, generate publication-quality artifacts, and write executive + technical reports.
+
+### 2026-02-17 20:50 (local) - Stage 14 (deep convergence baseline analysis, run `1452_a`) - PASS
+- command:
+  - `python3 /Users/shaileshrana/shape-of-wisdom/scripts/analysis/deep_convergence_1452a.py --run-dir /Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a --out-dir /Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a`
+- inputs (paths + SHA-256):
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/manifests/baseline_manifest.jsonl`: `90f9f9f6c1e0097ee74e71ff26dff517d444a0a7eca4063d2a9b3bf8876e8219`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/outputs/Qwen__Qwen2.5-7B-Instruct/baseline_outputs.jsonl`: `be56c85e77ec21b1dbe90a732db9e4bd9cfa106563b5bc11fffe74f322fd34b8`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/outputs/meta-llama__Llama-3.1-8B-Instruct/baseline_outputs.jsonl`: `c44a42de679f8c24131b66a241ed0a5e8e0d8f8bdaedadc2a47ab9e965b523fd`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/outputs/mistralai__Mistral-7B-Instruct-v0.3/baseline_outputs.jsonl`: `4fccba888bb27acc3c22886d39778939aa879a28915639170c9adf041551becd`
+  - `/Users/shaileshrana/shape-of-wisdom/scripts/analysis/deep_convergence_1452a.py`: `ddd352ed0568c362365b48ad71ecdafc403e46732a5603bc46e4b1cb9163f044`
+- outputs (paths + SHA-256):
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/analysis_summary.json`: `1d00ef0aff1f90e0e71cf42a69d31c225ad7dece63d6b991e6a882e1172044b5`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/headline_metrics.csv`: `75f52b7139e0053979160f005e8c244ae18aa7534a89d7f223e3b1a4395ab5e3`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/known_observation_verification.csv`: `579d54dd02f484e9b9bdcf904c710cd48a4016b269ac88ef2097af87e916fca3`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/commitment_summary.csv`: `ffc09854f3586743c6c65a8fa3923fccaf5a5eced16bdc6b24eb61acc52573b1`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/latent_summary_metrics.csv`: `b184436cda72b9049fd61c560fea2bb93186b6b64ebce2338d2d2a416d8c1841`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/failure_mode_breakdown.csv`: `35a84fd40775740caa8a379aa69154e49edce1cc87b9641b19d606edc3791721`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/DEEP_CONVERGENCE_REPORT.md`: `c30702696bef153f02d2321a383530cc886ab1bbb8c9825c1cfcbca41d9913cf`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/EXECUTIVE_SUMMARY.md`: `ba79f120f183ceb05bbb4118509dd2c99f249d79b3c2ed9ad9df279f8f4b912b`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/figures/correct_token_dynamics_by_outcome.png`: `79c5f0727cea646b2849949bc529bfc5ac05716331ecf27bc67042cb7bb34624`
+  - `/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/figures/latent_dynamics_by_outcome.png`: `fa330a30a10f42e94e1dd1e53feab7cc37d327784e501cfb28a941a34e021e2b`
+- validators (paths + PASS/FAIL):
+  - baseline row parity check: PASS (`3000` rows/model).
+  - known observation verification: PASS (max abs diff vs known rates `0.000333` for each model; rounding-level match).
+  - mandatory report path exists: PASS (`/Users/shaileshrana/shape-of-wisdom/downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a/DEEP_CONVERGENCE_REPORT.md`).
+- notes:
+  - Added baseline-only deep convergence analysis script and generated required deliverables under `analysis/deep_convergence_1452a`.
+  - Metric-space vs display-space separation is explicit in outputs and report; primary metrics are computed without geometric display transforms.
+  - Primary analyses include all baseline prompts (3000/model), then stratify by final outcome.
+- next:
+  - use this baseline-only deep convergence artifact set for manuscript synthesis and intervention experiment planning.

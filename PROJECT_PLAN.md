@@ -105,3 +105,33 @@ Canonical docs:
   - validator outputs + PASS/FAIL
   - the next step
 - Write a `.done` sentinel at `runs/<run_id>/sentinels/<stage_name>.done` containing the same hashes.
+
+## 2026-02-17 20:43 (IST) - Session Plan (Deep Convergence, Baseline-Only, run `1452_a`)
+- [ ] Verify baseline integrity for run `rtx6000ada_baseline_20260216_1452_a`:
+  - row parity (3000/model), layer completeness, manifest join integrity.
+- [ ] Formalize and compute convergence definitions from baseline outputs only:
+  - probability target, margin target, stability-through-end, basin-distance criteria with explicit formulas.
+- [ ] Compute correct-token dynamics on all prompts:
+  - `p_correct(l)`, `m_correct(l)`, first-passage/commit layer, hazard, late flips, oscillations; then stratify by final correctness.
+- [ ] Compute latent-space dynamics from `projected_hidden_128`:
+  - displacement, path length, straightness, curvature proxy, alignment to correct-direction vectors, divergence windows.
+- [ ] Compute prompt-difficulty structure:
+  - hard-prompt subsets by domain/subject/structure and early-layer uncertainty signatures.
+  - fit interpretable early-layer predictors of final convergence failure.
+- [ ] Synthesize intervention levers grounded in measured baseline evidence:
+  - prompt-level, inference-time, training/objective-level, representation-steering windows, each with minimal validation experiment.
+- [ ] Produce deliverables under:
+  - `downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a`
+  - required report: `DEEP_CONVERGENCE_REPORT.md`
+  - include clean figures, CSV/JSON tables, executive summary, technical report.
+
+## 2026-02-17 20:50 (IST) - Session Completion (Deep Convergence, Baseline-Only, run `1452_a`)
+- [x] Verify baseline integrity for run `rtx6000ada_baseline_20260216_1452_a`.
+- [x] Formalize and compute convergence definitions (probability, margin, stability-through-end, basin distance).
+- [x] Compute correct-token dynamics across all prompts and stratify by final outcome.
+- [x] Compute latent-space trajectory metrics and divergence layer windows from `projected_hidden_128`.
+- [x] Compute prompt-difficulty structure and early-layer interpretable failure predictors.
+- [x] Produce intervention levers with mechanism, expected effect, and minimal validation experiments.
+- [x] Deliver artifacts under:
+  - `downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a`
+  - includes `DEEP_CONVERGENCE_REPORT.md`, `EXECUTIVE_SUMMARY.md`, `TECHNICAL_REPORT.md`, CSV/JSON tables, and publication-quality figures.
