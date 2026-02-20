@@ -48,3 +48,6 @@ artifacts/parser_edge_case_regression/*
 
 # Paid/large inputs and derived data (never commit)
 data/
+
+# Legacy archive (kept local only; never commit)
+v1/
