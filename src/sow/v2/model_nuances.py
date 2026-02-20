@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 
@@ -70,3 +71,22 @@ def pick_torch_dtype(*, device: str):
     if str(device) == "cpu":
         return torch.float32
     return torch.float16
+
+
+def _version_tuple(version: str) -> tuple[int, int, int]:
+    nums = [int(x) for x in re.findall(r"\d+", str(version))]
+    if not nums:
+        return (0, 0, 0)
+    nums = (nums + [0, 0, 0])[:3]
+    return (int(nums[0]), int(nums[1]), int(nums[2]))
+
+
+def assert_transformers_version_floor(model_id: str, current_version: str) -> None:
+    nuance = get_model_nuance(model_id)
+    cur = _version_tuple(str(current_version))
+    floor = _version_tuple(str(nuance.min_transformers_version))
+    if cur < floor:
+        raise RuntimeError(
+            "transformers version below required floor for model "
+            f"{model_id}: current={current_version} required>={nuance.min_transformers_version}"
+        )

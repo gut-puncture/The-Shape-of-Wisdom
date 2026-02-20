@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -14,14 +15,19 @@ import matplotlib.pyplot as plt
 from _common import base_parser, run_v2_root_for, write_json
 from sow.v2.assets import write_phase_diagram, write_sha_manifest, write_trajectory_plots
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
 
 REQUIRED_FILES = [
+    "layerwise.parquet",
     "decision_metrics.parquet",
     "prompt_types.parquet",
     "type_counts.json",
     "basin_gap.parquet",
+    "spans.jsonl",
     "span_effects.parquet",
     "span_labels.parquet",
+    "span_paraphrase_stability.parquet",
     "tracing_scalars.parquet",
     "attention_mass_by_span.parquet",
     "attention_contrib_by_span.parquet",
@@ -29,7 +35,77 @@ REQUIRED_FILES = [
     "patching_results.parquet",
     "span_deletion_causal.parquet",
     "negative_controls.parquet",
+    "01_extract_baseline.report.json",
+    "02_compute_decision_metrics.report.json",
+    "03_classify_trajectories.report.json",
+    "04_region_analysis.report.json",
+    "05_span_counterfactuals.report.json",
+    "06_select_tracing_subset.report.json",
+    "07_run_tracing.report.json",
+    "08_attention_and_mlp_decomposition.report.json",
+    "09_causal_tests.report.json",
+    "10_causal_validation_tools.report.json",
 ]
+
+REQUIRED_METADATA_FILES = [
+    REPO_ROOT / "configs" / "experiment_v2.yaml",
+    REPO_ROOT / "docs" / "PAPER_OBJECTIVE_V3.md",
+    REPO_ROOT / "docs" / "IMPLEMENTATION_PLAN_V3.md",
+    REPO_ROOT / "docs" / "MODEL_NUANCES_V2.md",
+    REPO_ROOT / "docs" / "PREREGISTERED_HYPOTHESES_V3.md",
+]
+
+
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _evaluate_metadata_immutability(snapshot_path: Path) -> dict[str, object]:
+    if not snapshot_path.exists():
+        return {
+            "pass": False,
+            "reason": "missing_snapshot",
+            "snapshot_path": str(snapshot_path),
+            "changed_files": [],
+            "missing_files": [str(snapshot_path)],
+        }
+
+    try:
+        payload = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {
+            "pass": False,
+            "reason": f"invalid_snapshot_json: {exc}",
+            "snapshot_path": str(snapshot_path),
+            "changed_files": [],
+            "missing_files": [],
+        }
+
+    records = payload.get("files") or []
+    changed_files: list[str] = []
+    missing_files: list[str] = []
+    for rec in records:
+        p = Path(str((rec or {}).get("path") or ""))
+        expected = str((rec or {}).get("sha256") or "")
+        if not p.exists():
+            missing_files.append(str(p))
+            continue
+        got = _sha256(p)
+        if (not expected) or (got != expected):
+            changed_files.append(str(p))
+
+    pass_flag = (len(changed_files) == 0) and (len(missing_files) == 0)
+    return {
+        "pass": bool(pass_flag),
+        "reason": None if pass_flag else "metadata_changed_or_missing",
+        "snapshot_path": str(snapshot_path),
+        "changed_files": sorted(changed_files),
+        "missing_files": sorted(missing_files),
+    }
 
 
 def _copy_if_exists(src: Path, dst: Path) -> bool:
@@ -132,8 +208,10 @@ def main() -> int:
     _write_routing_vs_contribution_figure(out_root=out_root, out_path=routing_fig)
     _write_causal_panel_figure(out_root=out_root, out_path=causal_fig)
 
-    final_root = Path(f"/Users/shaileshrana/shape-of-wisdom/artifacts/final_result_v2/{args.run_id}")
+    final_root = REPO_ROOT / "artifacts" / "final_result_v2" / args.run_id
     final_root.mkdir(parents=True, exist_ok=True)
+    snapshot_path = out_root / "meta" / "run_start_metadata_snapshot.json"
+    metadata_immutability = _evaluate_metadata_immutability(snapshot_path)
 
     copied = []
     missing = []
@@ -144,6 +222,13 @@ def main() -> int:
             copied.append(str(dst))
         else:
             missing.append(name)
+
+    for src in REQUIRED_METADATA_FILES:
+        dst = final_root / "metadata" / src.name
+        if _copy_if_exists(src, dst):
+            copied.append(str(dst))
+        else:
+            missing.append(f"metadata/{src.name}")
 
     for fig in [
         fig_dir / "fig_phase_diagram_modelX.png",
@@ -174,19 +259,28 @@ def main() -> int:
         encoding="utf-8",
     )
 
+    gates = {
+        "required_files_present": len(missing) == 0,
+        "metadata_immutability": bool(metadata_immutability.get("pass")),
+    }
+    failing_gates = sorted([k for k, v in gates.items() if not bool(v)])
+
     final_report = {
-        "pass": len(missing) == 0,
+        "pass": len(failing_gates) == 0,
         "run_id": args.run_id,
         "artifact_root": str(final_root),
         "copied_files": copied,
         "missing_required_files": missing,
+        "metadata_immutability": metadata_immutability,
+        "gates": gates,
+        "failing_gates": failing_gates,
     }
     (final_root / "final_report.json").write_text(json.dumps(final_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
     write_sha_manifest(root_dir=final_root, out_path=final_root / "sha256_manifest.json")
 
     write_json(out_root / "11_generate_paper_assets.report.json", final_report)
     print(str(final_root))
-    return 0 if len(missing) == 0 else 2
+    return 0 if len(failing_gates) == 0 else 2
 
 
 if __name__ == "__main__":

@@ -20,7 +20,10 @@ Scope:
 - Causal/negative-control sanity
 
 Command:
-- `python3 -m unittest tests.test_stage13_inference_checkpoint tests.test_thermal_governor tests.v2.test_negative_controls tests.v2.test_causal_ablation_directionality tests.v2.test_tracing_decomposition_conservation -v`
+- Historical run command (before legacy archival to `/v1`):
+  - `python3 -m unittest tests.test_stage13_inference_checkpoint tests.test_thermal_governor tests.v2.test_negative_controls tests.v2.test_causal_ablation_directionality tests.v2.test_tracing_decomposition_conservation -v`
+- Active equivalent command in current root:
+  - `python3 -m unittest tests.test_thermal_governor tests.test_parser_regression tests.test_token_buckets -v`
 
 Result:
 - PASS (`11/11` tests)

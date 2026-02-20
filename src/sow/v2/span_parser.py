@@ -4,7 +4,14 @@ import re
 from dataclasses import dataclass
 from typing import Dict, Iterable, List
 
-_OPTION_LINE_RE = re.compile(r"^\s*([A-D])[\)\.:]\s+", flags=re.MULTILINE)
+_OPTION_LINE_RE = re.compile(
+    r"^\s*(?:[-*•]\s*)?(?:[\(\[]\s*([A-D])\s*[\)\]]|([A-D])[\)\.:])\s+",
+    flags=re.MULTILINE,
+)
+_POST_OPTIONS_CUE_RE = re.compile(
+    r"\n\s*(?:answer|final\s+answer|correct\s+answer|rationale|explanation)\b",
+    flags=re.IGNORECASE,
+)
 _QUESTION_RE = re.compile(r"question\s*:\s*", flags=re.IGNORECASE)
 
 
@@ -45,18 +52,31 @@ def parse_prompt_spans(prompt_text: str) -> List[PromptSpan]:
         if stem_e > stem_s:
             spans.append(PromptSpan("question_stem", "question_stem", stem_s, stem_e, text[stem_s:stem_e]))
 
+        # Split trailing post-options content when a cue appears after the final option.
+        post_start = None
+        last_match = option_matches[-1]
+        tail = text[int(last_match.end()) :]
+        cue = _POST_OPTIONS_CUE_RE.search(tail)
+        if cue:
+            post_start = int(last_match.end()) + int(cue.start())
+
         for i, m in enumerate(option_matches):
-            key = str(m.group(1)).upper()
+            key = str((m.group(1) or m.group(2) or "")).upper()
+            if key not in {"A", "B", "C", "D"}:
+                continue
             s = int(m.start())
-            e = int(option_matches[i + 1].start()) if i + 1 < len(option_matches) else n
+            if i + 1 < len(option_matches):
+                e = int(option_matches[i + 1].start())
+            else:
+                e = int(post_start) if post_start is not None else n
             s, e = _clip(s, e, n)
             if e > s:
                 spans.append(PromptSpan(f"option_{key}", f"option_{key}", s, e, text[s:e]))
 
-        last_end = int(option_matches[-1].end())
-        post_s, post_e = _clip(last_end, n, n)
-        if post_e > post_s:
-            spans.append(PromptSpan("post_options", "post_options", post_s, post_e, text[post_s:post_e]))
+        if post_start is not None:
+            post_s, post_e = _clip(int(post_start), n, n)
+            if post_e > post_s:
+                spans.append(PromptSpan("post_options", "post_options", post_s, post_e, text[post_s:post_e]))
         return spans
 
     # Fallback: simple two-span split for prompts without option-line markers.

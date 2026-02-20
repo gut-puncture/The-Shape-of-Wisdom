@@ -2,6 +2,7 @@ experiment:
   name: shape_of_wisdom_v2
   objective_doc: /Users/shaileshrana/shape-of-wisdom/docs/PAPER_OBJECTIVE_V3.md
   implementation_doc: /Users/shaileshrana/shape-of-wisdom/docs/IMPLEMENTATION_PLAN_V3.md
+  preregistration_doc: /Users/shaileshrana/shape-of-wisdom/docs/PREREGISTERED_HYPOTHESES_V3.md
 
 models:
   - name: qwen2.5-7b-instruct
@@ -33,6 +34,36 @@ causal:
   patching_target_layers: [20, 21, 22, 23, 24, 25, 26, 27]
   include_negative_controls: true
   drift_decomposition_r2_min: 0.70
+
+validators:
+  stage05_paraphrase:
+    min_label_agreement: 0.85
+    min_span_jaccard: 0.80
+    sample_size_per_model: 50
+  stage06_tracing_subset:
+    difficult_domain_top_k: 1
+    min_difficult_share: 0.30
+    min_domains_covered: 2
+    min_prompts_per_domain: 10
+  stage08_decomposition:
+    split_train_fraction: 0.70
+    min_train_rows: 100
+    min_test_rows: 100
+    require_split_r2: true
+  stage09:
+    min_ablation_rows: 1
+    min_patching_rows: 1
+  stage10:
+    min_evidence_rows: 5
+    min_distractor_rows: 5
+    alpha: 0.05
+    min_gap_ci_lo: 0.0
+    min_observed_minus_shuffled: 0.05
+    min_observed_minus_sign_flipped: 0.05
+    split_train_fraction: 0.70
+    min_train_rows: 5
+    min_test_rows: 5
+    require_split_direction_match: true
 
 thermal_policy:
   enabled: true

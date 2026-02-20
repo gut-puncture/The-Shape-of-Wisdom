@@ -22,7 +22,10 @@ def _sign_flips(delta: np.ndarray) -> int:
     if delta.size <= 1:
         return 0
     s = np.sign(delta)
-    flips = np.sum(s[1:] != s[:-1])
+    nz = s[s != 0]
+    if nz.size <= 1:
+        return 0
+    flips = np.sum(nz[1:] != nz[:-1])
     return int(flips)
 
 
@@ -32,9 +35,10 @@ def _late_flips(delta: np.ndarray, *, tail_len: int = 8) -> int:
     s = np.sign(delta)
     tail_start = max(0, int(delta.size) - int(tail_len))
     tail = s[tail_start:]
-    if tail.size <= 1:
+    tail_nz = tail[tail != 0]
+    if tail_nz.size <= 1:
         return 0
-    return int(np.sum(tail[1:] != tail[:-1]))
+    return int(np.sum(tail_nz[1:] != tail_nz[:-1]))
 
 
 def classify_trajectory(delta: np.ndarray, *, is_correct: bool, drift: np.ndarray) -> str:

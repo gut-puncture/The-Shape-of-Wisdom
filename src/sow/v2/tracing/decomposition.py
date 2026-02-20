@@ -100,7 +100,12 @@ def drift_reconstruction_quality(*, observed_drift: np.ndarray, attn_scalar: np.
     y = np.asarray(observed_drift, dtype=np.float64).reshape(-1)
     a = np.asarray(attn_scalar, dtype=np.float64).reshape(-1)
     m = np.asarray(mlp_scalar, dtype=np.float64).reshape(-1)
-    n = min(y.size, a.size, m.size)
+    if not (y.size == a.size == m.size):
+        raise ValueError(
+            "observed_drift, attn_scalar, and mlp_scalar must have equal length "
+            f"(got {y.size}, {a.size}, {m.size})"
+        )
+    n = y.size
     if n == 0:
         return {"r2": 0.0, "coef_attn": 0.0, "coef_mlp": 0.0, "intercept": 0.0}
 
@@ -110,7 +115,11 @@ def drift_reconstruction_quality(*, observed_drift: np.ndarray, attn_scalar: np.
     y_hat = x @ beta
     ss_tot = float(np.sum((y - np.mean(y)) ** 2))
     ss_res = float(np.sum((y - y_hat) ** 2))
-    r2 = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+    if ss_tot > 0:
+        r2 = 1.0 - (ss_res / ss_tot)
+    else:
+        # Constant-series edge case: exact reconstruction is a perfect fit.
+        r2 = 1.0 if ss_res <= 1e-18 else 0.0
     return {
         "r2": float(r2),
         "coef_attn": float(beta[0]),

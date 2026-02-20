@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -10,9 +11,12 @@ import pandas as pd
 from _common import base_parser, baseline_manifest_path, load_experiment_config, resolve_models, run_v2_root_for, write_json, write_parquet
 from sow.io_jsonl import iter_jsonl
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
-from sow.v2.model_nuances import apply_tokenizer_nuance, pick_torch_dtype
+from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor, pick_torch_dtype
 from sow.v2.span_counterfactuals import completed_span_keys_for_mode, compute_span_effect, delete_span, label_span_effects
+from sow.v2.span_paraphrase_stability import deterministic_paraphrase, proxy_mutated_delta, score_prompt_paraphrase
 from sow.v2.span_parser import parse_prompt_spans
+
+_deterministic_paraphrase = deterministic_paraphrase
 
 
 def _tail_decision_info(decision_metrics: pd.DataFrame) -> Dict[Tuple[str, str], Dict[str, str | float]]:
@@ -31,21 +35,6 @@ def _tail_decision_info(decision_metrics: pd.DataFrame) -> Dict[Tuple[str, str],
     return out
 
 
-def _proxy_mutated_delta(*, full_delta: float, span_role: str, span_len: int, prompt_len: int, correct_key: str) -> float:
-    ratio = float(span_len) / max(1.0, float(prompt_len))
-    if span_role == "question_stem":
-        effect = 0.30 * ratio + 0.02
-    elif span_role.startswith("option_") and span_role.endswith(str(correct_key)):
-        effect = 0.35 * ratio + 0.02
-    elif span_role.startswith("option_"):
-        effect = -0.20 * ratio
-    elif span_role == "instruction":
-        effect = 0.05 * ratio
-    else:
-        effect = -0.03 * ratio
-    return float(full_delta - effect)
-
-
 def _position_ids(attn):
     p = attn.long().cumsum(dim=-1) - 1
     return p.masked_fill(attn == 0, 0)
@@ -55,8 +44,31 @@ def _choice_token_ids(tokenizer) -> Dict[str, int | None]:
     out: Dict[str, int | None] = {}
     for key in ["A", "B", "C", "D"]:
         ids = tokenizer.encode(key, add_special_tokens=False)
-        out[key] = int(ids[0]) if ids else None
+        # Multi-token labels are not safe to collapse to one token id for delta readout.
+        out[key] = int(ids[0]) if len(ids) == 1 else None
     return out
+
+
+def _validate_choice_token_ids(choice_token_ids: Dict[str, int | None]) -> None:
+    missing = [k for k in ["A", "B", "C", "D"] if choice_token_ids.get(k) is None]
+    if missing:
+        raise ValueError(
+            "single-token option label ids are required for model counterfactual mode; "
+            f"missing labels={missing}"
+        )
+
+
+def _merge_span_rows(*, existing_rows: List[Dict[str, object]], new_rows: List[Dict[str, object]]) -> List[Dict[str, object]]:
+    rows = [*existing_rows, *new_rows]
+    if not rows:
+        return []
+    tmp = pd.DataFrame.from_records(rows)
+    if tmp.empty:
+        return []
+    key_cols = ["model_id", "prompt_uid", "span_id"]
+    if all(c in tmp.columns for c in key_cols):
+        tmp = tmp.drop_duplicates(subset=key_cols, keep="last")
+    return tmp.to_dict(orient="records")
 
 
 def _model_mutated_delta(
@@ -96,7 +108,7 @@ def _model_mutated_delta(
     c_tid = choice_token_ids.get(ck)
     k_tid = choice_token_ids.get(kp)
     if c_tid is None:
-        return 0.0
+        raise ValueError(f"missing single-token id for correct_key={ck!r}")
 
     if k_tid is None:
         # Fallback: strongest non-correct option token.
@@ -113,11 +125,11 @@ def _model_mutated_delta(
                 best_val = val
                 best_key = key
         if best_key is None:
-            return 0.0
+            raise ValueError("unable to find competitor token id for A/B/C/D")
         k_tid = choice_token_ids.get(best_key)
 
     if k_tid is None:
-        return 0.0
+        raise ValueError("competitor token id resolved to None")
     return float(logits[int(c_tid)].item() - logits[int(k_tid)].item())
 
 
@@ -128,6 +140,49 @@ def _write_spans_jsonl(path: Path, rows: List[Dict[str, object]]) -> None:
             f.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
 
 
+def _compute_paraphrase_stability(
+    *,
+    model_prompt_uids_by_model: Dict[str, List[str]],
+    manifest_rows: Dict[str, Dict[str, object]],
+    info_by_model_prompt: Dict[Tuple[str, str], Dict[str, str | float]],
+    sample_size_per_model: int,
+    seed: int,
+) -> pd.DataFrame:
+    rng = random.Random(int(seed))
+    rows: List[Dict[str, object]] = []
+    for model_id in sorted(model_prompt_uids_by_model.keys()):
+        candidates = [u for u in sorted(model_prompt_uids_by_model.get(model_id) or []) if (model_id, u) in info_by_model_prompt]
+        if sample_size_per_model > 0 and len(candidates) > sample_size_per_model:
+            sampled_uids = sorted(rng.sample(candidates, int(sample_size_per_model)))
+        else:
+            sampled_uids = candidates
+        for prompt_uid in sampled_uids:
+            info = info_by_model_prompt.get((model_id, prompt_uid)) or {}
+            manifest_row = manifest_rows.get(prompt_uid) or {}
+            prompt_text = str(manifest_row.get("prompt_text") or "")
+            full_delta = float(info.get("full_delta") or 0.0)
+            correct_key = str(info.get("correct_key") or manifest_row.get("correct_key") or "A").strip().upper()
+            paraphrased = _deterministic_paraphrase(prompt_text)
+            score = score_prompt_paraphrase(
+                prompt_text=prompt_text,
+                full_delta=full_delta,
+                correct_key=correct_key,
+                paraphrased_text=paraphrased,
+            )
+            rows.append(
+                {
+                    "model_id": str(model_id),
+                    "prompt_uid": str(prompt_uid),
+                    "label_agreement": float(score["label_agreement"]),
+                    "span_jaccard": float(score["span_jaccard"]),
+                    "n_common_labels": int(score["n_common_labels"]),
+                    "n_original_labels": int(score["n_original_labels"]),
+                    "n_paraphrased_labels": int(score["n_paraphrased_labels"]),
+                }
+            )
+    return pd.DataFrame.from_records(rows)
+
+
 def main() -> int:
     ap = base_parser("V2: parse spans and compute counterfactual span effects")
     ap.add_argument("--counterfactual-mode", choices=["model", "proxy"], default=None)
@@ -136,6 +191,14 @@ def main() -> int:
 
     cfg = load_experiment_config(Path(args.config))
     models = resolve_models(cfg, model_name=args.model_name)
+    expected_model_ids = [str(m["model_id"]) for m in models]
+    execution_cfg = cfg.get("execution") or {}
+    validators_cfg = cfg.get("validators") or {}
+    stage05_cfg = validators_cfg.get("stage05_paraphrase") or {}
+    paraphrase_min_label_agreement = float(stage05_cfg.get("min_label_agreement", 0.85))
+    paraphrase_min_span_jaccard = float(stage05_cfg.get("min_span_jaccard", 0.80))
+    paraphrase_sample_size = int(stage05_cfg.get("sample_size_per_model", 50))
+    deterministic_seed = int(execution_cfg.get("deterministic_seed", 12345))
 
     span_cfg = cfg.get("span_counterfactual") or {}
     mode = str(args.counterfactual_mode or span_cfg.get("mode") or "proxy")
@@ -170,6 +233,8 @@ def main() -> int:
     prompts_processed = 0
     fallback_count = 0
     thermal_stop_action = None
+    model_level_proxy_fallback: Dict[str, str] = {}
+    model_prompt_uids_by_model: Dict[str, List[str]] = {}
 
     for model in models:
         model_id = str(model["model_id"])
@@ -184,30 +249,43 @@ def main() -> int:
         )
         if max_prompts > 0:
             model_prompt_uids = model_prompt_uids[:max_prompts]
+        model_prompt_uids_by_model[model_id] = list(model_prompt_uids)
 
         model_obj = None
         tokenizer = None
         choice_token_ids: Dict[str, int | None] | None = None
         device = "cpu"
+        model_counterfactual_enabled = mode == "model"
 
         if mode == "model":
             import torch  # noqa: PLC0415
+            import transformers  # noqa: PLC0415
             from transformers import AutoModelForCausalLM, AutoTokenizer  # noqa: PLC0415
 
+            assert_transformers_version_floor(model_id, str(transformers.__version__))
             device = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
             tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision, use_fast=True, trust_remote_code=False)
             apply_tokenizer_nuance(tokenizer, model_id=model_id)
-            model_obj = AutoModelForCausalLM.from_pretrained(
-                model_id,
-                revision=revision,
-                torch_dtype=pick_torch_dtype(device=device),
-                low_cpu_mem_usage=True,
-                trust_remote_code=False,
-            )
-            model_obj.eval()
-            if device != "cpu":
-                model_obj.to(device)
             choice_token_ids = _choice_token_ids(tokenizer)
+            try:
+                _validate_choice_token_ids(choice_token_ids)
+            except ValueError as exc:
+                if not allow_proxy_fallback:
+                    raise SystemExit(f"{model_id}: {exc}") from exc
+                model_counterfactual_enabled = False
+                model_level_proxy_fallback[model_id] = str(exc)
+
+            if model_counterfactual_enabled:
+                model_obj = AutoModelForCausalLM.from_pretrained(
+                    model_id,
+                    revision=revision,
+                    torch_dtype=pick_torch_dtype(device=device),
+                    low_cpu_mem_usage=True,
+                    trust_remote_code=False,
+                )
+                model_obj.eval()
+                if device != "cpu":
+                    model_obj.to(device)
 
         for prompt_uid in model_prompt_uids:
             if governor is not None:
@@ -246,7 +324,7 @@ def main() -> int:
                 mutated_text = delete_span(prompt_text, start_char=int(span.start_char), end_char=int(span.end_char))
                 source = "proxy_v1"
 
-                if mode == "model" and model_obj is not None and tokenizer is not None and choice_token_ids is not None:
+                if model_counterfactual_enabled and model_obj is not None and tokenizer is not None and choice_token_ids is not None:
                     try:
                         mutated_delta = _model_mutated_delta(
                             model_obj=model_obj,
@@ -262,7 +340,7 @@ def main() -> int:
                         if not allow_proxy_fallback:
                             raise
                         fallback_count += 1
-                        mutated_delta = _proxy_mutated_delta(
+                        mutated_delta = proxy_mutated_delta(
                             full_delta=full_delta,
                             span_role=str(span.label),
                             span_len=int(span.end_char - span.start_char),
@@ -270,7 +348,7 @@ def main() -> int:
                             correct_key=correct_key,
                         )
                 else:
-                    mutated_delta = _proxy_mutated_delta(
+                    mutated_delta = proxy_mutated_delta(
                         full_delta=full_delta,
                         span_role=str(span.label),
                         span_len=int(span.end_char - span.start_char),
@@ -339,34 +417,71 @@ def main() -> int:
 
     labels = label_span_effects(effects, output_col="span_label")
 
-    spans_rows = new_spans_rows
+    existing_span_rows: List[Dict[str, object]] = []
     if args.resume and spans_path.exists():
-        for row in iter_jsonl(spans_path):
-            spans_rows.append(row)
-    if spans_rows:
-        # Keep last write for each key.
-        tmp = pd.DataFrame.from_records(spans_rows)
-        tmp = tmp.drop_duplicates(subset=["model_id", "prompt_uid", "span_id"], keep="last")
-        spans_rows = tmp.to_dict(orient="records")
+        existing_span_rows = [dict(r) for r in iter_jsonl(spans_path)]
+    spans_rows = _merge_span_rows(existing_rows=existing_span_rows, new_rows=new_spans_rows)
 
     _write_spans_jsonl(spans_path, spans_rows)
     write_parquet(effects_path, effects)
     write_parquet(out_root / "span_labels.parquet", labels)
 
+    stability = _compute_paraphrase_stability(
+        model_prompt_uids_by_model=model_prompt_uids_by_model,
+        manifest_rows=manifest_rows,
+        info_by_model_prompt=info_by_model_prompt,
+        sample_size_per_model=max(0, int(paraphrase_sample_size)),
+        seed=deterministic_seed,
+    )
+    stability_path = out_root / "span_paraphrase_stability.parquet"
+    write_parquet(stability_path, stability)
+    label_agreement_mean = float(stability["label_agreement"].mean()) if (not stability.empty and "label_agreement" in stability.columns) else 0.0
+    span_jaccard_mean = float(stability["span_jaccard"].mean()) if (not stability.empty and "span_jaccard" in stability.columns) else 0.0
+    per_model_stability: Dict[str, Dict[str, float | int]] = {}
+    for model_id in expected_model_ids:
+        if stability.empty or "model_id" not in stability.columns:
+            sub = pd.DataFrame()
+        else:
+            sub = stability[stability["model_id"].astype(str) == str(model_id)]
+        per_model_stability[str(model_id)] = {
+            "rows": int(sub.shape[0]),
+            "label_agreement_mean": float(sub["label_agreement"].mean()) if (not sub.empty and "label_agreement" in sub.columns) else 0.0,
+            "span_jaccard_mean": float(sub["span_jaccard"].mean()) if (not sub.empty and "span_jaccard" in sub.columns) else 0.0,
+        }
+    expected_models_present = bool(expected_model_ids) and all(int(per_model_stability[mid]["rows"]) > 0 for mid in expected_model_ids)
+    per_model_label_ok = bool(expected_models_present) and all(
+        float(per_model_stability[mid]["label_agreement_mean"]) >= float(paraphrase_min_label_agreement) for mid in expected_model_ids
+    )
+    per_model_span_ok = bool(expected_models_present) and all(
+        float(per_model_stability[mid]["span_jaccard_mean"]) >= float(paraphrase_min_span_jaccard) for mid in expected_model_ids
+    )
+    paraphrase_gates = {
+        "paraphrase_sample_nonempty": int(stability.shape[0]) > 0,
+        "paraphrase_label_agreement": float(label_agreement_mean) >= float(paraphrase_min_label_agreement),
+        "paraphrase_span_jaccard": float(span_jaccard_mean) >= float(paraphrase_min_span_jaccard),
+        "paraphrase_expected_models_present": bool(expected_models_present),
+        "paraphrase_label_agreement_per_model": bool(per_model_label_ok),
+        "paraphrase_span_jaccard_per_model": bool(per_model_span_ok),
+    }
+    failing_gates = sorted([k for k, v in paraphrase_gates.items() if not bool(v)])
+    gates_pass = len(failing_gates) == 0
+
     label_counts = labels["span_label"].value_counts().to_dict() if (not labels.empty and "span_label" in labels.columns) else {}
 
     done_sentinel = out_root / "sentinels" / "05_span_counterfactuals.done"
-    if thermal_stop_action is None:
+    pass_flag = (thermal_stop_action is None) and bool(gates_pass)
+    if pass_flag:
         done_sentinel.parent.mkdir(parents=True, exist_ok=True)
         done_sentinel.write_text(json.dumps({"stage": "05_span_counterfactuals", "pass": True}, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
     write_json(
         out_root / "05_span_counterfactuals.report.json",
         {
-            "pass": thermal_stop_action is None,
+            "pass": bool(pass_flag),
             "counterfactual_mode": mode,
             "allow_proxy_fallback": bool(allow_proxy_fallback),
             "proxy_fallback_count": int(fallback_count),
+            "model_level_proxy_fallback": model_level_proxy_fallback,
             "prompts_processed": int(prompts_processed),
             "spans": int(len(spans_rows)),
             "effects": int(effects.shape[0]),
@@ -376,15 +491,28 @@ def main() -> int:
                 "pause_mode": str(thermal_cfg_obj.pause_mode),
                 "events_path": str(thermal_events),
             },
+            "paraphrase_stability": {
+                "sample_size_per_model": int(paraphrase_sample_size),
+                "expected_models": expected_model_ids,
+                "rows": int(stability.shape[0]),
+                "label_agreement_mean": float(label_agreement_mean),
+                "span_jaccard_mean": float(span_jaccard_mean),
+                "per_model": per_model_stability,
+                "out_path": str(stability_path),
+            },
+            "gates": paraphrase_gates,
+            "failing_gates": failing_gates,
             "stopped_early": bool(thermal_stop_action is not None),
             "stop_reason": "thermal_checkpoint" if thermal_stop_action is not None else None,
             "thermal_action": thermal_stop_action,
-            "done_sentinel": str(done_sentinel) if thermal_stop_action is None else None,
+            "done_sentinel": str(done_sentinel) if pass_flag else None,
         },
     )
     print(str(out_root / "span_labels.parquet"))
     if thermal_stop_action is not None:
         return 95
+    if not gates_pass:
+        return 2
     return 0
 
 

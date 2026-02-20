@@ -62,6 +62,37 @@ class TestOrchestratorIncompleteReport(unittest.TestCase):
             with (run_root / "manifests" / "ccc_baseline.jsonl").open("w", encoding="utf-8") as f:
                 f.write(json.dumps(manifest_row, sort_keys=True) + "\n")
 
+            cfg_path = run_root / "cfg.yaml"
+            cfg_path.write_text(
+                "\n".join(
+                    [
+                        "models:",
+                        "  - name: qwen2.5-7b-instruct",
+                        "    model_id: Qwen/Qwen2.5-7B-Instruct",
+                        "    revision: r0",
+                        "runtime_estimator:",
+                        "  threshold_hours_all_models: 36",
+                        "  stage_row_multiplier:",
+                        "    05_span_counterfactuals.py: 8.0",
+                        "    07_run_tracing.py: 1.0",
+                        "validators:",
+                        "  stage05_paraphrase:",
+                        "    min_label_agreement: 0.0",
+                        "    min_span_jaccard: 0.0",
+                        "    sample_size_per_model: 1",
+                        "  stage10:",
+                        "    min_evidence_rows: 0",
+                        "    min_distractor_rows: 0",
+                        "    alpha: 1.0",
+                        "    min_gap_ci_lo: -1.0",
+                        "    min_observed_minus_shuffled: -1.0",
+                        "    min_observed_minus_sign_flipped: -1.0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
             proc = subprocess.run(
                 [
                     sys.executable,
@@ -72,6 +103,8 @@ class TestOrchestratorIncompleteReport(unittest.TestCase):
                     "smoke",
                     "--model-name",
                     "qwen2.5-7b-instruct",
+                    "--config",
+                    str(cfg_path),
                 ],
                 cwd=str(REPO_ROOT),
                 check=False,

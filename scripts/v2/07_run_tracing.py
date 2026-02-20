@@ -9,11 +9,12 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 import torch
+import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from _common import base_parser, load_experiment_config, resolve_models, run_v2_root_for, write_json, write_parquet
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
-from sow.v2.model_nuances import apply_tokenizer_nuance, get_model_nuance, pick_torch_dtype
+from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor, get_model_nuance, pick_torch_dtype
 from sow.v2.span_parser import parse_prompt_spans
 from sow.v2.tracing.decomposition import attention_mass_by_span_per_layer, drift_series_from_deltas
 from sow.v2.tracing.hooks import capture_component_outputs
@@ -34,8 +35,18 @@ def _choice_token_ids(tokenizer) -> Dict[str, int | None]:
     out: Dict[str, int | None] = {}
     for key in ["A", "B", "C", "D"]:
         ids = tokenizer.encode(key, add_special_tokens=False)
-        out[key] = int(ids[0]) if ids else None
+        # Multi-token labels are not safe to collapse to one token id for delta readout.
+        out[key] = int(ids[0]) if len(ids) == 1 else None
     return out
+
+
+def _validate_choice_token_ids(choice_token_ids: Dict[str, int | None]) -> None:
+    missing = [k for k in ["A", "B", "C", "D"] if choice_token_ids.get(k) is None]
+    if missing:
+        raise ValueError(
+            "single-token option label ids are required for tracing delta readout; "
+            f"missing labels={missing}"
+        )
 
 
 def _logits_from_hidden(model_obj, hidden_vec: torch.Tensor) -> torch.Tensor:
@@ -155,6 +166,7 @@ def main() -> int:
             subset = subset[:max_prompts]
 
         nuance = get_model_nuance(model_id)
+        assert_transformers_version_floor(model_id, str(transformers.__version__))
 
         tok = AutoTokenizer.from_pretrained(model_id, revision=revision, use_fast=True, trust_remote_code=False)
         apply_tokenizer_nuance(tok, model_id=model_id)
@@ -176,6 +188,10 @@ def main() -> int:
             mdl.to(device)
 
         choice_token_ids = _choice_token_ids(tok)
+        try:
+            _validate_choice_token_ids(choice_token_ids)
+        except ValueError as exc:
+            raise SystemExit(f"{model_id}: {exc}") from exc
 
         with torch.inference_mode():
             for rec in subset:

@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 
@@ -49,6 +51,54 @@ def _load_cfg(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _metadata_contract_paths(*, cfg: dict, config_path: Path) -> list[Path]:
+    exp = cfg.get("experiment") or {}
+    paths = [
+        Path(config_path),
+        Path(str(exp.get("objective_doc") or (REPO_ROOT / "docs" / "PAPER_OBJECTIVE_V3.md"))),
+        Path(str(exp.get("implementation_doc") or (REPO_ROOT / "docs" / "IMPLEMENTATION_PLAN_V3.md"))),
+        REPO_ROOT / "docs" / "MODEL_NUANCES_V2.md",
+        Path(str(exp.get("preregistration_doc") or (REPO_ROOT / "docs" / "PREREGISTERED_HYPOTHESES_V3.md"))),
+    ]
+    uniq = []
+    seen = set()
+    for p in paths:
+        r = p.expanduser().resolve()
+        s = str(r)
+        if s in seen:
+            continue
+        seen.add(s)
+        uniq.append(r)
+    return uniq
+
+
+def _write_run_start_metadata_snapshot(*, run_id: str, cfg: dict, config_path: Path) -> Path:
+    out_root = REPO_ROOT / "runs" / str(run_id) / "v2"
+    snapshot_path = out_root / "meta" / "run_start_metadata_snapshot.json"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    records = []
+    for p in _metadata_contract_paths(cfg=cfg, config_path=config_path):
+        if p.exists():
+            records.append({"path": str(p), "sha256": _sha256(p)})
+        else:
+            records.append({"path": str(p), "sha256": None})
+    payload = {
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "run_id": str(run_id),
+        "files": records,
+    }
+    snapshot_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    return snapshot_path
+
+
 def _baseline_prompt_count(run_id: str) -> int:
     ccc = REPO_ROOT / "runs" / run_id / "manifests" / "ccc_baseline.jsonl"
     base = REPO_ROOT / "runs" / run_id / "manifests" / "baseline_manifest.jsonl"
@@ -76,12 +126,11 @@ def _pilot_rows_per_second(run_id: str) -> float:
     return min(values) if values else 0.2
 
 
-def _run_script(script_name: str, argv: List[str]) -> None:
+def _run_script(script_name: str, argv: List[str]) -> int:
     script = REPO_ROOT / "scripts" / "v2" / script_name
     cmd = [sys.executable, str(script), *argv]
     proc = subprocess.run(cmd, cwd=str(REPO_ROOT), check=False)
-    if proc.returncode != 0:
-        raise SystemExit(proc.returncode)
+    return int(proc.returncode)
 
 
 def _heavy_stage_estimates(*, cfg: dict, baseline_count: int, rows_per_second: float) -> dict:
@@ -112,10 +161,13 @@ def main() -> int:
     ap.add_argument("--config", default=str(REPO_ROOT / "configs" / "experiment_v2.yaml"))
     args = ap.parse_args()
 
-    cfg = _load_cfg(Path(args.config))
+    cfg_path = Path(args.config).expanduser().resolve()
+    cfg = _load_cfg(cfg_path)
 
     if args.mode == "single_model" and not args.model_name:
         raise SystemExit("--mode single_model requires --model-name")
+
+    snapshot_path = _write_run_start_metadata_snapshot(run_id=args.run_id, cfg=cfg, config_path=cfg_path)
 
     baseline_count = _baseline_prompt_count(args.run_id)
     rps = _pilot_rows_per_second(args.run_id)
@@ -128,7 +180,7 @@ def main() -> int:
 
     mode_max_prompts = {"smoke": 25, "single_model": 300, "full": 0}[args.mode]
 
-    base_argv = ["--run-id", args.run_id, "--config", args.config]
+    base_argv = ["--run-id", args.run_id, "--config", str(cfg_path)]
     if args.model_name:
         base_argv.extend(["--model-name", args.model_name])
     if mode_max_prompts > 0:
@@ -139,6 +191,8 @@ def main() -> int:
     executed = []
     skipped_names = set()
     skipped = []
+    failed_script = None
+    failed_exit_code = None
     for script_name in PIPELINE:
         deps = DEPENDENCIES.get(script_name, set())
         missing_deps = sorted(d for d in deps if (d in skipped_names or d not in executed))
@@ -157,12 +211,19 @@ def main() -> int:
         script_argv = list(base_argv)
         if args.mode == "smoke" and script_name == "05_span_counterfactuals.py":
             script_argv.extend(["--counterfactual-mode", "proxy"])
-        _run_script(script_name, script_argv)
+        rc = _run_script(script_name, script_argv)
+        if rc != 0:
+            failed_script = script_name
+            failed_exit_code = int(rc)
+            for rest in PIPELINE[PIPELINE.index(script_name) + 1 :]:
+                skipped.append({"script": rest, "reason": f"upstream stage failed: {script_name} (rc={rc})"})
+                skipped_names.add(rest)
+            break
         executed.append(script_name)
 
     out_root = REPO_ROOT / "runs" / args.run_id / "v2"
     out_root.mkdir(parents=True, exist_ok=True)
-    complete = len(skipped) == 0
+    complete = (len(skipped) == 0) and (failed_script is None)
     report = {
         "pass": bool(complete),
         "complete": bool(complete),
@@ -181,9 +242,14 @@ def main() -> int:
             (x.get("script") in HEAVY_STAGES) and ("exceeds 36h" in str(x.get("reason")))
             for x in skipped
         ),
+        "failed_script": failed_script,
+        "failed_exit_code": failed_exit_code,
+        "run_start_metadata_snapshot": str(snapshot_path),
     }
     (out_root / "00_run_experiment.report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
     print(str(out_root / "00_run_experiment.report.json"))
+    if failed_exit_code is not None:
+        return int(failed_exit_code)
     return 0
 
 

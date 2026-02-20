@@ -36,7 +36,9 @@ def _extract_first_letter(token: str) -> Optional[str]:
     t = normalize_text(token)
     if not t:
         return None
-    # Strip a small set of leading punctuation often attached to tokens.
+    # Strip tokenizer boundary markers and leading punctuation often attached to pieces.
+    t = re.sub(r"^[\u0120\u2581]+", "", t)
+    t = re.sub(r"^\s*[-*•]+\s*", "", t)
     t = re.sub(r'^[\(\[\{<"\']+', "", t).lstrip()
     if not t:
         return None
@@ -132,7 +134,7 @@ def parse_choice(
     if ft_letter:
         letter_candidates.append(ft_letter)
 
-    m0 = re.match(r'^\s*[\(\[\{<"\']*\s*([ABCD])\b', text_nfkc, flags=re.IGNORECASE)
+    m0 = re.match(r'^\s*(?:[-*•]+\s*)?[\(\[\{<"\']*\s*([ABCD])\b', text_nfkc, flags=re.IGNORECASE)
     if m0:
         letter_candidates.append(m0.group(1).upper())
 

@@ -63,6 +63,32 @@ class TestV2PipelineSmoke(unittest.TestCase):
             with (run_root / "manifests" / "ccc_baseline.jsonl").open("w", encoding="utf-8") as f:
                 f.write(json.dumps(manifest_row, sort_keys=True) + "\n")
 
+            cfg_path = run_root / "cfg.yaml"
+            cfg_path.write_text(
+                "\n".join(
+                    [
+                        "models:",
+                        "  - name: qwen2.5-7b-instruct",
+                        "    model_id: Qwen/Qwen2.5-7B-Instruct",
+                        "    revision: r0",
+                        "validators:",
+                        "  stage05_paraphrase:",
+                        "    min_label_agreement: 0.0",
+                        "    min_span_jaccard: 0.0",
+                        "    sample_size_per_model: 1",
+                        "  stage10:",
+                        "    min_evidence_rows: 0",
+                        "    min_distractor_rows: 0",
+                        "    alpha: 1.0",
+                        "    min_gap_ci_lo: -1.0",
+                        "    min_observed_minus_shuffled: -1.0",
+                        "    min_observed_minus_sign_flipped: -1.0",
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
             scripts_and_args = [
                 ("01_extract_baseline.py", []),
                 ("02_compute_decision_metrics.py", []),
@@ -80,6 +106,8 @@ class TestV2PipelineSmoke(unittest.TestCase):
                         run_id,
                         "--model-name",
                         "qwen2.5-7b-instruct",
+                        "--config",
+                        str(cfg_path),
                         *extra_args,
                     ],
                     cwd=str(REPO_ROOT),

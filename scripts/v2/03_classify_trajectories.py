@@ -20,7 +20,7 @@ def main() -> int:
 
     metrics = pd.read_parquet(in_path)
     if args.model_name:
-        metrics = metrics[metrics["model_id"].str.contains(args.model_name, na=False)]
+        metrics = metrics[metrics["model_id"].str.contains(args.model_name, na=False, case=False)]
     if args.max_prompts > 0 and not metrics.empty:
         keep = set(metrics["prompt_uid"].drop_duplicates().head(int(args.max_prompts)).tolist())
         metrics = metrics[metrics["prompt_uid"].isin(keep)]

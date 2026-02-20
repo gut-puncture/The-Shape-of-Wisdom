@@ -111,7 +111,10 @@ def write_trajectory_plots(metrics_df: pd.DataFrame, *, out_dir: Path) -> List[P
 
 def write_sha_manifest(*, root_dir: Path, out_path: Path) -> None:
     records = []
+    out_abs = out_path.resolve()
     for p in sorted(root_dir.rglob("*")):
+        if p.resolve() == out_abs:
+            continue
         if p.is_file():
             records.append({"path": str(p), "sha256": _sha256(p)})
     out_path.parent.mkdir(parents=True, exist_ok=True)
