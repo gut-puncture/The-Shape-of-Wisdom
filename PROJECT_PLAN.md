@@ -7,11 +7,12 @@ Rules:
 - Run history, blockers, and "what is running now" live in `STATE.md`.
 - Never proceed to the next stage unless the prior stage's validator passes and a `.done` sentinel exists.
 - Cost discipline: build cheap validators + smoke tests first; avoid GPU until all local gates pass.
-- Local Mac mini discipline: all inference stages must use thermal hygiene (see `docs/IMPLEMENTATION_SPEC.md` section 23).
+- Local Mac mini discipline: all inference stages must use thermal hygiene (see `docs/IMPLEMENTATION_PLAN_V3.md` thermal section).
 
 Canonical docs:
-- `docs/IMPLEMENTATION_SPEC.md`
-- `docs/METHODOLOGY_NARRATIVE_V2.md`
+- `docs/IMPLEMENTATION_PLAN_V3.md`
+- `docs/PAPER_OBJECTIVE_V3.md`
+- `docs/SPRINTS_EPICS_TASKS_V3.md`
 - `STATE.md`
 
 ## Stage Checklist (authoritative order)
@@ -124,6 +125,11 @@ Canonical docs:
   - `downloads/gpu_runs_20260216_full/rtx6000ada_baseline_20260216_1452_a/analysis/deep_convergence_1452a`
   - required report: `DEEP_CONVERGENCE_REPORT.md`
   - include clean figures, CSV/JSON tables, executive summary, technical report.
+
+- [ ] Stage 15 - Paper manuscript generation (LaTeX)
+  - Inputs: Stage 14 analysis artifacts, `docs/PAPER_OBJECTIVE_V3.md`
+  - Artifacts: `paper/shape_of_wisdom.tex`, `paper/figures/*.pdf`, `paper/shape_of_wisdom.pdf`
+  - Gate: LaTeX compiles without errors, all figures included, word count >= 4000 words
 
 ## 2026-02-17 20:50 (IST) - Session Completion (Deep Convergence, Baseline-Only, run `1452_a`)
 - [x] Verify baseline integrity for run `rtx6000ada_baseline_20260216_1452_a`.

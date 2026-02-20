@@ -1169,6 +1169,20 @@ def cmd_stage13_smoke(args: argparse.Namespace) -> int:
     return 0 if report["pass"] else 2
 
 
+def inference_exit_code_from_model_results(per_model: List[Dict[str, Any]]) -> int:
+    failed = [m for m in per_model if not bool(m.get("pass"))]
+    if not failed:
+        return 0
+    thermal_only = [
+        m
+        for m in failed
+        if bool(m.get("stopped_early")) and str(m.get("stop_reason") or "") == "thermal_checkpoint"
+    ]
+    if len(thermal_only) == len(failed):
+        return 95
+    return 2
+
+
 def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
     run_dir = _run_dir(args.run_id)
     cfg_path = run_dir / "run_config.yaml"
@@ -1205,7 +1219,6 @@ def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
         raise SystemExit(f"unknown model_name in {model_names}; known={known}")
 
     per_model = []
-    ok_all = True
     for m in models:
         res = run_stage13_inference_for_model(
             run_id=args.run_id,
@@ -1230,8 +1243,8 @@ def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
                 **res,
             }
         )
-        if not res.get("pass"):
-            ok_all = False
+    exit_code = inference_exit_code_from_model_results(per_model)
+    ok_all = exit_code == 0
 
     v_report = {
         "pass": bool(ok_all),
@@ -1244,6 +1257,8 @@ def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
         "run_config_sha256": sha256_file(cfg_path),
         "config_snapshot_path": str(_config_snapshot_path(run_dir)),
         "config_snapshot_sha256": _config_snapshot_sha256(run_dir),
+        "exit_code": int(exit_code),
+        "needs_thermal_resume": bool(exit_code == 95),
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -1288,7 +1303,7 @@ def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
     append_state_entry(
         state_path=_state_path(),
         stage=f"Stage 13 - inference ({condition})",
-        status="PASS" if ok_all else "FAIL",
+        status="PASS" if ok_all else ("RETRY" if exit_code == 95 else "FAIL"),
         command=(
             f"python3 sow.py inference-{condition} --run-id {args.run_id}"
             + (f" --model-name {args.model_name}" if args.model_name else "")
@@ -1305,12 +1320,17 @@ def _cmd_stage13_condition(args: argparse.Namespace, *, condition: str) -> int:
             *(HashedPath(path=str(p), sha256=sha256_file(p)) for p in sent_paths),
         ],
         validators=[HashedPath(path=str(v_path), sha256=sha256_file(v_path))],
-        notes="Full inference outputs are append-only JSONL; this stage is resumable and must pass strict validation before analysis.",
-        next_step="Stage 13b - robustness inference" if condition == "baseline" and ok_all else ("Stage 14 - analysis" if ok_all else "Fix inference failures"),
+        notes="Full inference outputs are append-only JSONL; this stage is resumable and must pass strict validation before analysis."
+        + (" Thermal checkpoint exit requested; cooldown then resume." if exit_code == 95 else ""),
+        next_step=(
+            "Stage 13b - robustness inference"
+            if condition == "baseline" and ok_all
+            else ("Stage 14 - analysis" if ok_all else ("Resume this stage after cooldown" if exit_code == 95 else "Fix inference failures"))
+        ),
     )
 
     print(str(v_path))
-    return 0 if ok_all else 2
+    return int(exit_code)
 
 
 def cmd_inference_baseline(args: argparse.Namespace) -> int:

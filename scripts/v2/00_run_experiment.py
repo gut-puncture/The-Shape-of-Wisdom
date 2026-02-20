@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+from typing import List
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from sow.v2.runtime_policy import choose_backend, estimate_runtime  # noqa: E402
+
+
+PIPELINE = [
+    "01_extract_baseline.py",
+    "02_compute_decision_metrics.py",
+    "03_classify_trajectories.py",
+    "04_region_analysis.py",
+    "05_span_counterfactuals.py",
+    "06_select_tracing_subset.py",
+    "07_run_tracing.py",
+    "08_attention_and_mlp_decomposition.py",
+    "09_causal_tests.py",
+    "10_causal_validation_tools.py",
+    "11_generate_paper_assets.py",
+]
+
+HEAVY_STAGES = {"05_span_counterfactuals.py", "07_run_tracing.py"}
+DEPENDENCIES = {
+    "08_attention_and_mlp_decomposition.py": {"07_run_tracing.py"},
+    "09_causal_tests.py": {"07_run_tracing.py"},
+    "10_causal_validation_tools.py": {"05_span_counterfactuals.py"},
+    "11_generate_paper_assets.py": {
+        "08_attention_and_mlp_decomposition.py",
+        "09_causal_tests.py",
+        "10_causal_validation_tools.py",
+    },
+}
+
+
+def _load_cfg(path: Path) -> dict:
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def _baseline_prompt_count(run_id: str) -> int:
+    ccc = REPO_ROOT / "runs" / run_id / "manifests" / "ccc_baseline.jsonl"
+    base = REPO_ROOT / "runs" / run_id / "manifests" / "baseline_manifest.jsonl"
+    p = ccc if ccc.exists() else base
+    if not p.exists():
+        return 0
+    with p.open("r", encoding="utf-8") as f:
+        return sum(1 for _ in f)
+
+
+def _pilot_rows_per_second(run_id: str) -> float:
+    pilot_dir = REPO_ROOT / "runs" / run_id / "pilot"
+    values = []
+    if not pilot_dir.exists():
+        return 0.2
+    for p in pilot_dir.glob("*_pilot_report.json"):
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        n = float(obj.get("sample_size") or obj.get("metrics_overall", {}).get("n") or 0.0)
+        t = float(obj.get("timing_seconds", {}).get("inference") or 0.0)
+        if n > 0 and t > 0:
+            values.append(n / t)
+    return min(values) if values else 0.2
+
+
+def _run_script(script_name: str, argv: List[str]) -> None:
+    script = REPO_ROOT / "scripts" / "v2" / script_name
+    cmd = [sys.executable, str(script), *argv]
+    proc = subprocess.run(cmd, cwd=str(REPO_ROOT), check=False)
+    if proc.returncode != 0:
+        raise SystemExit(proc.returncode)
+
+
+def _heavy_stage_estimates(*, cfg: dict, baseline_count: int, rows_per_second: float) -> dict:
+    runtime_cfg = cfg.get("runtime_estimator") or {}
+    threshold_model_count = int(runtime_cfg.get("threshold_model_count", len(cfg.get("models") or [])) or 3)
+    stage_row_multiplier = dict(runtime_cfg.get("stage_row_multiplier") or {})
+    defaults = {"05_span_counterfactuals.py": 8.0, "07_run_tracing.py": 1.0}
+    out = {}
+    for stage in sorted(HEAVY_STAGES):
+        mult = float(stage_row_multiplier.get(stage, defaults.get(stage, 1.0)))
+        prompts_per_model = max(1, int(round(float(baseline_count) * mult)))
+        est = estimate_runtime(
+            task_name=stage,
+            rows_per_second=max(float(rows_per_second), 1e-9),
+            prompts_per_model=prompts_per_model,
+            model_count=threshold_model_count,
+        )
+        out[stage] = est
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="V2 experiment orchestrator")
+    ap.add_argument("--run-id", required=True)
+    ap.add_argument("--mode", choices=["smoke", "single_model", "full"], default="full")
+    ap.add_argument("--model-name", default=None)
+    ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--config", default=str(REPO_ROOT / "configs" / "experiment_v2.yaml"))
+    args = ap.parse_args()
+
+    cfg = _load_cfg(Path(args.config))
+
+    if args.mode == "single_model" and not args.model_name:
+        raise SystemExit("--mode single_model requires --model-name")
+
+    baseline_count = _baseline_prompt_count(args.run_id)
+    rps = _pilot_rows_per_second(args.run_id)
+    threshold = float((cfg.get("runtime_estimator") or {}).get("threshold_hours_all_models", 36.0))
+    stage_est = _heavy_stage_estimates(cfg=cfg, baseline_count=baseline_count, rows_per_second=rps)
+    stage_backend = {
+        stage: choose_backend(estimated_hours_all_models=est.estimated_hours_all_models, threshold_hours=threshold)
+        for stage, est in stage_est.items()
+    }
+
+    mode_max_prompts = {"smoke": 25, "single_model": 300, "full": 0}[args.mode]
+
+    base_argv = ["--run-id", args.run_id, "--config", args.config]
+    if args.model_name:
+        base_argv.extend(["--model-name", args.model_name])
+    if mode_max_prompts > 0:
+        base_argv.extend(["--max-prompts", str(mode_max_prompts)])
+    if args.resume:
+        base_argv.append("--resume")
+
+    executed = []
+    skipped_names = set()
+    skipped = []
+    for script_name in PIPELINE:
+        deps = DEPENDENCIES.get(script_name, set())
+        missing_deps = sorted(d for d in deps if (d in skipped_names or d not in executed))
+        if missing_deps:
+            skipped.append({"script": script_name, "reason": f"dependency skipped: {', '.join(missing_deps)}"})
+            skipped_names.add(script_name)
+            continue
+        if args.mode == "smoke" and script_name == "07_run_tracing.py":
+            skipped.append({"script": script_name, "reason": "smoke mode skips model tracing stage"})
+            skipped_names.add(script_name)
+            continue
+        if script_name in HEAVY_STAGES and stage_backend.get(script_name) == "gpu":
+            skipped.append({"script": script_name, "reason": "estimated runtime exceeds 36h threshold for all models"})
+            skipped_names.add(script_name)
+            continue
+        script_argv = list(base_argv)
+        if args.mode == "smoke" and script_name == "05_span_counterfactuals.py":
+            script_argv.extend(["--counterfactual-mode", "proxy"])
+        _run_script(script_name, script_argv)
+        executed.append(script_name)
+
+    out_root = REPO_ROOT / "runs" / args.run_id / "v2"
+    out_root.mkdir(parents=True, exist_ok=True)
+    complete = len(skipped) == 0
+    report = {
+        "pass": bool(complete),
+        "complete": bool(complete),
+        "run_id": args.run_id,
+        "mode": args.mode,
+        "model_name": args.model_name,
+        "runtime_rows_per_second_from_pilot": rps,
+        "runtime_threshold_hours_all_models": threshold,
+        "heavy_stage_estimates_hours_all_models": {
+            stage: float(est.estimated_hours_all_models) for stage, est in stage_est.items()
+        },
+        "heavy_stage_backend_decision": stage_backend,
+        "executed_scripts": executed,
+        "skipped_scripts": skipped,
+        "requires_gpu_handoff": any(
+            (x.get("script") in HEAVY_STAGES) and ("exceeds 36h" in str(x.get("reason")))
+            for x in skipped
+        ),
+    }
+    (out_root / "00_run_experiment.report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    print(str(out_root / "00_run_experiment.report.json"))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

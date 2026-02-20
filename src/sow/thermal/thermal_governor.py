@@ -55,6 +55,7 @@ class ThermalHygieneConfig:
     cutoff_level: str
     cooldown_seconds: int
     check_interval_seconds: int
+    pause_mode: str
 
     @staticmethod
     def from_cfg(cfg: Dict[str, Any] | None) -> "ThermalHygieneConfig":
@@ -67,18 +68,21 @@ class ThermalHygieneConfig:
                 cutoff_level="serious",
                 cooldown_seconds=20 * 60,
                 check_interval_seconds=30,
+                pause_mode="sleep",
             )
         enabled = bool(cfg.get("enabled", True))
         provider = str(cfg.get("provider", "powermetrics_thermal_pressure"))
         cutoff_level = str(cfg.get("cutoff_level", "serious"))
         cooldown_seconds = int(cfg.get("cooldown_seconds", 20 * 60))
         check_interval_seconds = int(cfg.get("check_interval_seconds", 30))
+        pause_mode = str(cfg.get("pause_mode", "sleep"))
         return ThermalHygieneConfig(
             enabled=enabled,
             provider=provider,
             cutoff_level=cutoff_level,
             cooldown_seconds=cooldown_seconds,
             check_interval_seconds=check_interval_seconds,
+            pause_mode=pause_mode,
         )
 
 
@@ -116,6 +120,8 @@ class ThermalGovernor:
             raise ValueError("cooldown_seconds must be positive")
         if self._cfg.check_interval_seconds <= 0:
             raise ValueError("check_interval_seconds must be positive")
+        if str(self._cfg.pause_mode) not in ("sleep", "checkpoint_exit"):
+            raise ValueError("pause_mode must be one of: sleep/checkpoint_exit")
 
     @property
     def cfg(self) -> ThermalHygieneConfig:
@@ -163,6 +169,26 @@ class ThermalGovernor:
         if _rank(level) < _rank(self._cfg.cutoff_level):
             return {"checked": True, "enabled": True, "level": level, "cooled_down": False}
 
+        if str(self._cfg.pause_mode) == "checkpoint_exit":
+            self._append_event(
+                {
+                    "event": "checkpoint_exit_requested",
+                    "stage": stage,
+                    "model_id": model_id,
+                    "model_revision": model_revision,
+                    "level": level,
+                    "cooldown_seconds": int(self._cfg.cooldown_seconds),
+                }
+            )
+            return {
+                "checked": True,
+                "enabled": True,
+                "level": level,
+                "cooled_down": False,
+                "checkpoint_exit": True,
+                "cooldown_seconds": int(self._cfg.cooldown_seconds),
+            }
+
         # Cooldown (cooperative sleep)
         self._append_event(
             {
@@ -185,4 +211,3 @@ class ThermalGovernor:
             }
         )
         return {"checked": True, "enabled": True, "level": level, "cooled_down": True}
-

@@ -1,0 +1,58 @@
+experiment:
+  name: shape_of_wisdom_v2
+  objective_doc: /Users/shaileshrana/shape-of-wisdom/docs/PAPER_OBJECTIVE_V3.md
+  implementation_doc: /Users/shaileshrana/shape-of-wisdom/docs/IMPLEMENTATION_PLAN_V3.md
+
+models:
+  - name: qwen2.5-7b-instruct
+    model_id: Qwen/Qwen2.5-7B-Instruct
+    revision: a09a35458c702b33eeacc393d103063234e8bc28
+  - name: llama-3.1-8b-instruct
+    model_id: meta-llama/Llama-3.1-8B-Instruct
+    revision: 0e9e39f249a16976918f6564b8830bc894c89659
+  - name: mistral-7b-instruct-v0.3
+    model_id: mistralai/Mistral-7B-Instruct-v0.3
+    revision: c170c708c41dac9275d15a8fff4eca08d52bab71
+
+data_scope:
+  baseline_manifest_name: ccc_baseline.jsonl
+  robustness_enabled: false
+  robustness_variant_cap_if_needed: 5
+
+sampling:
+  span_counterfactual_prompts_per_model: 200
+  span_counterfactual_max_prompts_per_model: 1000
+  tracing_prompts_per_model: 600
+
+span_counterfactual:
+  mode: model
+  allow_proxy_fallback: false
+
+causal:
+  ablation_target_layers: [20, 21, 22, 23, 24, 25, 26, 27]
+  patching_target_layers: [20, 21, 22, 23, 24, 25, 26, 27]
+  include_negative_controls: true
+  drift_decomposition_r2_min: 0.70
+
+thermal_policy:
+  enabled: true
+  provider: powermetrics_thermal_pressure
+  cutoff_level: serious
+  cooldown_seconds: 1200
+  check_interval_seconds: 30
+  pause_mode: checkpoint_exit
+
+runtime_estimator:
+  forecast_from_smoke: true
+  threshold_hours_all_models: 36
+  threshold_model_count: 3
+  mac_default: true
+  fallback_backend: gpu
+  stage_row_multiplier:
+    05_span_counterfactuals.py: 8.0
+    07_run_tracing.py: 1.0
+
+execution:
+  modes: [smoke, single_model, full]
+  default_mode: full
+  deterministic_seed: 12345

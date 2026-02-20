@@ -24,6 +24,7 @@ class TestThermalGovernor(unittest.TestCase):
             cutoff_level="serious",
             cooldown_seconds=1200,
             check_interval_seconds=999,
+            pause_mode="sleep",
         )
         with tempfile.TemporaryDirectory() as td:
             events = Path(td) / "events.jsonl"
@@ -61,6 +62,7 @@ class TestThermalGovernor(unittest.TestCase):
             cutoff_level="serious",
             cooldown_seconds=1200,
             check_interval_seconds=1,
+            pause_mode="sleep",
         )
         with tempfile.TemporaryDirectory() as td:
             events = Path(td) / "events.jsonl"
@@ -98,6 +100,7 @@ class TestThermalGovernor(unittest.TestCase):
             cutoff_level="critical",
             cooldown_seconds=1200,
             check_interval_seconds=60,
+            pause_mode="sleep",
         )
         with tempfile.TemporaryDirectory() as td:
             events = Path(td) / "events.jsonl"
@@ -120,4 +123,3 @@ class TestThermalGovernor(unittest.TestCase):
 
             lines = events.read_text(encoding="utf-8").strip().splitlines()
             self.assertEqual(len(lines), 1)
-

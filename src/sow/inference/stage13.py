@@ -569,6 +569,7 @@ def run_stage13_inference_for_model(
     """
     import torch  # noqa: PLC0415
     from transformers import AutoModelForCausalLM, AutoTokenizer  # noqa: PLC0415
+    from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig  # noqa: PLC0415
 
     model_id = str(model["model_id"])
     revision = str(model["revision"])
@@ -599,6 +600,9 @@ def run_stage13_inference_for_model(
 
     # Determinism knobs (best effort). Batch-consistency gate is the real guardrail.
     det = configure_torch_determinism(device=device)
+    th_cfg = ThermalHygieneConfig.from_cfg(thermal_hygiene_cfg)
+    thermal_events_path = run_dir / "meta" / "thermal_events.jsonl"
+    governor = ThermalGovernor(cfg=th_cfg, events_path=thermal_events_path) if th_cfg.enabled else None
 
     torch_dtype = torch.float16 if device != "cpu" else torch.float32
 
@@ -677,6 +681,15 @@ def run_stage13_inference_for_model(
                 "CUBLAS_WORKSPACE_CONFIG": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
             },
         },
+        "thermal_hygiene": {
+            "enabled": bool(th_cfg.enabled),
+            "provider": str(th_cfg.provider),
+            "cutoff_level": str(th_cfg.cutoff_level),
+            "cooldown_seconds": int(th_cfg.cooldown_seconds),
+            "check_interval_seconds": int(th_cfg.check_interval_seconds),
+            "pause_mode": str(th_cfg.pause_mode),
+            "events_path": str(thermal_events_path),
+        },
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     meta_path = paths.run_meta_json
@@ -727,6 +740,25 @@ def run_stage13_inference_for_model(
             off = int(st.offset)
             slen = int(st.slice_len())
             batch = rows[off : off + slen]
+            if governor is not None:
+                action = governor.maybe_cooldown(stage=f"stage13_{condition}", model_id=model_id, model_revision=revision)
+                if bool(action.get("checkpoint_exit")):
+                    out = {
+                        "pass": False,
+                        "stopped_early": True,
+                        "stop_reason": "thermal_checkpoint",
+                        "thermal_action": action,
+                        "output_path": str(out_jsonl),
+                        "output_sha256": sha256_file(out_jsonl) if out_jsonl.exists() else None,
+                        "batching": {"resolved": int(bs), "batch_sizes_used": sorted(int(x) for x in bs_used)},
+                    }
+                    try:
+                        del model_obj
+                        del tok
+                    except Exception:
+                        pass
+                    cleanup_torch(device=str(device))
+                    return out
             # Skip already completed by resume_key (append-only resume).
             batch2 = []
             for r in batch:

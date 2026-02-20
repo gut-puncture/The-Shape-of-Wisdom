@@ -521,6 +521,104 @@ class TestStage13InferenceCheckpoint(unittest.TestCase):
             self.assertEqual(len(rows_out), 6)
             self.assertEqual({r["prompt_uid"] for r in rows_out}, {f"u{i}" for i in range(6)})
 
+    def test_stage13_invokes_thermal_governor_when_enabled(self) -> None:
+        from sow.inference.stage13 import run_stage13_inference_for_model
+
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            run_dir = tmp / "run"
+            (run_dir / "token_buckets").mkdir(parents=True, exist_ok=True)
+            (run_dir / "sentinels").mkdir(parents=True, exist_ok=True)
+            (run_dir / "pca").mkdir(parents=True, exist_ok=True)
+
+            model = {"name": "fake", "model_id": "fake/model", "revision": "r0"}
+            model_key = "fake__model"
+
+            tb = {
+                "run_id": "test",
+                "model_id": model["model_id"],
+                "model_revision": model["revision"],
+                "buckets": {"A": [1], "B": [2], "C": [3], "D": [4]},
+            }
+            (run_dir / "token_buckets" / f"{model_key}.json").write_text(json.dumps(tb), encoding="utf-8")
+
+            mean = np.zeros((5,), dtype=np.float32)
+            components = np.zeros((128, 5), dtype=np.float32)
+            basis = run_dir / "pca" / f"{model_key}_pca_basis.npz"
+            np.savez(basis, mean=mean, components=components, explained_variance_ratio=np.ones((128,), dtype=np.float64) * 0.0)
+            meta = run_dir / "pca" / f"{model_key}_pca_basis.meta.json"
+            meta.write_text(json.dumps({"basis_hash": "h0"}), encoding="utf-8")
+
+            from sow.hashing import sha256_file
+
+            (run_dir / "sentinels" / f"pca_fit.{model_key}.done").write_text(
+                json.dumps(
+                    {
+                        "stage": "pca_fit",
+                        "run_id": "test",
+                        "model_id": model["model_id"],
+                        "model_revision": model["revision"],
+                        "basis_path": str(basis),
+                        "basis_sha256": sha256_file(basis),
+                        "meta_path": str(meta),
+                        "meta_sha256": sha256_file(meta),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            manifest = run_dir / "manifests.jsonl"
+            _write_jsonl(
+                manifest,
+                [
+                    {
+                        "prompt_uid": "u0",
+                        "prompt_id": "u0",
+                        "example_id": "e0",
+                        "wrapper_id": "plain_exam",
+                        "prompt_text": "Q?\\nA. x\\nB. y\\nC. z\\nD. w\\nAnswer: ",
+                        "options": {"A": "x", "B": "y", "C": "z", "D": "w"},
+                        "correct_key": "A",
+                        "manifest_sha256": "m0",
+                        "coarse_domain": "d0",
+                    }
+                ],
+            )
+
+            out = run_dir / "out.jsonl"
+            calls = {"n": 0}
+
+            def fake_maybe(self, *, stage, model_id, model_revision):
+                calls["n"] += 1
+                return {"checked": True, "enabled": True, "level": "nominal", "cooled_down": False}
+
+            with patch("transformers.AutoTokenizer.from_pretrained", return_value=_FakeTokenizer()), patch(
+                "transformers.AutoModelForCausalLM.from_pretrained", return_value=_FakeModel(n_layers=3, hidden_dim=5)
+            ), patch("sow.thermal.thermal_governor.ThermalGovernor.maybe_cooldown", new=fake_maybe):
+                res = run_stage13_inference_for_model(
+                    run_id="test",
+                    run_dir=run_dir,
+                    model=model,
+                    generation={"do_sample": False, "max_new_tokens": 24, "temperature": 1.0, "top_p": 1.0},
+                    manifest_path=manifest,
+                    condition="baseline",
+                    batch_size=1,
+                    device_override="cpu",
+                    output_path_override=out,
+                    stop_after_rows=None,
+                    commitment_margin_thresholds=[0.1],
+                    thermal_hygiene_cfg={
+                        "enabled": True,
+                        "provider": "powermetrics_thermal_pressure",
+                        "cutoff_level": "serious",
+                        "cooldown_seconds": 1200,
+                        "check_interval_seconds": 1,
+                        "pause_mode": "sleep",
+                    },
+                )
+                self.assertTrue(res["pass"])
+                self.assertGreater(calls["n"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

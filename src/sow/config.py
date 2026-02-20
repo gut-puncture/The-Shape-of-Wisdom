@@ -54,6 +54,7 @@ def default_run_config(*, run_id: str, random_seed: int) -> Dict[str, Any]:
             "cutoff_level": "serious",
             "cooldown_seconds": 20 * 60,
             "check_interval_seconds": 30,
+            "pause_mode": "checkpoint_exit",
         },
         "prompting": {
             "baseline_wrapper_id": "plain_exam",
@@ -144,3 +145,6 @@ def validate_run_config(cfg: Dict[str, Any]) -> None:
         interval_seconds = int(th.get("check_interval_seconds", 30))
         if interval_seconds <= 0:
             raise ValueError("thermal_hygiene.check_interval_seconds must be positive")
+        pause_mode = str(th.get("pause_mode", "sleep"))
+        if pause_mode not in ("sleep", "checkpoint_exit"):
+            raise ValueError("thermal_hygiene.pause_mode must be one of: sleep/checkpoint_exit")
