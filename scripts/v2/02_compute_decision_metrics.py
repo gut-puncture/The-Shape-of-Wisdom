@@ -51,6 +51,7 @@ def main() -> int:
             "pass": True,
             "rows": int(df.shape[0]),
             "prompts": int(df["prompt_uid"].nunique()) if not df.empty else 0,
+            "correctness_source": "final_layer_top1_logits",
             "out_path": str(out_path),
         },
     )

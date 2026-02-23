@@ -12,8 +12,8 @@ from sow.v2.trajectory_types import classify_trajectory  # noqa: E402
 
 class TestTrajectoryClassification(unittest.TestCase):
     def test_stable_correct(self) -> None:
-        delta = np.asarray([0.2, 0.3, 0.35, 0.4], dtype=float)
-        drift = np.asarray([0.1, 0.05, 0.05, 0.0], dtype=float)
+        delta = np.asarray([0.6, 0.7, 0.8, 0.9], dtype=float)
+        drift = np.asarray([0.1, 0.1, 0.1, 0.0], dtype=float)
         t = classify_trajectory(delta, is_correct=True, drift=drift)
         self.assertEqual(t, "stable_correct")
 

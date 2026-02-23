@@ -121,19 +121,19 @@ def parse_choice(
         "parsed_choice": None,
         "decision": "unresolved_no_signal",
         "debug": {
+            "first_token_letter": None,
             "letter_candidates": [],
             "numeric_candidates": [],
             "option_text_hits": [],
+            "conflicts": [],
         },
     }
 
     # --- Letters ---
-    letter_candidates: List[str] = []
-
     ft_letter = _extract_first_letter(first_token or "")
-    if ft_letter:
-        letter_candidates.append(ft_letter)
+    out["debug"]["first_token_letter"] = ft_letter
 
+    letter_candidates: List[str] = []
     m0 = re.match(r'^\s*(?:[-*•]+\s*)?[\(\[\{<"\']*\s*([ABCD])\b', text_nfkc, flags=re.IGNORECASE)
     if m0:
         letter_candidates.append(m0.group(1).upper())
@@ -155,14 +155,18 @@ def parse_choice(
 
     unique_letters: Set[str] = set([c for c in letter_candidates if c in {"A", "B", "C", "D"}])
     out["debug"]["letter_candidates"] = sorted(unique_letters)
-
-    if len(unique_letters) > 1:
-        # Regression wants this treated as no-signal (not conflicting signals).
-        out["parsed_choice"] = None
-        out["decision"] = "unresolved_no_signal"
-        return out
-
-    letter_choice = next(iter(unique_letters)) if len(unique_letters) == 1 else None
+    letter_choice: Optional[str] = None
+    if ft_letter:
+        letter_choice = ft_letter
+        if len(unique_letters) > 1 or (len(unique_letters) == 1 and ft_letter not in unique_letters):
+            out["debug"]["conflicts"].append("first_token_vs_response_letter")
+    else:
+        if len(unique_letters) > 1:
+            # Regression wants this treated as no-signal (not conflicting signals).
+            out["parsed_choice"] = None
+            out["decision"] = "unresolved_no_signal"
+            return out
+        letter_choice = next(iter(unique_letters)) if len(unique_letters) == 1 else None
 
     # --- Numerics ---
     numeric_tokens: List[str] = []
@@ -238,17 +242,26 @@ def parse_choice(
         option_choice = option_hits[0]
 
     # --- Conflicts ---
-    if letter_choice and numeric_choice and letter_choice != numeric_choice:
+    if ft_letter and numeric_choice and ft_letter != numeric_choice:
+        out["debug"]["conflicts"].append("first_token_vs_numeric")
+    elif letter_choice and numeric_choice and letter_choice != numeric_choice:
         out["parsed_choice"] = None
         out["decision"] = "unresolved_conflicting_signals"
         return out
 
-    if numeric_choice and option_choice and numeric_choice != option_choice:
+    if ft_letter and option_choice and ft_letter != option_choice:
+        out["debug"]["conflicts"].append("first_token_vs_option_text")
+    elif numeric_choice and option_choice and numeric_choice != option_choice:
         out["parsed_choice"] = None
         out["decision"] = "unresolved_conflicting_signals"
         return out
 
     # --- Resolve ---
+    if ft_letter:
+        out["parsed_choice"] = ft_letter
+        out["decision"] = "resolved_letter_first_token"
+        return out
+
     if letter_choice:
         out["parsed_choice"] = letter_choice
         out["decision"] = "resolved_letter"

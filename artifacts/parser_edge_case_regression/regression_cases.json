@@ -14,7 +14,7 @@
     "correct_key": null,
     "expected": {
       "choice": "A",
-      "decision": "resolved_letter"
+      "decision": "resolved_letter_first_token"
     }
   },
   {
@@ -355,8 +355,8 @@
     },
     "correct_key": null,
     "expected": {
-      "choice": null,
-      "decision": "unresolved_conflicting_signals"
+      "choice": "A",
+      "decision": "resolved_letter_first_token"
     }
   },
   {
@@ -465,6 +465,60 @@
     "expected": {
       "choice": null,
       "decision": "unresolved_no_signal"
+    }
+  },
+  {
+    "case_id": "first_token_marker_gpt2_space",
+    "category": "letters",
+    "description": "GPT2-style first-token marker should resolve by first-token precedence",
+    "response_text": "",
+    "first_token": "ĠA.",
+    "options": {
+      "A": "alpha",
+      "B": "beta",
+      "C": "gamma",
+      "D": "delta"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_letter_first_token"
+    }
+  },
+  {
+    "case_id": "first_token_marker_sentencepiece",
+    "category": "letters",
+    "description": "SentencePiece-style first-token marker should resolve by first-token precedence",
+    "response_text": "",
+    "first_token": "▁(C",
+    "options": {
+      "A": "alpha",
+      "B": "beta",
+      "C": "gamma",
+      "D": "delta"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "C",
+      "decision": "resolved_letter_first_token"
+    }
+  },
+  {
+    "case_id": "first_token_precedence_conflicting_text",
+    "category": "conflicts",
+    "description": "When first token and later text conflict, first token remains authoritative",
+    "response_text": "Answer: B. Option B is correct.",
+    "first_token": " A",
+    "options": {
+      "A": "alpha",
+      "B": "beta",
+      "C": "gamma",
+      "D": "delta"
+    },
+    "correct_key": null,
+    "expected": {
+      "choice": "A",
+      "decision": "resolved_letter_first_token"
     }
   }
 ]

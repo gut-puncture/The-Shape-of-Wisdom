@@ -19,6 +19,15 @@ class TestModelNuancesVersionFloor(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             assert_transformers_version_floor("meta-llama/Llama-3.1-8B-Instruct", "4.42.9")
 
+    def test_stage00a_baseline_inference_enforces_version_floor(self) -> None:
+        path = REPO_ROOT / "src" / "sow" / "v2" / "baseline_inference.py"
+        src = path.read_text(encoding="utf-8")
+        self.assertIn(
+            "assert_transformers_version_floor(",
+            src,
+            msg="baseline inference must enforce model-specific transformers version floors",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

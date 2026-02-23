@@ -8,7 +8,17 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from _common import base_parser, baseline_manifest_path, load_experiment_config, resolve_models, run_v2_root_for, write_json, write_parquet
+from _common import (
+    base_parser,
+    baseline_manifest_path,
+    load_experiment_config,
+    resolve_models,
+    run_v2_root_for,
+    write_json,
+    write_jsonl,
+    write_parquet,
+    write_text_atomic,
+)
 from sow.io_jsonl import iter_jsonl
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
 from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor, pick_torch_dtype
@@ -69,6 +79,21 @@ def _merge_span_rows(*, existing_rows: List[Dict[str, object]], new_rows: List[D
     if all(c in tmp.columns for c in key_cols):
         tmp = tmp.drop_duplicates(subset=key_cols, keep="last")
     return tmp.to_dict(orient="records")
+
+
+def _merge_effect_rows(*, existing_df: pd.DataFrame, new_rows: List[Dict[str, object]]) -> pd.DataFrame:
+    if not new_rows:
+        return existing_df
+    new_df = pd.DataFrame.from_records(new_rows)
+    if existing_df.empty:
+        merged = new_df
+    elif new_df.empty:
+        merged = existing_df
+    else:
+        merged = pd.concat([existing_df, new_df], ignore_index=True)
+    if not merged.empty:
+        merged = merged.drop_duplicates(subset=["model_id", "prompt_uid", "span_id"], keep="last")
+    return merged
 
 
 def _model_mutated_delta(
@@ -134,10 +159,7 @@ def _model_mutated_delta(
 
 
 def _write_spans_jsonl(path: Path, rows: List[Dict[str, object]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n")
+    write_jsonl(path, rows)
 
 
 def _compute_paraphrase_stability(
@@ -198,7 +220,11 @@ def main() -> int:
     paraphrase_min_label_agreement = float(stage05_cfg.get("min_label_agreement", 0.85))
     paraphrase_min_span_jaccard = float(stage05_cfg.get("min_span_jaccard", 0.80))
     paraphrase_sample_size = int(stage05_cfg.get("sample_size_per_model", 50))
+    sampling_cfg = cfg.get("sampling") or {}
+    span_counterfactual_prompts_per_model = int(sampling_cfg.get("span_counterfactual_prompts_per_model", 0))
+    span_counterfactual_max_prompts_per_model = int(sampling_cfg.get("span_counterfactual_max_prompts_per_model", 0))
     deterministic_seed = int(execution_cfg.get("deterministic_seed", 12345))
+    checkpoint_every_prompts = max(1, int(execution_cfg.get("stage05_checkpoint_every_prompts", 25)))
 
     span_cfg = cfg.get("span_counterfactual") or {}
     mode = str(args.counterfactual_mode or span_cfg.get("mode") or "proxy")
@@ -225,9 +251,13 @@ def main() -> int:
 
     existing_effects = pd.read_parquet(effects_path) if (args.resume and effects_path.exists()) else pd.DataFrame()
     done_keys = completed_span_keys_for_mode(existing_effects, mode=mode)
+    existing_span_rows: List[Dict[str, object]] = []
+    if args.resume and spans_path.exists():
+        existing_span_rows = [dict(r) for r in iter_jsonl(spans_path)]
 
     new_spans_rows: List[Dict[str, object]] = []
     effects_rows: List[Dict[str, object]] = []
+    pending_prompts_since_checkpoint = 0
 
     max_prompts = int(args.max_prompts)
     prompts_processed = 0
@@ -235,6 +265,24 @@ def main() -> int:
     thermal_stop_action = None
     model_level_proxy_fallback: Dict[str, str] = {}
     model_prompt_uids_by_model: Dict[str, List[str]] = {}
+    available_prompt_counts: Dict[str, int] = {}
+    requested_prompt_counts: Dict[str, int] = {}
+    selected_prompt_counts: Dict[str, int] = {}
+
+    def _flush_checkpoint() -> None:
+        nonlocal existing_effects, existing_span_rows, new_spans_rows, effects_rows, pending_prompts_since_checkpoint
+        if not new_spans_rows and not effects_rows:
+            pending_prompts_since_checkpoint = 0
+            return
+        existing_span_rows = _merge_span_rows(existing_rows=existing_span_rows, new_rows=new_spans_rows)
+        existing_effects = _merge_effect_rows(existing_df=existing_effects, new_rows=effects_rows)
+        _write_spans_jsonl(spans_path, existing_span_rows)
+        write_parquet(effects_path, existing_effects)
+        labels_ckpt = label_span_effects(existing_effects, output_col="span_label")
+        write_parquet(out_root / "span_labels.parquet", labels_ckpt)
+        new_spans_rows = []
+        effects_rows = []
+        pending_prompts_since_checkpoint = 0
 
     for model in models:
         model_id = str(model["model_id"])
@@ -247,9 +295,20 @@ def main() -> int:
                 if str(mid) == model_id and prompt_uid in manifest_rows
             }
         )
+        available_prompt_counts[model_id] = int(len(model_prompt_uids))
+        requested = int(span_counterfactual_prompts_per_model) if int(span_counterfactual_prompts_per_model) > 0 else int(len(model_prompt_uids))
+        if int(span_counterfactual_max_prompts_per_model) > 0:
+            requested = min(int(requested), int(span_counterfactual_max_prompts_per_model))
         if max_prompts > 0:
-            model_prompt_uids = model_prompt_uids[:max_prompts]
+            requested = min(int(requested), int(max_prompts))
+        requested = max(0, int(requested))
+        requested_prompt_counts[model_id] = int(requested)
+        if int(len(model_prompt_uids)) > int(requested):
+            seed_offset = sum(ord(ch) for ch in model_id)
+            rng = random.Random(int(deterministic_seed) + int(seed_offset))
+            model_prompt_uids = sorted(rng.sample(model_prompt_uids, int(requested)))
         model_prompt_uids_by_model[model_id] = list(model_prompt_uids)
+        selected_prompt_counts[model_id] = int(len(model_prompt_uids))
 
         model_obj = None
         tokenizer = None
@@ -385,6 +444,9 @@ def main() -> int:
                 done_keys.add(key)
 
             prompts_processed += 1
+            pending_prompts_since_checkpoint += 1
+            if pending_prompts_since_checkpoint >= checkpoint_every_prompts:
+                _flush_checkpoint()
 
         if mode == "model" and model_obj is not None:
             try:
@@ -405,22 +467,10 @@ def main() -> int:
         if thermal_stop_action is not None:
             break
 
-    effects_new = pd.DataFrame.from_records(effects_rows)
-    if existing_effects.empty:
-        effects = effects_new
-    elif effects_new.empty:
-        effects = existing_effects
-    else:
-        effects = pd.concat([existing_effects, effects_new], ignore_index=True)
-    if not effects.empty:
-        effects = effects.drop_duplicates(subset=["model_id", "prompt_uid", "span_id"], keep="last")
-
+    _flush_checkpoint()
+    effects = existing_effects
     labels = label_span_effects(effects, output_col="span_label")
-
-    existing_span_rows: List[Dict[str, object]] = []
-    if args.resume and spans_path.exists():
-        existing_span_rows = [dict(r) for r in iter_jsonl(spans_path)]
-    spans_rows = _merge_span_rows(existing_rows=existing_span_rows, new_rows=new_spans_rows)
+    spans_rows = existing_span_rows
 
     _write_spans_jsonl(spans_path, spans_rows)
     write_parquet(effects_path, effects)
@@ -463,7 +513,17 @@ def main() -> int:
         "paraphrase_label_agreement_per_model": bool(per_model_label_ok),
         "paraphrase_span_jaccard_per_model": bool(per_model_span_ok),
     }
-    failing_gates = sorted([k for k, v in paraphrase_gates.items() if not bool(v)])
+    is_full_mode = int(max_prompts) == 0
+    sampling_full_mode_prompt_count = True
+    if is_full_mode and int(span_counterfactual_prompts_per_model) > 0:
+        sampling_full_mode_prompt_count = all(
+            int(selected_prompt_counts.get(mid, 0)) >= int(span_counterfactual_prompts_per_model) for mid in expected_model_ids
+        )
+    gates = {
+        **paraphrase_gates,
+        "sampling_full_mode_prompt_count": bool(sampling_full_mode_prompt_count),
+    }
+    failing_gates = sorted([k for k, v in gates.items() if not bool(v)])
     gates_pass = len(failing_gates) == 0
 
     label_counts = labels["span_label"].value_counts().to_dict() if (not labels.empty and "span_label" in labels.columns) else {}
@@ -472,7 +532,10 @@ def main() -> int:
     pass_flag = (thermal_stop_action is None) and bool(gates_pass)
     if pass_flag:
         done_sentinel.parent.mkdir(parents=True, exist_ok=True)
-        done_sentinel.write_text(json.dumps({"stage": "05_span_counterfactuals", "pass": True}, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        write_text_atomic(
+            done_sentinel,
+            json.dumps({"stage": "05_span_counterfactuals", "pass": True}, ensure_ascii=False, sort_keys=True) + "\n",
+        )
 
     write_json(
         out_root / "05_span_counterfactuals.report.json",
@@ -500,7 +563,15 @@ def main() -> int:
                 "per_model": per_model_stability,
                 "out_path": str(stability_path),
             },
-            "gates": paraphrase_gates,
+            "sampling_contract": {
+                "is_full_mode": bool(is_full_mode),
+                "span_counterfactual_prompts_per_model": int(span_counterfactual_prompts_per_model),
+                "span_counterfactual_max_prompts_per_model": int(span_counterfactual_max_prompts_per_model),
+                "available_prompt_counts": {str(k): int(v) for k, v in available_prompt_counts.items()},
+                "requested_prompt_counts": {str(k): int(v) for k, v in requested_prompt_counts.items()},
+                "selected_prompt_counts": {str(k): int(v) for k, v in selected_prompt_counts.items()},
+            },
+            "gates": gates,
             "failing_gates": failing_gates,
             "stopped_early": bool(thermal_stop_action is not None),
             "stop_reason": "thermal_checkpoint" if thermal_stop_action is not None else None,

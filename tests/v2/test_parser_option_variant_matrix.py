@@ -57,8 +57,12 @@ class TestParserOptionVariantMatrix(unittest.TestCase):
             "({L}",
             "[{L}",
             "\n{L}",
+            " {L}",
+            "{L}.",
             "Ġ{L}",
             "▁{L}",
+            "Ġ{L}.",
+            "▁({L}",
         ]
         for letter in ["A", "B", "C", "D"]:
             tokens = [tpl.format(L=letter) for tpl in token_templates]
@@ -71,7 +75,18 @@ class TestParserOptionVariantMatrix(unittest.TestCase):
                         letter,
                         msg=f"first-token parser failed for token={token!r}; out={out}",
                     )
-                    self.assertEqual(out["decision"], "resolved_letter")
+                    self.assertEqual(out["decision"], "resolved_letter_first_token")
+
+    def test_first_token_wins_over_conflicting_later_mentions(self) -> None:
+        for letter, conflicting in [("A", "B"), ("B", "C"), ("C", "D"), ("D", "A")]:
+            with self.subTest(letter=letter, conflicting=conflicting):
+                out = parse_choice(
+                    response_text=f"Answer: {conflicting}. Actually option {conflicting} is correct.",
+                    first_token=f" {letter}",
+                    options=_options(),
+                )
+                self.assertEqual(out["parsed_choice"], letter, msg=f"first-token precedence failed; out={out}")
+                self.assertEqual(out["decision"], "resolved_letter_first_token")
 
     def test_ambiguous_in_word_text_stays_unresolved(self) -> None:
         for text in ["Aardvark", "planB", "catC", "Dynamo"]:

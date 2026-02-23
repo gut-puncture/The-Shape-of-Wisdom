@@ -21,14 +21,10 @@ def _bootstrap_gap_ci(ev: np.ndarray, ds: np.ndarray, *, seed: int) -> dict[str,
     rng = np.random.default_rng(int(seed))
     draws = np.empty((2000,), dtype=np.float64)
     for i in range(draws.size):
-        ev_m = float(np.mean(rng.choice(ev_arr, size=ev_arr.size, replace=True)))
-        ds_m = float(np.mean(rng.choice(ds_arr, size=ds_arr.size, replace=True)))
-        draws[i] = ev_m - ds_m
-    return {
-        "mean": float(np.mean(draws)),
-        "lo": float(np.quantile(draws, 0.025)),
-        "hi": float(np.quantile(draws, 0.975)),
-    }
+        ev_sample = rng.choice(ev_arr, size=ev_arr.size, replace=True)
+        ds_sample = rng.choice(ds_arr, size=ds_arr.size, replace=True)
+        draws[i] = float(np.mean(ev_sample) - np.mean(ds_sample))
+    return bootstrap_ci(draws.tolist(), seed=int(seed) + 1)
 
 
 def _control_value(df: pd.DataFrame, key: str) -> float:

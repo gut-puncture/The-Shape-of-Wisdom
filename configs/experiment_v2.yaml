@@ -17,6 +17,9 @@ models:
 
 data_scope:
   baseline_manifest_name: ccc_baseline.jsonl
+  baseline_manifest_source: /Users/shaileshrana/shape-of-wisdom/prompt_packs/ccc_baseline_v1_3000.jsonl
+  baseline_manifest_sha256: bfe2557316cb1e0eae6a684eb8de84885f74e446ac72f1847a7da80baf2de56c
+  baseline_manifest_expected_rows_full: 3000
   robustness_enabled: false
   robustness_variant_cap_if_needed: 5
 
@@ -36,6 +39,12 @@ causal:
   drift_decomposition_r2_min: 0.70
 
 validators:
+  stage03_trajectory:
+    required_types: [stable_correct, stable_wrong, unstable_correct, unstable_wrong]
+    min_count_per_type_per_model: 1
+    tail_len: 8
+    max_late_flip_count: 0
+    min_abs_delta_tail_floor: 0.5
   stage05_paraphrase:
     min_label_agreement: 0.85
     min_span_jaccard: 0.80
@@ -45,6 +54,7 @@ validators:
     min_difficult_share: 0.30
     min_domains_covered: 2
     min_prompts_per_domain: 10
+    max_domain_share: 0.60
   stage08_decomposition:
     split_train_fraction: 0.70
     min_train_rows: 100
@@ -79,6 +89,7 @@ runtime_estimator:
   threshold_model_count: 3
   mac_default: true
   fallback_backend: gpu
+  require_measured_rps_for_full: true
   stage_row_multiplier:
     05_span_counterfactuals.py: 8.0
     07_run_tracing.py: 1.0
@@ -87,3 +98,8 @@ execution:
   modes: [smoke, single_model, full]
   default_mode: full
   deterministic_seed: 12345
+  stage00_baseline_checkpoint_every_prompts: 1
+  stage00_baseline_batch_chain_mps: [6, 5, 4, 3, 2, 1]
+  stage00_baseline_batch_chain_cuda: [12, 10, 8, 6, 4, 2, 1]
+  stage05_checkpoint_every_prompts: 1
+  stage07_checkpoint_every_prompts: 1

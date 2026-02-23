@@ -16,6 +16,7 @@ class TrajectorySummary:
     sign_flip_count: int
     late_flip_count: int
     mean_abs_drift_last8: float
+    min_abs_delta_tail: float
 
 
 def _sign_flips(delta: np.ndarray) -> int:
@@ -41,15 +42,24 @@ def _late_flips(delta: np.ndarray, *, tail_len: int = 8) -> int:
     return int(np.sum(tail_nz[1:] != tail_nz[:-1]))
 
 
-def classify_trajectory(delta: np.ndarray, *, is_correct: bool, drift: np.ndarray) -> str:
+def classify_trajectory(
+    delta: np.ndarray,
+    *,
+    is_correct: bool,
+    drift: np.ndarray,
+    tail_len: int = 8,
+    max_late_flip_count: int = 0,
+    min_abs_delta_tail_floor: float = 0.5,
+) -> str:
     if delta.size == 0:
         return "unstable_wrong" if not is_correct else "unstable_correct"
 
-    late_flip_count = _late_flips(delta)
-    tail = drift[max(0, drift.size - 8) :] if drift.size else np.asarray([], dtype=np.float64)
-    mean_abs_drift_last8 = float(np.mean(np.abs(tail))) if tail.size else 0.0
+    late_flip_count = _late_flips(delta, tail_len=int(tail_len))
+    tail_delta = delta[max(0, delta.size - int(tail_len)) :] if delta.size else np.asarray([], dtype=np.float64)
+    min_abs_delta_tail = float(np.min(np.abs(tail_delta))) if tail_delta.size else 0.0
+    _ = drift  # drift is retained as a reported diagnostic but not a hard stability gate.
 
-    stable = (late_flip_count == 0) and (mean_abs_drift_last8 <= 0.15)
+    stable = (late_flip_count <= int(max_late_flip_count)) and (min_abs_delta_tail >= float(min_abs_delta_tail_floor))
     if is_correct and stable:
         return "stable_correct"
     if (not is_correct) and stable:
@@ -59,7 +69,13 @@ def classify_trajectory(delta: np.ndarray, *, is_correct: bool, drift: np.ndarra
     return "unstable_wrong"
 
 
-def classify_trajectory_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
+def classify_trajectory_table(
+    metrics_df: pd.DataFrame,
+    *,
+    tail_len: int = 8,
+    max_late_flip_count: int = 0,
+    min_abs_delta_tail_floor: float = 0.5,
+) -> pd.DataFrame:
     if metrics_df.empty:
         return pd.DataFrame(
             columns=[
@@ -70,6 +86,7 @@ def classify_trajectory_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
                 "sign_flip_count",
                 "late_flip_count",
                 "mean_abs_drift_last8",
+                "min_abs_delta_tail",
             ]
         )
 
@@ -79,7 +96,16 @@ def classify_trajectory_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
         delta = g["delta"].to_numpy(dtype=np.float64)
         drift = g["drift"].to_numpy(dtype=np.float64)
         is_correct = bool(g["is_correct"].iloc[0])
-        t_type = classify_trajectory(delta, is_correct=is_correct, drift=drift)
+        t_type = classify_trajectory(
+            delta,
+            is_correct=is_correct,
+            drift=drift,
+            tail_len=int(tail_len),
+            max_late_flip_count=int(max_late_flip_count),
+            min_abs_delta_tail_floor=float(min_abs_delta_tail_floor),
+        )
+        tail_drift = drift[max(0, drift.size - int(tail_len)) :] if drift.size else np.asarray([], dtype=np.float64)
+        tail_delta = delta[max(0, delta.size - int(tail_len)) :] if delta.size else np.asarray([], dtype=np.float64)
         rows.append(
             {
                 "model_id": str(model_id),
@@ -87,8 +113,9 @@ def classify_trajectory_table(metrics_df: pd.DataFrame) -> pd.DataFrame:
                 "is_correct": is_correct,
                 "trajectory_type": t_type,
                 "sign_flip_count": _sign_flips(delta),
-                "late_flip_count": _late_flips(delta),
-                "mean_abs_drift_last8": float(np.mean(np.abs(drift[max(0, drift.size - 8) :]))) if drift.size else 0.0,
+                "late_flip_count": _late_flips(delta, tail_len=int(tail_len)),
+                "mean_abs_drift_last8": float(np.mean(np.abs(tail_drift))) if tail_drift.size else 0.0,
+                "min_abs_delta_tail": float(np.min(np.abs(tail_delta))) if tail_delta.size else 0.0,
             }
         )
 

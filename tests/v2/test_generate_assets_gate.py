@@ -11,6 +11,19 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class TestGenerateAssetsGate(unittest.TestCase):
+    def test_stage11_final_report_is_built_once(self) -> None:
+        script = (REPO_ROOT / "scripts" / "v2" / "11_generate_paper_assets.py").read_text(encoding="utf-8")
+        self.assertEqual(
+            script.count("final_report = {"),
+            1,
+            msg="stage11 should assemble final_report once to avoid drift between duplicate blocks",
+        )
+        self.assertEqual(
+            script.count("write_json(stage11_report_path, final_report)"),
+            1,
+            msg="stage11 should write stage11_report_path once to avoid internal report drift",
+        )
+
     def test_fails_when_required_files_missing(self) -> None:
         run_id = "test_v2_assets_gate"
         run_root = REPO_ROOT / "runs" / run_id / "v2"

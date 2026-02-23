@@ -12,13 +12,15 @@ import pandas as pd
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from _common import base_parser, run_v2_root_for, write_json
+from _common import base_parser, run_v2_root_for, write_json, write_text_atomic
 from sow.v2.assets import write_phase_diagram, write_sha_manifest, write_trajectory_plots
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 REQUIRED_FILES = [
+    "00_run_experiment.report.json",
+    "00a_generate_baseline_outputs.report.json",
     "layerwise.parquet",
     "decision_metrics.parquet",
     "prompt_types.parquet",
@@ -45,6 +47,9 @@ REQUIRED_FILES = [
     "08_attention_and_mlp_decomposition.report.json",
     "09_causal_tests.report.json",
     "10_causal_validation_tools.report.json",
+    "11_generate_paper_assets.report.json",
+    "meta/readiness_audit.json",
+    "meta/run_start_metadata_snapshot.json",
 ]
 
 REQUIRED_METADATA_FILES = [
@@ -215,7 +220,10 @@ def main() -> int:
 
     copied = []
     missing = []
+    deferred_required = {"11_generate_paper_assets.report.json"}
     for name in REQUIRED_FILES:
+        if name in deferred_required:
+            continue
         src = out_root / name
         dst = final_root / name
         if _copy_if_exists(src, dst):
@@ -245,18 +253,18 @@ def main() -> int:
 
     methods_md = final_root / "methods.md"
     results_md = final_root / "results_summary.md"
-    methods_md.write_text(
+    write_text_atomic(
+        methods_md,
         "# Methods\n\n"
         "This run follows PAPER_OBJECTIVE_V3 and IMPLEMENTATION_PLAN_V3 with deterministic metrics, trajectory typing, "
         "span operationalization, tracing decomposition, and causal validation controls.\n",
-        encoding="utf-8",
     )
-    results_md.write_text(
+    write_text_atomic(
+        results_md,
         "# Results Summary\n\n"
         f"- Decision-metric rows: {int(metrics.shape[0])}\n"
         f"- Prompt count: {int(metrics['prompt_uid'].nunique()) if not metrics.empty else 0}\n"
         f"- Generated figures: {len(list((final_root / 'figures').glob('*.png')))}\n",
-        encoding="utf-8",
     )
 
     gates = {
@@ -275,10 +283,15 @@ def main() -> int:
         "gates": gates,
         "failing_gates": failing_gates,
     }
-    (final_root / "final_report.json").write_text(json.dumps(final_report, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
-    write_sha_manifest(root_dir=final_root, out_path=final_root / "sha256_manifest.json")
 
-    write_json(out_root / "11_generate_paper_assets.report.json", final_report)
+    stage11_report_path = out_root / "11_generate_paper_assets.report.json"
+    write_json(stage11_report_path, final_report)
+    stage11_bundle_path = final_root / "11_generate_paper_assets.report.json"
+    copied.append(str(stage11_bundle_path))
+    final_report["copied_files"] = copied
+    write_json(stage11_bundle_path, final_report)
+    write_json(final_root / "final_report.json", final_report)
+    write_sha_manifest(root_dir=final_root, out_path=final_root / "sha256_manifest.json")
     print(str(final_root))
     return 0 if len(failing_gates) == 0 else 2
 

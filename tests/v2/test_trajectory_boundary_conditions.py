@@ -13,28 +13,29 @@ from sow.v2.trajectory_types import classify_trajectory  # noqa: E402
 
 
 class TestTrajectoryBoundaryConditions(unittest.TestCase):
-    def test_exact_drift_threshold_is_stable(self) -> None:
-        delta = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], dtype=float)
-        drift = np.asarray([0.15] * 8, dtype=float)
-        t = classify_trajectory(delta, is_correct=True, drift=drift)
+    def test_exact_tail_floor_is_stable(self) -> None:
+        delta = np.asarray([0.5] * 10, dtype=float)
+        drift = np.asarray([0.3] * 10, dtype=float)
+        t = classify_trajectory(delta, is_correct=True, drift=drift, tail_len=8, max_late_flip_count=0, min_abs_delta_tail_floor=0.5)
         self.assertEqual(t, "stable_correct")
 
-    def test_above_drift_threshold_is_unstable(self) -> None:
-        delta = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], dtype=float)
-        drift = np.asarray([0.150001] * 8, dtype=float)
-        t = classify_trajectory(delta, is_correct=True, drift=drift)
+    def test_below_tail_floor_is_unstable(self) -> None:
+        delta = np.asarray([0.49] * 10, dtype=float)
+        drift = np.asarray([0.01] * 10, dtype=float)
+        t = classify_trajectory(delta, is_correct=True, drift=drift, tail_len=8, max_late_flip_count=0, min_abs_delta_tail_floor=0.5)
         self.assertEqual(t, "unstable_correct")
 
-    def test_zero_crossings_do_not_create_spurious_instability(self) -> None:
-        # Crossing exactly through zero should not be treated as a sign flip.
-        delta = np.asarray([0.25, 0.0, 0.20, 0.30], dtype=float)
-        drift = np.asarray([0.0, 0.0, 0.0, 0.0], dtype=float)
-        t = classify_trajectory(delta, is_correct=True, drift=drift)
-        self.assertEqual(
-            t,
-            "stable_correct",
-            msg=f"zero crossings should not force unstable classification; delta={delta.tolist()} drift={drift.tolist()}",
-        )
+    def test_late_flip_in_tail_is_unstable(self) -> None:
+        delta = np.asarray([0.9, 0.9, 0.9, 0.9, 0.9, -0.9, -0.9, -0.9, -0.9, -0.9], dtype=float)
+        drift = np.asarray([0.0] * 10, dtype=float)
+        t = classify_trajectory(delta, is_correct=False, drift=drift, tail_len=8, max_late_flip_count=0, min_abs_delta_tail_floor=0.5)
+        self.assertEqual(t, "unstable_wrong")
+
+    def test_high_drift_without_late_flip_and_with_floor_remains_stable(self) -> None:
+        delta = np.asarray([0.6, 1.2, 0.7, 1.4, 0.9, 1.3, 0.8, 1.1, 0.7, 1.2], dtype=float)
+        drift = np.asarray([0.6, -0.5, 0.7, -0.5, 0.4, -0.5, 0.3, -0.4, 0.5, 0.0], dtype=float)
+        t = classify_trajectory(delta, is_correct=True, drift=drift, tail_len=8, max_late_flip_count=0, min_abs_delta_tail_floor=0.5)
+        self.assertEqual(t, "stable_correct")
 
 
 if __name__ == "__main__":

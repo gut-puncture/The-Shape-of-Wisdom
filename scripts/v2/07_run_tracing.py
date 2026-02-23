@@ -12,7 +12,15 @@ import torch
 import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from _common import base_parser, load_experiment_config, resolve_models, run_v2_root_for, write_json, write_parquet
+from _common import (
+    base_parser,
+    load_experiment_config,
+    resolve_models,
+    run_v2_root_for,
+    write_json,
+    write_parquet,
+    write_text_atomic,
+)
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
 from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor, get_model_nuance, pick_torch_dtype
 from sow.v2.span_parser import parse_prompt_spans
@@ -119,6 +127,7 @@ def main() -> int:
 
     execution_cfg = cfg.get("execution") or {}
     seed = int(execution_cfg.get("deterministic_seed", 12345))
+    checkpoint_every_prompts = max(1, int(execution_cfg.get("stage07_checkpoint_every_prompts", 25)))
     _set_deterministic_seed(seed)
 
     thermal_cfg_obj = ThermalHygieneConfig.from_cfg(cfg.get("thermal_policy"))
@@ -149,10 +158,31 @@ def main() -> int:
     scalar_rows = []
     mass_rows = []
     contrib_rows = []
+    pending_prompts_since_checkpoint = 0
 
     thermal_stop_action = None
     models_completed = 0
     prompts_attempted = 0
+
+    def _flush_checkpoint() -> None:
+        nonlocal scalars_existing, mass_existing, contrib_existing
+        nonlocal scalar_rows, mass_rows, contrib_rows, pending_prompts_since_checkpoint
+        if not scalar_rows and not mass_rows and not contrib_rows:
+            pending_prompts_since_checkpoint = 0
+            return
+        scalars_new = pd.DataFrame.from_records(scalar_rows)
+        mass_new = pd.DataFrame.from_records(mass_rows)
+        contrib_new = pd.DataFrame.from_records(contrib_rows)
+        scalars_existing = _merge_resume(scalars_existing, scalars_new, key_cols=scalar_key)
+        mass_existing = _merge_resume(mass_existing, mass_new, key_cols=mass_key)
+        contrib_existing = _merge_resume(contrib_existing, contrib_new, key_cols=mass_key)
+        write_parquet(scalar_path, scalars_existing)
+        write_parquet(mass_path, mass_existing)
+        write_parquet(contrib_path, contrib_existing)
+        scalar_rows = []
+        mass_rows = []
+        contrib_rows = []
+        pending_prompts_since_checkpoint = 0
 
     for model in models:
         model_id = str(model["model_id"])
@@ -336,6 +366,9 @@ def main() -> int:
                         )
 
                 done_prompt_keys.add((model_id, prompt_uid))
+                pending_prompts_since_checkpoint += 1
+                if pending_prompts_since_checkpoint >= checkpoint_every_prompts:
+                    _flush_checkpoint()
 
         try:
             del mdl
@@ -351,17 +384,10 @@ def main() -> int:
 
         models_completed += 1
 
-    scalars_new = pd.DataFrame.from_records(scalar_rows)
-    mass_new = pd.DataFrame.from_records(mass_rows)
-    contrib_new = pd.DataFrame.from_records(contrib_rows)
-
-    scalars = _merge_resume(scalars_existing, scalars_new, key_cols=scalar_key)
-    mass = _merge_resume(mass_existing, mass_new, key_cols=mass_key)
-    contrib = _merge_resume(contrib_existing, contrib_new, key_cols=mass_key)
-
-    write_parquet(scalar_path, scalars)
-    write_parquet(mass_path, mass)
-    write_parquet(contrib_path, contrib)
+    _flush_checkpoint()
+    scalars = scalars_existing
+    mass = mass_existing
+    contrib = contrib_existing
 
     report = {
         "pass": thermal_stop_action is None,
@@ -393,7 +419,10 @@ def main() -> int:
         )
     else:
         done_sentinel.parent.mkdir(parents=True, exist_ok=True)
-        done_sentinel.write_text(json.dumps({"stage": "07_run_tracing", "pass": True}, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+        write_text_atomic(
+            done_sentinel,
+            json.dumps({"stage": "07_run_tracing", "pass": True}, ensure_ascii=False, sort_keys=True) + "\n",
+        )
         report["done_sentinel"] = str(done_sentinel)
 
     write_json(out_root / "07_run_tracing.report.json", report)

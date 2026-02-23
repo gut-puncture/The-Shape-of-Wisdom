@@ -147,6 +147,52 @@ class TestMetadataImmutabilityContract(unittest.TestCase):
             if final_root.exists():
                 shutil.rmtree(final_root)
 
+    def test_stage11_requires_run_start_snapshot_in_required_files(self) -> None:
+        run_id = "test_v2_stage11_requires_snapshot"
+        run_root = REPO_ROOT / "runs" / run_id
+        out_root = run_root / "v2"
+        final_root = REPO_ROOT / "artifacts" / "final_result_v2" / run_id
+        if run_root.exists():
+            shutil.rmtree(run_root)
+        if final_root.exists():
+            shutil.rmtree(final_root)
+
+        original_required_files = list(self.mod11.REQUIRED_FILES)
+        original_required_metadata_files = list(self.mod11.REQUIRED_METADATA_FILES)
+        original_argv = list(sys.argv)
+        try:
+            out_root.mkdir(parents=True, exist_ok=True)
+            import pandas as pd
+
+            pd.DataFrame.from_records(
+                [{"model_id": "Qwen/Qwen2.5-7B-Instruct", "prompt_uid": "u0", "layer_index": 0, "delta": 0.1, "drift": 0.0, "boundary": 0.1, "is_correct": True, "entropy": 0.5}]
+            ).to_parquet(out_root / "decision_metrics.parquet", index=False)
+            pd.DataFrame.from_records(
+                [{"model_id": "Qwen/Qwen2.5-7B-Instruct", "prompt_uid": "u0", "trajectory_type": "stable_correct", "is_correct": True}]
+            ).to_parquet(out_root / "prompt_types.parquet", index=False)
+
+            self.mod11.REQUIRED_FILES = [
+                "decision_metrics.parquet",
+                "prompt_types.parquet",
+                "meta/run_start_metadata_snapshot.json",
+            ]
+            self.mod11.REQUIRED_METADATA_FILES = []
+            sys.argv = [str(SCRIPT11), "--run-id", run_id]
+            rc = int(self.mod11.main())
+            self.assertEqual(rc, 2)
+
+            rep = json.loads((final_root / "final_report.json").read_text(encoding="utf-8"))
+            self.assertFalse(bool(rep.get("gates", {}).get("required_files_present")))
+            self.assertIn("meta/run_start_metadata_snapshot.json", rep.get("missing_required_files") or [])
+        finally:
+            self.mod11.REQUIRED_FILES = original_required_files
+            self.mod11.REQUIRED_METADATA_FILES = original_required_metadata_files
+            sys.argv = original_argv
+            if run_root.exists():
+                shutil.rmtree(run_root)
+            if final_root.exists():
+                shutil.rmtree(final_root)
+
 
 if __name__ == "__main__":
     unittest.main()

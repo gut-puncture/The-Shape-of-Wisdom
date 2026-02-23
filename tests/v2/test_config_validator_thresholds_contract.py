@@ -12,17 +12,32 @@ class TestConfigValidatorThresholdsContract(unittest.TestCase):
     def test_explicit_thresholds_present_for_gated_stages(self) -> None:
         cfg = yaml.safe_load(CFG_PATH.read_text(encoding="utf-8"))
         validators = cfg.get("validators") or {}
+        data_scope = cfg.get("data_scope") or {}
+        execution = cfg.get("execution") or {}
+        runtime_estimator = cfg.get("runtime_estimator") or {}
+
+        self.assertIn("baseline_manifest_source", data_scope)
+        self.assertIn("baseline_manifest_sha256", data_scope)
+        self.assertIn("baseline_manifest_expected_rows_full", data_scope)
 
         stage05 = validators.get("stage05_paraphrase") or {}
         self.assertIn("min_label_agreement", stage05)
         self.assertIn("min_span_jaccard", stage05)
         self.assertIn("sample_size_per_model", stage05)
 
+        stage03 = validators.get("stage03_trajectory") or {}
+        self.assertIn("required_types", stage03)
+        self.assertIn("min_count_per_type_per_model", stage03)
+        self.assertIn("tail_len", stage03)
+        self.assertIn("max_late_flip_count", stage03)
+        self.assertIn("min_abs_delta_tail_floor", stage03)
+
         stage06 = validators.get("stage06_tracing_subset") or {}
         self.assertIn("difficult_domain_top_k", stage06)
         self.assertIn("min_difficult_share", stage06)
         self.assertIn("min_domains_covered", stage06)
         self.assertIn("min_prompts_per_domain", stage06)
+        self.assertIn("max_domain_share", stage06)
 
         stage09 = validators.get("stage09") or {}
         self.assertIn("min_ablation_rows", stage09)
@@ -45,6 +60,11 @@ class TestConfigValidatorThresholdsContract(unittest.TestCase):
         self.assertIn("min_train_rows", stage08)
         self.assertIn("min_test_rows", stage08)
         self.assertIn("require_split_r2", stage08)
+
+        self.assertIn("stage00_baseline_checkpoint_every_prompts", execution)
+        self.assertIn("stage00_baseline_batch_chain_mps", execution)
+        self.assertIn("stage00_baseline_batch_chain_cuda", execution)
+        self.assertIn("require_measured_rps_for_full", runtime_estimator)
 
     def test_preregistered_hypotheses_doc_exists(self) -> None:
         prereg = REPO_ROOT / "docs" / "PREREGISTERED_HYPOTHESES_V3.md"

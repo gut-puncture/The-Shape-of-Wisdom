@@ -40,12 +40,17 @@ class TestBundleRequiredFilesContract(unittest.TestCase):
             "patching_results.parquet",
             "span_deletion_causal.parquet",
             "negative_controls.parquet",
+            "00_run_experiment.report.json",
+            "00a_generate_baseline_outputs.report.json",
             "05_span_counterfactuals.report.json",
             "06_select_tracing_subset.report.json",
             "07_run_tracing.report.json",
             "08_attention_and_mlp_decomposition.report.json",
             "09_causal_tests.report.json",
             "10_causal_validation_tools.report.json",
+            "11_generate_paper_assets.report.json",
+            "meta/readiness_audit.json",
+            "meta/run_start_metadata_snapshot.json",
         }
         missing = sorted(expected - req)
         self.assertFalse(missing, msg=f"bundle is missing required reproducibility artifacts: {missing}")

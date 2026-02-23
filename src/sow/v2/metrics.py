@@ -44,6 +44,27 @@ def _competitor_from_logits(candidate_logits: Mapping[str, Any], *, correct_key:
     return str(best) if best is not None else "A"
 
 
+def _final_layer_top1_from_logits(row: Mapping[str, Any]) -> str | None:
+    layerwise = row.get("layerwise") or []
+    if not isinstance(layerwise, list) or not layerwise:
+        return None
+    last = layerwise[-1] or {}
+    logits = last.get("candidate_logits") or {}
+    best_choice = None
+    best_value = None
+    for c in CHOICES:
+        try:
+            v = float(logits.get(c, float("-inf")))
+        except Exception:
+            continue
+        if not np.isfinite(v):
+            continue
+        if best_choice is None or v > float(best_value):
+            best_choice = c
+            best_value = v
+    return str(best_choice) if best_choice is not None else None
+
+
 def compute_row_decision_metrics(row: Mapping[str, Any], *, correct_key: str) -> List[LayerDecisionMetrics]:
     layerwise = row.get("layerwise") or []
     if not isinstance(layerwise, list) or not layerwise:
@@ -112,6 +133,11 @@ def build_decision_metrics_frame(
         if ck not in CHOICES:
             continue
 
+        final_top1 = _final_layer_top1_from_logits(row)
+        if final_top1 not in CHOICES:
+            continue
+        is_correct = bool(str(final_top1) == ck)
+
         layer_metrics = compute_row_decision_metrics(row, correct_key=ck)
         if not layer_metrics:
             continue
@@ -125,7 +151,7 @@ def build_decision_metrics_frame(
                     "example_id": str(row.get("example_id") or ""),
                     "wrapper_id": str(row.get("wrapper_id") or ""),
                     "coarse_domain": str(row.get("coarse_domain") or "unknown"),
-                    "is_correct": bool(row.get("is_correct") is True),
+                    "is_correct": bool(is_correct),
                     "correct_key": ck,
                     "layer_index": int(m.layer_index),
                     "delta": float(m.delta),

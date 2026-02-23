@@ -1,4 +1,5 @@
 import importlib.util
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -64,6 +65,42 @@ class TestRuntimeThresholdBoundaries(unittest.TestCase):
         est = self.mod00._heavy_stage_estimates(cfg=cfg, baseline_count=10, rows_per_second=10.0)
         self.assertEqual(int(est["05_span_counterfactuals.py"].model_count), 2)
         self.assertEqual(int(est["07_run_tracing.py"].model_count), 2)
+
+    def test_full_mode_rejects_default_fallback_when_policy_requires_measured(self) -> None:
+        cfg = {
+            "runtime_estimator": {
+                "require_measured_rps_for_full": True,
+            }
+        }
+        with self.assertRaises(RuntimeError):
+            self.mod00._enforce_runtime_rps_policy(
+                cfg=cfg,
+                mode="full",
+                rows_per_second=0.2,
+                rps_source="default_fallback_0.2",
+            )
+
+    def test_full_mode_accepts_measured_rps_when_policy_requires_measured(self) -> None:
+        cfg = {
+            "runtime_estimator": {
+                "require_measured_rps_for_full": True,
+            }
+        }
+        self.mod00._enforce_runtime_rps_policy(
+            cfg=cfg,
+            mode="full",
+            rows_per_second=3.2,
+            rps_source="stage00a_report",
+        )
+
+    def test_runtime_refresh_recomputes_baseline_count_after_stage00a(self) -> None:
+        src = SCRIPT00.read_text(encoding="utf-8")
+        self.assertIn("baseline_prompt_count_current", src, msg="orchestrator report must expose current baseline count")
+        self.assertRegex(
+            src,
+            re.compile(r"def _refresh_runtime_decisions\(\).*?_baseline_prompt_count\(args\.run_id\)", re.DOTALL),
+            msg="refresh path must recompute baseline prompt count, not use stale startup value",
+        )
 
 
 if __name__ == "__main__":
