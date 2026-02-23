@@ -42,6 +42,7 @@ class TestOrchestratorGatePropagation(unittest.TestCase):
             report = json.loads(report_path.read_text(encoding="utf-8"))
             self.assertFalse(bool(report.get("pass")))
             self.assertFalse(bool(report.get("complete")))
+            self.assertFalse(bool(report.get("ready_to_execute_full_experiment")))
             self.assertIn("failed_script", report)
             self.assertIn("failed_exit_code", report)
             self.assertEqual(str(report.get("failed_script")), "00a_generate_baseline_outputs.py")

@@ -37,6 +37,15 @@ BASE_PIPELINE = [
 ]
 
 HEAVY_STAGES = {"05_span_counterfactuals.py", "07_run_tracing.py"}
+BACKEND_REASON_REQUIRED_KEYS = {
+    "estimated_hours_all_models",
+    "threshold_hours_all_models",
+    "rows_per_second",
+    "rows_per_second_source",
+    "baseline_prompt_count_current",
+    "backend_decision",
+    "decision_rule",
+}
 DEPENDENCIES = {
     "08_attention_and_mlp_decomposition.py": {"07_run_tracing.py"},
     "09_causal_tests.py": {"07_run_tracing.py"},
@@ -181,6 +190,14 @@ def _runtime_rows_per_second(run_id: str) -> Tuple[float, str]:
     return _pilot_rows_per_second(run_id)
 
 
+def _runtime_source_precedence(selected_source: str) -> dict:
+    ordered = ["stage00a_report", "pilot_report", "default_fallback_0.2"]
+    return {
+        "selected_source": str(selected_source),
+        "ordered_sources": ordered,
+    }
+
+
 def _run_script(script_name: str, argv: List[str]) -> int:
     script = REPO_ROOT / "scripts" / "v2" / script_name
     cmd = [sys.executable, str(script), *argv]
@@ -255,6 +272,7 @@ def main() -> int:
             "failed_exit_code": None,
             "requires_gpu_handoff": False,
             "ready_to_execute_full_experiment": False,
+            "runtime_source_precedence": _runtime_source_precedence("unset"),
             "run_start_metadata_snapshot": str(snapshot_path),
         }
         write_json(report_path, report)
@@ -298,16 +316,21 @@ def main() -> int:
             stage: choose_backend(estimated_hours_all_models=est.estimated_hours_all_models, threshold_hours=threshold)
             for stage, est in stage_est.items()
         }
-        backend_reason = {
-            stage: {
+        backend_reason = {}
+        for stage, est in stage_est.items():
+            payload = {
                 "estimated_hours_all_models": float(est.estimated_hours_all_models),
                 "threshold_hours_all_models": float(threshold),
                 "rows_per_second": float(rps),
                 "rows_per_second_source": str(rps_source),
                 "baseline_prompt_count_current": int(baseline_prompt_count_current),
+                "backend_decision": str(stage_backend.get(stage) or "unknown"),
+                "decision_rule": "choose_backend(estimated_hours_all_models, threshold_hours_all_models)",
             }
-            for stage, est in stage_est.items()
-        }
+            missing = sorted(k for k in BACKEND_REASON_REQUIRED_KEYS if k not in payload)
+            if missing:
+                raise RuntimeError(f"invalid heavy_stage_backend_reason payload for {stage}: missing={missing}")
+            backend_reason[stage] = payload
 
     # Smoke/single-model may not run stage00a; establish decisions upfront.
     if args.mode != "full":
@@ -396,6 +419,7 @@ def main() -> int:
         "model_name": args.model_name,
         "runtime_rows_per_second": float(rps),
         "runtime_rows_per_second_source": str(rps_source),
+        "runtime_source_precedence": _runtime_source_precedence(str(rps_source)),
         "baseline_prompt_count_current": int(baseline_prompt_count_current),
         "runtime_policy_enforced": bool(
             args.mode == "full" and bool((cfg.get("runtime_estimator") or {}).get("require_measured_rps_for_full", False))

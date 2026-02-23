@@ -129,8 +129,27 @@ class TestOrchestratorIncompleteReport(unittest.TestCase):
             self.assertTrue(report_path.exists())
             report = json.loads(report_path.read_text(encoding="utf-8"))
             self.assertFalse(bool(report.get("pass")))
+            self.assertFalse(bool(report.get("ready_to_execute_full_experiment")))
             self.assertTrue(any(x.get("script") == "07_run_tracing.py" for x in report.get("skipped_scripts") or []))
             self.assertTrue(any(x.get("script") == "11_generate_paper_assets.py" for x in report.get("skipped_scripts") or []))
+            self.assertIn("runtime_source_precedence", report)
+            precedence = report.get("runtime_source_precedence") or {}
+            self.assertIn("selected_source", precedence)
+            self.assertIn("ordered_sources", precedence)
+            backend_reason = report.get("heavy_stage_backend_reason") or {}
+            for stage in ["05_span_counterfactuals.py", "07_run_tracing.py"]:
+                self.assertIn(stage, backend_reason)
+                stage_reason = backend_reason.get(stage) or {}
+                for key in [
+                    "estimated_hours_all_models",
+                    "threshold_hours_all_models",
+                    "rows_per_second",
+                    "rows_per_second_source",
+                    "baseline_prompt_count_current",
+                    "backend_decision",
+                    "decision_rule",
+                ]:
+                    self.assertIn(key, stage_reason)
         finally:
             if run_root.exists():
                 shutil.rmtree(run_root)

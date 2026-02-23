@@ -54,6 +54,9 @@ class TestParserOptionVariantMatrix(unittest.TestCase):
     def test_first_token_path_handles_practical_token_forms(self) -> None:
         token_templates = [
             "{L}",
+            "{L}:",
+            "{L})",
+            "({L})",
             "({L}",
             "[{L}",
             "\n{L}",
@@ -76,6 +79,15 @@ class TestParserOptionVariantMatrix(unittest.TestCase):
                         msg=f"first-token parser failed for token={token!r}; out={out}",
                     )
                     self.assertEqual(out["decision"], "resolved_letter_first_token")
+
+    def test_numeric_vs_letter_conflict_fails_closed(self) -> None:
+        out = parse_choice(
+            response_text="A. Final answer: 8",
+            first_token="A",
+            options={"A": "3", "B": "7", "C": "8", "D": "11"},
+        )
+        self.assertIsNone(out["parsed_choice"], msg=f"numeric-vs-letter conflict must stay unresolved; out={out}")
+        self.assertEqual(out["decision"], "unresolved_conflicting_signals")
 
     def test_first_token_wins_over_conflicting_later_mentions(self) -> None:
         for letter, conflicting in [("A", "B"), ("B", "C"), ("C", "D"), ("D", "A")]:

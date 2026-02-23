@@ -70,6 +70,39 @@ def load_completed_resume_keys(path: Path) -> Set[str]:
     return out
 
 
+def select_pending_manifest_rows(
+    *,
+    manifest_rows: Sequence[Mapping[str, Any]],
+    model_id: str,
+    completed_keys: Set[str],
+) -> tuple[List[Mapping[str, Any]], Dict[str, int]]:
+    pending_rows: List[Mapping[str, Any]] = []
+    resume_rows_total = 0
+    resume_rows_skipped = 0
+    completed = {str(x) for x in completed_keys if str(x)}
+
+    for row in manifest_rows:
+        prompt_uid = str(row.get("prompt_uid") or "").strip()
+        if not prompt_uid:
+            continue
+        resume_rows_total += 1
+        rk = resume_key_for(model_id=str(model_id), prompt_uid=prompt_uid)
+        if rk in completed:
+            resume_rows_skipped += 1
+            continue
+        pending_rows.append(row)
+
+    return pending_rows, {
+        "resume_rows_total": int(resume_rows_total),
+        "resume_rows_skipped": int(resume_rows_skipped),
+        "pending_rows": int(len(pending_rows)),
+    }
+
+
+def checkpoint_flush_required(*, rows_since_checkpoint: int, checkpoint_every: int) -> bool:
+    return int(rows_since_checkpoint) >= max(1, int(checkpoint_every))
+
+
 def _is_retryable_batch_error(exc: BaseException) -> bool:
     if isinstance(exc, NonFiniteBatchError):
         return True
@@ -217,12 +250,20 @@ def validate_baseline_rows(
         if model_revision != str(expected_model_revision):
             errors.append("wrong_model_revision")
 
-        resume_key = str(row.get("resume_key") or "")
+        prompt_uid = str(row.get("prompt_uid") or "").strip()
+        if not prompt_uid:
+            errors.append("missing_prompt_uid")
+
+        resume_key = str(row.get("resume_key") or "").strip()
         if not resume_key:
             errors.append("missing_resume_key")
-        elif resume_key in seen_resume_keys:
-            errors.append("duplicate_resume_key")
         else:
+            expected_resume_key = resume_key_for(model_id=model_id, prompt_uid=prompt_uid) if prompt_uid else None
+            if expected_resume_key is None or resume_key != expected_resume_key:
+                errors.append("invalid_resume_key")
+        if resume_key and resume_key in seen_resume_keys:
+            errors.append("duplicate_resume_key")
+        elif resume_key:
             seen_resume_keys.add(resume_key)
 
         parsed_choice = row.get("parsed_choice")
@@ -345,15 +386,14 @@ def run_baseline_for_model(
     repair_trailing_partial_line(out_path)
     completed_keys = load_completed_resume_keys(out_path) if resume else set()
 
-    pending_rows: List[Mapping[str, Any]] = []
-    for r in manifest_rows:
-        prompt_uid = str(r.get("prompt_uid") or "")
-        if not prompt_uid:
-            continue
-        rk = resume_key_for(model_id=model_id, prompt_uid=prompt_uid)
-        if rk in completed_keys:
-            continue
-        pending_rows.append(r)
+    pending_rows, resume_meta = select_pending_manifest_rows(
+        manifest_rows=manifest_rows,
+        model_id=model_id,
+        completed_keys=completed_keys,
+    )
+    resume_rows_total = int(resume_meta.get("resume_rows_total", 0))
+    resume_rows_skipped = int(resume_meta.get("resume_rows_skipped", 0))
+    pending_rows_count = int(resume_meta.get("pending_rows", len(pending_rows)))
 
     if not pending_rows:
         return {
@@ -363,7 +403,10 @@ def run_baseline_for_model(
             "output_path": str(out_path),
             "rows_per_second": 0.0,
             "batch_sizes_used": [],
-            "pending_rows": 0,
+            "pending_rows": int(pending_rows_count),
+            "resume_rows_total": int(resume_rows_total),
+            "resume_rows_skipped": int(resume_rows_skipped),
+            "checkpoint_flush_count": 0,
         }
 
     if hasattr(torch, "manual_seed"):
@@ -410,13 +453,15 @@ def run_baseline_for_model(
     batch_sizes_used: List[int] = []
     rows_written = 0
     rows_since_checkpoint = 0
+    checkpoint_flush_count = 0
 
     def _flush_checkpoint() -> None:
-        nonlocal rows_written, rows_since_checkpoint, rows_buffer
+        nonlocal rows_written, rows_since_checkpoint, rows_buffer, checkpoint_flush_count
         if not rows_buffer:
             return
         append_jsonl_rows(out_path, rows_buffer)
         rows_written += int(len(rows_buffer))
+        checkpoint_flush_count += 1
         rows_since_checkpoint = 0
         rows_buffer = []
 
@@ -553,7 +598,7 @@ def run_baseline_for_model(
             }
             rows_buffer.append(out_row)
             rows_since_checkpoint += 1
-            if rows_since_checkpoint >= checkpoint_every:
+            if checkpoint_flush_required(rows_since_checkpoint=rows_since_checkpoint, checkpoint_every=checkpoint_every):
                 _flush_checkpoint()
 
     start = time.monotonic()
@@ -591,7 +636,10 @@ def run_baseline_for_model(
             "output_path": str(out_path),
             "rows_per_second": float(rows_written / elapsed),
             "batch_sizes_used": batch_sizes_used,
-            "pending_rows": int(len(pending_rows)),
+            "pending_rows": int(pending_rows_count),
+            "resume_rows_total": int(resume_rows_total),
+            "resume_rows_skipped": int(resume_rows_skipped),
+            "checkpoint_flush_count": int(checkpoint_flush_count),
         }
 
     return {
@@ -603,5 +651,8 @@ def run_baseline_for_model(
         "output_path": str(out_path),
         "rows_per_second": float(rows_written / elapsed),
         "batch_sizes_used": batch_sizes_used,
-        "pending_rows": int(len(pending_rows)),
+        "pending_rows": int(pending_rows_count),
+        "resume_rows_total": int(resume_rows_total),
+        "resume_rows_skipped": int(resume_rows_skipped),
+        "checkpoint_flush_count": int(checkpoint_flush_count),
     }

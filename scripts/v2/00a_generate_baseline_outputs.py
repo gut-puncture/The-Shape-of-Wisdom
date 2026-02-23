@@ -40,57 +40,164 @@ def _prepare_manifest(*, run_id: str, cfg: Dict[str, Any]) -> Dict[str, Any]:
     run_manifest = manifests_dir / "ccc_baseline.jsonl"
 
     data_scope = cfg.get("data_scope") or {}
-    source_path = Path(str(data_scope.get("baseline_manifest_source") or "")).expanduser() if data_scope.get("baseline_manifest_source") else None
+    source_raw = str(data_scope.get("baseline_manifest_source") or "").strip()
+    source_path = Path(source_raw).expanduser() if source_raw else None
     expected_sha = str(data_scope.get("baseline_manifest_sha256") or "").strip().lower()
+    source_exists = bool(source_path is not None and source_path.exists())
+    source_is_file = bool(source_exists and source_path is not None and source_path.is_file())
+
+    def _meta(
+        *,
+        manifest_path: Path,
+        manifest_sha256: str | None,
+        source_path_value: str | None,
+        hash_ok: bool,
+        manifest_empty_placeholder: bool,
+        hash_error: str | None,
+        copied_from_source: bool,
+    ) -> Dict[str, Any]:
+        return {
+            "manifest_path": manifest_path,
+            "manifest_sha256": manifest_sha256,
+            "source_path": source_path_value,
+            "source_exists": bool(source_exists),
+            "source_is_file": bool(source_is_file),
+            "hash_ok": bool(hash_ok),
+            "manifest_empty_placeholder": bool(manifest_empty_placeholder),
+            "hash_error": hash_error,
+            "copied_from_source": bool(copied_from_source),
+            "expected_sha256": expected_sha or None,
+        }
 
     if run_manifest.exists():
-        run_sha = _sha256(run_manifest)
+        if not run_manifest.is_file():
+            return _meta(
+                manifest_path=run_manifest,
+                manifest_sha256=None,
+                source_path_value=str(run_manifest),
+                hash_ok=False,
+                manifest_empty_placeholder=False,
+                hash_error=f"existing run manifest must be a file: {run_manifest}",
+                copied_from_source=False,
+            )
+        try:
+            run_sha = _sha256(run_manifest)
+        except Exception as exc:
+            return _meta(
+                manifest_path=run_manifest,
+                manifest_sha256=None,
+                source_path_value=str(run_manifest),
+                hash_ok=False,
+                manifest_empty_placeholder=False,
+                hash_error=f"unable to hash existing run manifest {run_manifest}: {exc}",
+                copied_from_source=False,
+            )
         is_empty_placeholder = run_manifest.stat().st_size == 0
         hash_ok = bool((not expected_sha) or (run_sha == expected_sha))
-        return {
-            "manifest_path": run_manifest,
-            "manifest_sha256": run_sha,
-            "source_path": str(run_manifest),
-            "hash_ok": bool(hash_ok),
-            "manifest_empty_placeholder": bool(is_empty_placeholder),
-            "hash_error": None
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=run_sha,
+            source_path_value=str(run_manifest),
+            hash_ok=hash_ok,
+            manifest_empty_placeholder=is_empty_placeholder,
+            hash_error=None
             if hash_ok
             else (
                 "existing run manifest sha256 mismatch: "
                 f"expected={expected_sha} got={run_sha} path={run_manifest}"
             ),
-            "copied_from_source": False,
-            "expected_sha256": expected_sha or None,
-        }
-
-    if source_path is None or (not source_path.exists()):
-        raise SystemExit(f"missing data_scope.baseline_manifest_source: {source_path}")
-
-    source_sha = _sha256(source_path)
-    if expected_sha and source_sha != expected_sha:
-        raise SystemExit(
-            "baseline manifest sha256 mismatch: "
-            f"expected={expected_sha} got={source_sha} source={source_path}"
+            copied_from_source=False,
         )
 
-    write_text_atomic(run_manifest, source_path.read_text(encoding="utf-8"))
-    run_sha = _sha256(run_manifest)
+    if source_path is None:
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=None,
+            source_path_value=None,
+            hash_ok=False,
+            manifest_empty_placeholder=False,
+            hash_error="missing data_scope.baseline_manifest_source",
+            copied_from_source=False,
+        )
+
+    if not source_exists:
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=None,
+            source_path_value=str(source_path),
+            hash_ok=False,
+            manifest_empty_placeholder=False,
+            hash_error=f"missing data_scope.baseline_manifest_source: {source_path}",
+            copied_from_source=False,
+        )
+
+    if not source_is_file:
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=None,
+            source_path_value=str(source_path),
+            hash_ok=False,
+            manifest_empty_placeholder=False,
+            hash_error=f"baseline manifest source must be a file: {source_path}",
+            copied_from_source=False,
+        )
+
+    try:
+        source_sha = _sha256(source_path)
+    except Exception as exc:
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=None,
+            source_path_value=str(source_path),
+            hash_ok=False,
+            manifest_empty_placeholder=False,
+            hash_error=f"unable to hash baseline manifest source {source_path}: {exc}",
+            copied_from_source=False,
+        )
+
+    if expected_sha and source_sha != expected_sha:
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=None,
+            source_path_value=str(source_path),
+            hash_ok=False,
+            manifest_empty_placeholder=False,
+            hash_error=(
+                "baseline manifest sha256 mismatch: "
+                f"expected={expected_sha} got={source_sha} source={source_path}"
+            ),
+            copied_from_source=False,
+        )
+
+    try:
+        write_text_atomic(run_manifest, source_path.read_text(encoding="utf-8"))
+        run_sha = _sha256(run_manifest)
+    except Exception as exc:
+        return _meta(
+            manifest_path=run_manifest,
+            manifest_sha256=None,
+            source_path_value=str(source_path),
+            hash_ok=False,
+            manifest_empty_placeholder=False,
+            hash_error=f"failed to materialize run manifest from source {source_path}: {exc}",
+            copied_from_source=False,
+        )
+
     hash_ok = (not expected_sha) or (run_sha == expected_sha)
-    return {
-        "manifest_path": run_manifest,
-        "manifest_sha256": run_sha,
-        "source_path": str(source_path),
-        "hash_ok": bool(hash_ok),
-        "manifest_empty_placeholder": False,
-        "hash_error": None
+    return _meta(
+        manifest_path=run_manifest,
+        manifest_sha256=run_sha,
+        source_path_value=str(source_path),
+        hash_ok=hash_ok,
+        manifest_empty_placeholder=False,
+        hash_error=None
         if hash_ok
         else (
             "copied run manifest sha256 mismatch: "
             f"expected={expected_sha} got={run_sha} path={run_manifest}"
         ),
-        "copied_from_source": True,
-        "expected_sha256": expected_sha or None,
-    }
+        copied_from_source=True,
+    )
 
 
 def _load_manifest_rows(path: Path, *, max_prompts: int) -> List[Dict[str, Any]]:
@@ -139,6 +246,8 @@ def main() -> int:
             "manifest": {
                 "path": str(manifest_meta.get("manifest_path")),
                 "source_path": str(manifest_meta.get("source_path")),
+                "source_exists": bool(manifest_meta.get("source_exists", False)),
+                "source_is_file": bool(manifest_meta.get("source_is_file", False)),
                 "sha256": str(manifest_meta.get("manifest_sha256")),
                 "expected_sha256": manifest_meta.get("expected_sha256"),
                 "copied_from_source": bool(manifest_meta.get("copied_from_source")),
@@ -242,6 +351,9 @@ def main() -> int:
 
         target_rows = int(len(manifest_rows))
         observed_rows = int(len(rows))
+        resume_rows_total = int(run_stats.get("resume_rows_total", target_rows))
+        resume_rows_skipped = int(run_stats.get("resume_rows_skipped", 0))
+        checkpoint_flush_count = int(run_stats.get("checkpoint_flush_count", 0))
         layer_contract_ok = "invalid_layer_index_sequence" not in set(validation.get("errors") or [])
         rows_complete_ok = int(observed_rows) == int(target_rows)
         model_gates = {
@@ -263,6 +375,9 @@ def main() -> int:
             **run_stats,
             "rows_in_output": observed_rows,
             "target_rows": target_rows,
+            "resume_rows_total": int(resume_rows_total),
+            "resume_rows_skipped": int(resume_rows_skipped),
+            "checkpoint_flush_count": int(checkpoint_flush_count),
             "validation": validation,
             "gates": model_gates,
             "failing_gates": model_failing,
@@ -276,8 +391,7 @@ def main() -> int:
         "manifest_hash_contract": bool(manifest_meta.get("hash_ok")),
         "manifest_nonempty": int(len(manifest_rows)) > 0,
         "manifest_row_count_expected": (not is_full_mode)
-        or (expected_rows_full <= 0)
-        or (int(len(manifest_rows)) == int(expected_rows_full)),
+        or (expected_rows_full > 0 and int(len(manifest_rows)) == int(expected_rows_full)),
         "rows_complete_per_model": bool(rows_complete_flags and all(rows_complete_flags)),
         "all_model_validations_pass": bool(model_pass_flags and all(model_pass_flags)),
         "layer_index_contract_transformer_only": bool(layer_contract_flags and all(layer_contract_flags)),
@@ -299,6 +413,8 @@ def main() -> int:
         "manifest": {
             "path": str(manifest_meta.get("manifest_path")),
             "source_path": str(manifest_meta.get("source_path")),
+            "source_exists": bool(manifest_meta.get("source_exists", False)),
+            "source_is_file": bool(manifest_meta.get("source_is_file", False)),
             "sha256": str(manifest_meta.get("manifest_sha256")),
             "expected_sha256": manifest_meta.get("expected_sha256"),
             "copied_from_source": bool(manifest_meta.get("copied_from_source")),

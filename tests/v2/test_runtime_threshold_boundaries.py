@@ -1,5 +1,7 @@
 import importlib.util
+import json
 import re
+import shutil
 import sys
 import unittest
 from pathlib import Path
@@ -101,6 +103,31 @@ class TestRuntimeThresholdBoundaries(unittest.TestCase):
             re.compile(r"def _refresh_runtime_decisions\(\).*?_baseline_prompt_count\(args\.run_id\)", re.DOTALL),
             msg="refresh path must recompute baseline prompt count, not use stale startup value",
         )
+
+    def test_runtime_rows_per_second_prefers_stage00a_measurement_over_pilot(self) -> None:
+        run_id = "test_v2_runtime_stage00a_precedence"
+        run_root = REPO_ROOT / "runs" / run_id
+        if run_root.exists():
+            shutil.rmtree(run_root)
+
+        try:
+            (run_root / "v2").mkdir(parents=True, exist_ok=True)
+            (run_root / "pilot").mkdir(parents=True, exist_ok=True)
+            (run_root / "v2" / "00a_generate_baseline_outputs.report.json").write_text(
+                json.dumps({"rows_per_second": 3.25}, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            (run_root / "pilot" / "qwen_pilot_report.json").write_text(
+                json.dumps({"sample_size": 100, "timing_seconds": {"inference": 10}}, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+
+            rps, src = self.mod00._runtime_rows_per_second(run_id)
+            self.assertAlmostEqual(float(rps), 3.25, places=6)
+            self.assertEqual(str(src), "stage00a_report")
+        finally:
+            if run_root.exists():
+                shutil.rmtree(run_root)
 
 
 if __name__ == "__main__":

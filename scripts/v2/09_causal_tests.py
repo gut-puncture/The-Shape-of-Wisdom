@@ -21,7 +21,8 @@ def main() -> int:
     causal_cfg = cfg.get("causal") or {}
     validators_cfg = cfg.get("validators") or {}
     stage09_cfg = validators_cfg.get("stage09") or {}
-    target_layers = [int(x) for x in (causal_cfg.get("ablation_target_layers") or list(range(20, 28)))]
+    ablation_target_layers = [int(x) for x in (causal_cfg.get("ablation_target_layers") or list(range(20, 28)))]
+    patching_target_layers = [int(x) for x in (causal_cfg.get("patching_target_layers") or ablation_target_layers)]
     min_ablation_rows = int(stage09_cfg.get("min_ablation_rows", 1))
     min_patching_rows = int(stage09_cfg.get("min_patching_rows", 1))
 
@@ -46,14 +47,14 @@ def main() -> int:
         keep = set(merged["prompt_uid"].drop_duplicates().head(int(args.max_prompts)).tolist())
         merged = merged[merged["prompt_uid"].isin(keep)]
 
-    abl_attn = run_component_ablation(merged, component="attention", target_layers=target_layers)
-    abl_mlp = run_component_ablation(merged, component="mlp", target_layers=target_layers)
+    abl_attn = run_component_ablation(merged, component="attention", target_layers=ablation_target_layers)
+    abl_mlp = run_component_ablation(merged, component="mlp", target_layers=ablation_target_layers)
     ablation = pd.concat([abl_attn, abl_mlp], ignore_index=True)
 
     failing = merged[merged["trajectory_type"].isin(["unstable_wrong", "stable_wrong"])]
     success = merged[merged["trajectory_type"].isin(["stable_correct"]) ]
-    patch_attn = run_activation_patching(failing, success, component="attention", target_layers=target_layers)
-    patch_mlp = run_activation_patching(failing, success, component="mlp", target_layers=target_layers)
+    patch_attn = run_activation_patching(failing, success, component="attention", target_layers=patching_target_layers)
+    patch_mlp = run_activation_patching(failing, success, component="mlp", target_layers=patching_target_layers)
     patching = pd.concat([patch_attn, patch_mlp], ignore_index=True)
 
     write_parquet(ablation_out, ablation)
@@ -111,7 +112,8 @@ def main() -> int:
             "pass": bool(pass_flag),
             "ablation_rows": int(ablation.shape[0]),
             "patching_rows": int(patching.shape[0]),
-            "target_layers": target_layers,
+            "ablation_target_layers": ablation_target_layers,
+            "patching_target_layers": patching_target_layers,
             "component_coverage": component_coverage,
             "model_coverage": model_coverage,
             "gates": gates,

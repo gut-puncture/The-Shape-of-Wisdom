@@ -75,6 +75,22 @@ class TestRuntimeHygieneScriptsContract(unittest.TestCase):
             self.assertEqual(proc.returncode, 2, msg=f"stdout={proc.stdout}\nstderr={proc.stderr}")
             self.assertIn("baseline_manifest_sha256 mismatch", proc.stderr + proc.stdout)
 
+    def test_preflight_full_run_fails_when_manifest_source_key_missing(self) -> None:
+        cfg = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+        cfg["data_scope"].pop("baseline_manifest_source", None)
+        with tempfile.TemporaryDirectory() as td:
+            tmp_cfg = Path(td) / "cfg.yaml"
+            tmp_cfg.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+            proc = subprocess.run(
+                ["bash", str(PREFLIGHT_SCRIPT), "--config", str(tmp_cfg)],
+                cwd=str(REPO_ROOT),
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 2, msg=f"stdout={proc.stdout}\nstderr={proc.stderr}")
+            self.assertIn("data_scope.baseline_manifest_source missing or empty", proc.stderr + proc.stdout)
+
     def test_preflight_full_run_fails_on_missing_required_doc(self) -> None:
         cfg = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
         cfg["experiment"]["objective_doc"] = str(REPO_ROOT / "docs" / "MISSING_OBJECTIVE_DOC.md")
@@ -90,6 +106,22 @@ class TestRuntimeHygieneScriptsContract(unittest.TestCase):
             )
             self.assertEqual(proc.returncode, 2, msg=f"stdout={proc.stdout}\nstderr={proc.stderr}")
             self.assertIn("required document missing", proc.stderr + proc.stdout)
+
+    def test_preflight_full_run_fails_when_objective_doc_key_missing(self) -> None:
+        cfg = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+        cfg["experiment"].pop("objective_doc", None)
+        with tempfile.TemporaryDirectory() as td:
+            tmp_cfg = Path(td) / "cfg.yaml"
+            tmp_cfg.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+            proc = subprocess.run(
+                ["bash", str(PREFLIGHT_SCRIPT), "--config", str(tmp_cfg)],
+                cwd=str(REPO_ROOT),
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(proc.returncode, 2, msg=f"stdout={proc.stdout}\nstderr={proc.stderr}")
+            self.assertIn("experiment.objective_doc missing or empty", proc.stderr + proc.stdout)
 
 
 if __name__ == "__main__":

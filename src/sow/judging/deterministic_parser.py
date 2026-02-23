@@ -244,6 +244,9 @@ def parse_choice(
     # --- Conflicts ---
     if ft_letter and numeric_choice and ft_letter != numeric_choice:
         out["debug"]["conflicts"].append("first_token_vs_numeric")
+        out["parsed_choice"] = None
+        out["decision"] = "unresolved_conflicting_signals"
+        return out
     elif letter_choice and numeric_choice and letter_choice != numeric_choice:
         out["parsed_choice"] = None
         out["decision"] = "unresolved_conflicting_signals"

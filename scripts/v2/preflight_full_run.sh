@@ -81,43 +81,70 @@ if not models:
     errors.append("models list is empty")
 
 data_scope = cfg.get("data_scope") or {}
-manifest_source = Path(str(data_scope.get("baseline_manifest_source") or "")).expanduser()
+manifest_raw = str(data_scope.get("baseline_manifest_source") or "").strip()
+manifest_source = Path(manifest_raw).expanduser() if manifest_raw else None
 expected_sha = str(data_scope.get("baseline_manifest_sha256") or "").strip().lower()
 expected_rows = int(data_scope.get("baseline_manifest_expected_rows_full") or 0)
 
-checks["manifest.source_exists"] = manifest_source.exists()
-if not manifest_source.exists():
-    errors.append(f"baseline manifest source missing: {manifest_source}")
+checks["manifest.source_configured"] = bool(manifest_raw)
+if not manifest_raw:
+    checks["manifest.source_exists"] = False
+    checks["manifest.source_is_file"] = False
+    errors.append("data_scope.baseline_manifest_source missing or empty")
+elif manifest_source is None:
+    checks["manifest.source_exists"] = False
+    checks["manifest.source_is_file"] = False
+    errors.append("data_scope.baseline_manifest_source missing or empty")
 else:
-    actual_sha = sha256_file(manifest_source)
-    checks["manifest.sha_matches"] = bool(expected_sha and actual_sha == expected_sha)
-    if not expected_sha:
-        errors.append("data_scope.baseline_manifest_sha256 missing")
-    elif actual_sha != expected_sha:
-        errors.append(
-            f"baseline_manifest_sha256 mismatch: expected={expected_sha} got={actual_sha} source={manifest_source}"
-        )
-    row_count = read_jsonl_count(manifest_source)
-    checks["manifest.rows_expected_full"] = expected_rows > 0 and row_count == expected_rows
-    if expected_rows <= 0:
-        errors.append("data_scope.baseline_manifest_expected_rows_full must be > 0")
-    elif row_count != expected_rows:
-        errors.append(
-            f"baseline manifest row count mismatch: expected={expected_rows} got={row_count} source={manifest_source}"
-        )
+    source_exists = manifest_source.exists()
+    source_is_file = manifest_source.is_file()
+    checks["manifest.source_exists"] = bool(source_exists)
+    checks["manifest.source_is_file"] = bool(source_is_file)
+    if not source_exists:
+        errors.append(f"baseline manifest source missing: {manifest_source}")
+    elif not source_is_file:
+        errors.append(f"baseline manifest source must be a file: {manifest_source}")
+    else:
+        actual_sha = sha256_file(manifest_source)
+        checks["manifest.sha_matches"] = bool(expected_sha and actual_sha == expected_sha)
+        if not expected_sha:
+            errors.append("data_scope.baseline_manifest_sha256 missing")
+        elif actual_sha != expected_sha:
+            errors.append(
+                f"baseline_manifest_sha256 mismatch: expected={expected_sha} got={actual_sha} source={manifest_source}"
+            )
+        row_count = read_jsonl_count(manifest_source)
+        checks["manifest.rows_expected_full"] = expected_rows > 0 and row_count == expected_rows
+        if expected_rows <= 0:
+            errors.append("data_scope.baseline_manifest_expected_rows_full must be > 0")
+        elif row_count != expected_rows:
+            errors.append(
+                f"baseline manifest row count mismatch: expected={expected_rows} got={row_count} source={manifest_source}"
+            )
 
 exp = cfg.get("experiment") or {}
-docs = [
-    Path(str(exp.get("objective_doc") or "")),
-    Path(str(exp.get("implementation_doc") or "")),
-    Path(str(exp.get("preregistration_doc") or "")),
-    repo_root / "docs" / "MODEL_NUANCES_V2.md",
-]
-for p in docs:
-    ok = p.expanduser().resolve().exists()
-    checks[f"doc.{p.name}.exists"] = bool(ok)
+doc_field_map = {
+    "objective_doc": "PAPER_OBJECTIVE_V3.md",
+    "implementation_doc": "IMPLEMENTATION_PLAN_V3.md",
+    "preregistration_doc": "PREREGISTERED_HYPOTHESES_V3.md",
+}
+for field, default_name in doc_field_map.items():
+    raw = str(exp.get(field) or "").strip()
+    if not raw:
+        checks[f"doc.{field}.configured"] = False
+        errors.append(f"experiment.{field} missing or empty")
+        continue
+    checks[f"doc.{field}.configured"] = True
+    p = Path(raw).expanduser().resolve()
+    ok = p.exists()
+    checks[f"doc.{default_name}.exists"] = bool(ok)
     if not ok:
         errors.append(f"required document missing: {p}")
+
+nuances_doc = (repo_root / "docs" / "MODEL_NUANCES_V2.md").resolve()
+checks["doc.MODEL_NUANCES_V2.md.exists"] = nuances_doc.exists()
+if not nuances_doc.exists():
+    errors.append(f"required document missing: {nuances_doc}")
 
 validators = cfg.get("validators") or {}
 required_validators = [
