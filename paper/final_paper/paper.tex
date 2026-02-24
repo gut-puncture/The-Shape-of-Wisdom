@@ -1,21 +1,24 @@
-%%%%%%%% ICML 2026 SUBMISSION %%%%%%%%%%%%%%%%%
+%%%%%%%% NeurIPS 2025 STYLE %%%%%%%%%%%%%%%%%
 
 \documentclass{article}
 
-% Recommended, but optional, packages for figures and better typesetting:
+\usepackage[preprint]{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
 \usepackage{microtype}
+
+% Recommended, but optional, packages for figures and better typesetting:
 \usepackage{graphicx}
 \usepackage{subcaption}
-\usepackage{booktabs} % for professional tables
-
-% hyperref makes hyperlinks in the resulting PDF.
-\usepackage{hyperref}
 
 % Attempt to make hyperref and algorithmic work together better:
 \newcommand{\theHalgorithm}{\arabic{algorithm}}
-
-% Use the following line for the initial blind version submitted for review:
-\usepackage{icml2026}
 
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -24,42 +27,20 @@
 \usepackage[capitalize,noabbrev]{cleveref}
 \usepackage{xcolor}
 \usepackage{multirow}
-\usepackage{placeins}  % for \FloatBarrier
 
-% Force figures to stay in their section
-\makeatletter
-\renewcommand{\fps@figure}{!htbp}
-\renewcommand{\fps@table}{!htbp}
-\makeatother
-
-% Short running title (must fit in header)
-\icmltitlerunning{State, Motion, Boundary}
+\title{The Shape of Wisdom}
+\author{%
+  \textbf{Shailesh Rana} \\
+  Independent Researcher \\
+  \And
+  \textbf{Claude Opus 4.6} \\
+  \And
+  \textbf{ChatGPT Prism} \\
+}
 
 \begin{document}
 
-\twocolumn[
-  \icmltitle{State, Motion, Boundary: A Mechanistic Account of\\
-    Convergence and Failure in Transformer Multiple-Choice Decisions}
-
-  \icmlsetsymbol{equal}{*}
-
-  \begin{icmlauthorlist}
-    \icmlauthor{Anonymous Author(s)}{}
-  \end{icmlauthorlist}
-
-  \icmlkeywords{mechanistic interpretability, transformer dynamics, decision trajectories, logit margin, attention routing, MLP injection}
-
-  \vskip 0.3in
-]
-
-\printAffiliationsAndNotice{}
-
-% Override the running title after \icmltitle has run.
-% The icml2026.sty vbox height check (6.25pt threshold) incorrectly
-% triggers for any non-empty title in \small\bf, so we force it here.
-\makeatletter
-\gdef\@icmltitlerunning{State, Motion, Boundary}
-\makeatother
+\maketitle
 
 %% ============================================================
 %% ABSTRACT
@@ -100,7 +81,7 @@ Our answer is yes.  We define three primitives---\textbf{state} (the logit margi
 %% ============================================================
 %% 2. THE THREE PRIMITIVES
 %% ============================================================
-\section{The Three Primitives}
+\section{Margin, Drift, and Boundary}
 \label{sec:primitives}
 
 We study four-choice (A/B/C/D) questions.  At each transformer layer $l \in \{0,\ldots,L\}$, we extract logits for the four answer tokens and define all quantities in this subspace.
@@ -140,9 +121,8 @@ A trajectory is \textbf{stable} if, within a tail window of the last $\tau$ laye
 
 We use $\tau = 8$, require zero sign flips, and enforce $b_{\min} = 0.3$.  These thresholds were pre-registered.  Sensitivity analysis appears in \cref{sec:appendix_sensitivity}.
 
-\FloatBarrier
 
-\begin{figure*}[!htbp]
+\begin{figure}[!htbp]
   \vskip 0.1in
   \begin{center}
     \centerline{\includegraphics[width=0.92\textwidth]{fig1_three_primitives_1771964631694.png}}
@@ -150,14 +130,13 @@ We use $\tau = 8$, require zero sign flips, and enforce $b_{\min} = 0.3$.  These
     \label{fig:primitives}
   \end{center}
   \vskip -0.2in
-\end{figure*}
+\end{figure}
 
-\FloatBarrier
 
 %% ============================================================
 %% 3. EXPERIMENTAL SETTING
 %% ============================================================
-\section{Experimental Setting}
+\section{Experimental Setup}
 \label{sec:experiments}
 
 \subsection{Models}
@@ -206,7 +185,7 @@ Softmax probabilities compress high-confidence decisions into a near-saturated r
 %% ============================================================
 %% 4. PHASE DIAGRAM
 %% ============================================================
-\section{Phase Diagram of Convergence}
+\section{Trajectory Classification}
 \label{sec:phase}
 
 \subsection{Four Trajectory Outcomes}
@@ -248,7 +227,6 @@ Plotting the final-layer margin $\delta(L)$ against cumulative drift $\Sigma g$ 
   \vskip -0.2in
 \end{figure}
 
-\FloatBarrier
 
 \subsection{Cross-Model and Cross-Domain Replication}
 
@@ -260,7 +238,7 @@ The phase structure replicates qualitatively across all three models.  Absolute 
 %% ============================================================
 %% 5. TWO-FORCE DECOMPOSITION
 %% ============================================================
-\section{Opening the Box: Two-Force Decomposition}
+\section{Decomposing Drift into Attention and MLP}
 \label{sec:decomposition}
 
 \subsection{Setup}
@@ -303,12 +281,11 @@ For unstable trajectories, the two components are often \emph{misaligned}: atten
   \vskip -0.2in
 \end{figure}
 
-\FloatBarrier
 
 %% ============================================================
 %% 6. ATTENTION AS ROUTING
 %% ============================================================
-\section{Attention as Routing}
+\section{Attention and Span Routing}
 \label{sec:routing}
 
 \subsection{Prompt Span Taxonomy}
@@ -337,12 +314,11 @@ We distinguish \textbf{attention mass} (raw weight from answer position to span 
   \vskip -0.2in
 \end{figure}
 
-\FloatBarrier
 
 %% ============================================================
 %% 7. MLP AS INJECTION
 %% ============================================================
-\section{MLP as Injection}
+\section{MLP Contributions}
 \label{sec:mlp}
 
 The MLP scalar $s_{\mathrm{mlp}}(l)$ measures how much parametric knowledge each layer's feedforward network contributes to the decision margin.  Unlike attention, MLP can introduce information absent from the input---stored associations, factual recall, and learned biases.
@@ -357,7 +333,7 @@ The MLP scalar $s_{\mathrm{mlp}}(l)$ measures how much parametric knowledge each
 %% ============================================================
 %% 8. CAUSAL VALIDATION
 %% ============================================================
-\section{Causal Validation}
+\section{Causal Experiments}
 \label{sec:causal}
 
 Sections~\ref{sec:decomposition}--\ref{sec:mlp} are correlational.  We conduct three families of causal experiments.
@@ -386,9 +362,8 @@ Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\text
 
 \emph{Caveat.}  Our experiments use \emph{counterfactual simulation}---not live intervention.  Simulated ablation assumes sufficient linearity.  Live ablation would be stronger but introduces nonlinear propagation effects.
 
-\FloatBarrier
 
-\begin{figure*}[!htbp]
+\begin{figure}[!htbp]
   \vskip 0.1in
   \begin{center}
     \centerline{\includegraphics[width=0.92\textwidth]{fig4_causal_validation_1771964729842.png}}
@@ -396,16 +371,17 @@ Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\text
     \label{fig:causal}
   \end{center}
   \vskip -0.2in
-\end{figure*}
+\end{figure}
 
-\FloatBarrier
 
 
 %% ============================================================
 %% 9. DISCUSSION
 %% ============================================================
-\section{Discussion and Limitations}
+\section{Discussion}
 \label{sec:discussion}
+
+\paragraph{Code.}  Repository: \url{https://github.com/gut-puncture/The-Shape-of-Wisdom}.
 
 \textbf{What the primitives buy.}  Rather than ``the model got it wrong,'' we can say ``the model entered the correct region at layer~12 but was pushed out by MLP injection at layer~23.''  This localizes failure, identifies the responsible component, and suggests targeted interventions.
 
@@ -449,9 +425,8 @@ A transformer's decision on a multiple-choice question is not a point but a traj
 
 The framework is deliberately modest: we claim sufficiency for classification, not necessity; causal relevance, not sole causation; and insight from logit-margin space, not complete representation coverage.  The phase diagram is a map.  The two-force decomposition is a compass.  Together, they provide a vocabulary for navigating the space between a prompt and an answer.
 
-\FloatBarrier
 
-\begin{figure*}[!htbp]
+\begin{figure}[!htbp]
   \vskip 0.1in
   \begin{center}
     \centerline{\includegraphics[width=0.85\textwidth]{fig6_prompt_flow_1771964787286.png}}
@@ -459,9 +434,8 @@ The framework is deliberately modest: we claim sufficiency for classification, n
     \label{fig:flow}
   \end{center}
   \vskip -0.2in
-\end{figure*}
+\end{figure}
 
-\FloatBarrier
 
 %% ============================================================
 %% IMPACT STATEMENT
@@ -475,7 +449,7 @@ This paper presents work whose goal is to advance the field of mechanistic inter
 %% REFERENCES
 %% ============================================================
 \bibliography{references}
-\bibliographystyle{icml2026}
+\bibliographystyle{plainnat}
 
 
 %% ============================================================
