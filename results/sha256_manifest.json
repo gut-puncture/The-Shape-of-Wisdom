@@ -1,0 +1,210 @@
+[
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/00_run_experiment.report.json",
+    "sha256": "cceb1ceeeedf68f66b4232daec5e3aa03b76f1e0ad7e6095411e2d05e83131a6"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/00a_generate_baseline_outputs.report.json",
+    "sha256": "ff9a922e02c45642355ff0605e3a1ead2d82763b1eb3d38d8a3e49f2d8ce7b3d"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/01_extract_baseline.report.json",
+    "sha256": "04640b13fe2d9709016b036d1eceb9de28b4276fb555dca9663879f3b469c8cb"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/02_compute_decision_metrics.report.json",
+    "sha256": "fa0bcef5c013b3a8d8131ba162f126b191cfa01a73310b386b9a1c532237ea68"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/03_classify_trajectories.report.json",
+    "sha256": "dff33c2cde4abfda98e1dcd644f16efcd7a3feb93c011c1e0a8bf240dae35c9a"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/04_region_analysis.report.json",
+    "sha256": "0b5cb5ba0e2d1cae6f26d572fec3ef6b72c289475ce8a1287b4532d48f4324d6"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/05_span_counterfactuals.report.json",
+    "sha256": "97ba5bff8106a6a21cfac7d8dd563603554fb06d1dd3de2e5f1c48a629592011"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/06_select_tracing_subset.report.json",
+    "sha256": "5574cc9b037776c4a2b2908c66ac136947d60d635f6872bdfe6b0cd9ec7f471a"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/07_run_tracing.report.json",
+    "sha256": "fd47c4dedbe36c0178e2a3f0768ccf55ba000c0518303510abf3e4f602c91aa0"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/08_attention_and_mlp_decomposition.report.json",
+    "sha256": "b30c5330de31f626c2a0dcbe42c5b7d7ff5ac8ea28ca0eded4e5ce4de4ab5fc4"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/09_causal_tests.report.json",
+    "sha256": "3b1a6eef2ed1327e035d045793969da188c76821aec8bc93b6b227db7231d03a"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/10_causal_validation_tools.report.json",
+    "sha256": "468b17b089d248396f965872a5d200dd07f045eaf40858d32953acedaaff8c06"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/11_generate_paper_assets.report.json",
+    "sha256": "34e727b908dcdb61b200fcd4801e9661a1ce5291012ea3c4a806ee025b1dc7f3"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/ablation_results.parquet",
+    "sha256": "b099afe520b456fe658eb10f73fe1eebcd427f7635f96dbffe30b00c00949656"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/attention_contrib_by_span.parquet",
+    "sha256": "f8eed874565c53879151a12c06a74558df08a586dee7fd6a1957cd16c691e2e2"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/attention_mass_by_span.parquet",
+    "sha256": "5ecc924ae856e502dced49257217229de6c3384f78f1b328280f38639eb13b66"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/basin_gap.parquet",
+    "sha256": "942402fc540684384c59f6994aefe17f2c72fb669caab2aee909a84fca5f2ff0"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/decision_metrics.parquet",
+    "sha256": "48e686a9d4deec13451bb84829c7a0dfa0953f659f164989f41bcc7ee4febf71"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_causal_panel_modelX.png",
+    "sha256": "d6f5aa584923b44ef7ff4861386ce4b7b4835794493caff318113771b08c16d6"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_flips_Qwen__Qwen2.5-7B-Instruct.png",
+    "sha256": "f059543385bda8f8d4d10c83a84ddc4bead9475c7049e5d1f78492691e2b0449"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_flips_meta-llama__Llama-3.1-8B-Instruct.png",
+    "sha256": "1972502a7547912bbbd40af256f5278b274341a67bb806fe35ef88857dd66ff4"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_flips_mistralai__Mistral-7B-Instruct-v0.3.png",
+    "sha256": "20670f84127cb801f87e4358c92e9215e89a442a703f7b4b628a6ecd53e634ac"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_phase_diagram_modelX.png",
+    "sha256": "47c54b95a8454693b6c76915eb6d55f55d57498e2998ad0f2494e40ac47971d9"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_region_entry_exit.png",
+    "sha256": "c67c5171d71192e53267ad43dfcceba3d6d9af2d5cfd93ab074357109e165822"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_routing_vs_contribution_modelX.png",
+    "sha256": "6f51f058fa77f395a7d3ef5cd051d07aa1a6cea6ebc2a988986feeeb8fac1854"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_trajectories_delta_Qwen__Qwen2.5-7B-Instruct.png",
+    "sha256": "d252e8285b1feb19171c0ceea6b2e3b94cf99bcbd7f7faa7cf7d01df82cf8718"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_trajectories_delta_meta-llama__Llama-3.1-8B-Instruct.png",
+    "sha256": "225ebabf6e3c4f7fce98b80a332c3e9bf78b89d086cb626044273f9235687568"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_trajectories_delta_mistralai__Mistral-7B-Instruct-v0.3.png",
+    "sha256": "f309a08a752e277efdf005d2a56cb8542a631f276d98b6e7c29de112f907ea46"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_trajectories_entropy_Qwen__Qwen2.5-7B-Instruct.png",
+    "sha256": "eed6f3d48827961cf6f0b3bc497b46856d61ad5ecf69ec298ab56347c294fe38"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_trajectories_entropy_meta-llama__Llama-3.1-8B-Instruct.png",
+    "sha256": "fc0bce4d06838816e151ed496c9f4904f20a9956ecb3d474653c6491c878a5d8"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/figures/fig_trajectories_entropy_mistralai__Mistral-7B-Instruct-v0.3.png",
+    "sha256": "f7e21e3f243958ac86980f1d85ecfb53d9004db7f75915e5b08705e47d70f0e0"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/final_report.json",
+    "sha256": "34e727b908dcdb61b200fcd4801e9661a1ce5291012ea3c4a806ee025b1dc7f3"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/layerwise.parquet",
+    "sha256": "db7af7218b9b2fa48a2212f88ff01b3c2a9772a496e27995221f4c529c95cfcd"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/meta/readiness_audit.json",
+    "sha256": "8a23d663fef59b4847bb9d303540626b488062797fe4da13e49454a1fbee2227"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/meta/run_start_metadata_snapshot.json",
+    "sha256": "27e70deb6f465e2f9b41a38e2f6dbe733784885c65c44c9c8d9e6c5473192ee4"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/metadata/IMPLEMENTATION_PLAN_V3.md",
+    "sha256": "261ec3d244ac9c7a7c2648085560f2af0fc415ffe7ea940f0ffe554874ebcdd0"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/metadata/MODEL_NUANCES_V2.md",
+    "sha256": "f44a4588ece88008d92f63d12ef570904def0e7716a8317d30768312952b8bf4"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/metadata/PAPER_OBJECTIVE_V3.md",
+    "sha256": "98dac0d1e1c157fbf4f41b84e7e4fe70ffb8b1db07a452c65199ea27af84729a"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/metadata/PREREGISTERED_HYPOTHESES_V3.md",
+    "sha256": "e7672d346e5bfd5e93ec449210553ca3ecf3b185d22f13813d9bd31414332ea0"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/metadata/experiment_v2.yaml",
+    "sha256": "17dae633804af13b832e81b4f9ba1bd6fa3748c1c3ddf8ecacd4861b3528d1b5"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/methods.md",
+    "sha256": "d3f8c3956e8e6c6b7dd89cbd943716434fbd619b4d3bd0c8cfbc58766a550024"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/negative_controls.parquet",
+    "sha256": "ac35898f8383548439af7d4a6fd41f40e19c95c65e4c421d86b8a4fcdaec16a8"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/patching_results.parquet",
+    "sha256": "207683afb79392cfc189680701d54e37caf4de2a5db8493d3d3d972ff8b94cf6"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/prompt_types.parquet",
+    "sha256": "11d1be44277dcff3d53632f0a782cbd3981d7dd64e0826eb8d4b63e196c6ee79"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/results_summary.md",
+    "sha256": "b6f5232baf52d036d3707dca0ffd5856eebfd40a0747ea711c13c8973c162c98"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/span_deletion_causal.parquet",
+    "sha256": "6d6e1dc31d7ed74c76c209022ce3b434d877104f05ce72d1268b2e32919283d6"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/span_effects.parquet",
+    "sha256": "74081de2c823e80547a2b0ffe48a6b709c0de83d029e5741d86f225f0bd1a0c9"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/span_labels.parquet",
+    "sha256": "591a75da9c1c5f82c494ddabea2d4a49e6ce219877f25e5b173c2c7ef48e4776"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/span_paraphrase_stability.parquet",
+    "sha256": "168977b42f851512e48b82d602960a0717ce8f0495a0c9e5b42fe33010823f37"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/spans.jsonl",
+    "sha256": "81b674b3a34ab76303b193fbb067a32b692d1eca23a558c55b11b0687916511a"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/tracing_scalars.parquet",
+    "sha256": "19cfe92550f81b94cd6efd4ef9804f2aa30199092c4e3f7d2e43b202b9a6c4a1"
+  },
+  {
+    "path": "/workspace/shape-of-wisdom/artifacts/final_result_v2/gpu_full_20260224T145646Z/type_counts.json",
+    "sha256": "813724cdc92ae45983f20a5e1d52d065143cfc78857773965b4335dd15493b4e"
+  }
+]

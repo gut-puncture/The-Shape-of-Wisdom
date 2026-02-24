@@ -1,0 +1,474 @@
+{
+  "models": {
+    "Qwen/Qwen2.5-7B-Instruct": {
+      "difficult_domain_balance": {
+        "actual_difficult_count": 250,
+        "actual_difficult_share": 0.4166666666666667,
+        "available_difficult_count": 250,
+        "min_difficult_share": 0.3,
+        "target_difficult_count": 180
+      },
+      "difficult_domains": [
+        "law"
+      ],
+      "domain_difficulty": [
+        {
+          "coarse_domain": "law",
+          "correct_rate": 0.512,
+          "difficulty": 0.488,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "economics_finance_business",
+          "correct_rate": 0.564,
+          "difficulty": 0.43600000000000005,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "mathematics",
+          "correct_rate": 0.576,
+          "difficulty": 0.42400000000000004,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "chemistry",
+          "correct_rate": 0.596,
+          "difficulty": 0.404,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "biology",
+          "correct_rate": 0.616,
+          "difficulty": 0.384,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "physics_engineering",
+          "correct_rate": 0.644,
+          "difficulty": 0.356,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "psychology_social",
+          "correct_rate": 0.708,
+          "difficulty": 0.29200000000000004,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "computer_science",
+          "correct_rate": 0.724,
+          "difficulty": 0.276,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "medicine",
+          "correct_rate": 0.728,
+          "difficulty": 0.272,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "history_politics",
+          "correct_rate": 0.752,
+          "difficulty": 0.248,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "philosophy_religion",
+          "correct_rate": 0.768,
+          "difficulty": 0.23199999999999998,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "general_knowledge",
+          "correct_rate": 0.852,
+          "difficulty": 0.14800000000000002,
+          "n_prompts": 250
+        }
+      ],
+      "domain_replication": {
+        "actual_max_domain_share": 0.4166666666666667,
+        "max_domain_share": 0.6,
+        "min_domains_covered": 2,
+        "min_prompts_per_domain": 0,
+        "selected_domain_count": 8,
+        "selected_domain_counts": {
+          "computer_science": 38,
+          "economics_finance_business": 116,
+          "history_politics": 109,
+          "law": 250,
+          "mathematics": 7,
+          "medicine": 28,
+          "philosophy_religion": 25,
+          "psychology_social": 27
+        }
+      },
+      "failing_gates": [],
+      "gates": {
+        "difficult_domain_balance": true,
+        "difficult_domain_feasible": true,
+        "domain_coverage": true,
+        "domain_max_share": true,
+        "domain_prompt_floor": true,
+        "nonempty_selection": true,
+        "selection_target_met": true,
+        "trajectory_balance": true,
+        "trajectory_quota_feasible": true
+      },
+      "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/tracing_subset_Qwen__Qwen2.5-7B-Instruct.json",
+      "pass": true,
+      "selected": 600,
+      "target_selected": 600,
+      "trajectory_balance": {
+        "available_by_type": {
+          "stable_correct": 392,
+          "stable_wrong": 476,
+          "unstable_correct": 1618,
+          "unstable_wrong": 514
+        },
+        "infeasible_types": [],
+        "per_type_target": {
+          "stable_correct": 150,
+          "stable_wrong": 150,
+          "unstable_correct": 150,
+          "unstable_wrong": 150
+        },
+        "required_types": [
+          "stable_correct",
+          "stable_wrong",
+          "unstable_correct",
+          "unstable_wrong"
+        ],
+        "selected_by_type": {
+          "stable_correct": 150,
+          "stable_wrong": 150,
+          "unstable_correct": 150,
+          "unstable_wrong": 150
+        },
+        "selected_total": 600,
+        "target_met": true,
+        "target_total": 600,
+        "trajectory_quota_feasible": true
+      },
+      "trajectory_counts": {
+        "stable_correct": 150,
+        "stable_wrong": 150,
+        "unstable_correct": 150,
+        "unstable_wrong": 150
+      }
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+      "difficult_domain_balance": {
+        "actual_difficult_count": 250,
+        "actual_difficult_share": 0.4166666666666667,
+        "available_difficult_count": 250,
+        "min_difficult_share": 0.3,
+        "target_difficult_count": 180
+      },
+      "difficult_domains": [
+        "mathematics"
+      ],
+      "domain_difficulty": [
+        {
+          "coarse_domain": "mathematics",
+          "correct_rate": 0.412,
+          "difficulty": 0.5880000000000001,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "economics_finance_business",
+          "correct_rate": 0.476,
+          "difficulty": 0.524,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "physics_engineering",
+          "correct_rate": 0.496,
+          "difficulty": 0.504,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "law",
+          "correct_rate": 0.504,
+          "difficulty": 0.496,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "chemistry",
+          "correct_rate": 0.56,
+          "difficulty": 0.43999999999999995,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "biology",
+          "correct_rate": 0.592,
+          "difficulty": 0.40800000000000003,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "computer_science",
+          "correct_rate": 0.648,
+          "difficulty": 0.352,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "psychology_social",
+          "correct_rate": 0.66,
+          "difficulty": 0.33999999999999997,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "history_politics",
+          "correct_rate": 0.716,
+          "difficulty": 0.28400000000000003,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "philosophy_religion",
+          "correct_rate": 0.744,
+          "difficulty": 0.256,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "medicine",
+          "correct_rate": 0.768,
+          "difficulty": 0.23199999999999998,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "general_knowledge",
+          "correct_rate": 0.816,
+          "difficulty": 0.18400000000000005,
+          "n_prompts": 250
+        }
+      ],
+      "domain_replication": {
+        "actual_max_domain_share": 0.4166666666666667,
+        "max_domain_share": 0.6,
+        "min_domains_covered": 2,
+        "min_prompts_per_domain": 0,
+        "selected_domain_count": 7,
+        "selected_domain_counts": {
+          "computer_science": 37,
+          "economics_finance_business": 34,
+          "history_politics": 211,
+          "law": 38,
+          "mathematics": 250,
+          "medicine": 5,
+          "philosophy_religion": 25
+        }
+      },
+      "failing_gates": [],
+      "gates": {
+        "difficult_domain_balance": true,
+        "difficult_domain_feasible": true,
+        "domain_coverage": true,
+        "domain_max_share": true,
+        "domain_prompt_floor": true,
+        "nonempty_selection": true,
+        "selection_target_met": true,
+        "trajectory_balance": true,
+        "trajectory_quota_feasible": true
+      },
+      "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/tracing_subset_meta-llama__Llama-3.1-8B-Instruct.json",
+      "pass": true,
+      "selected": 600,
+      "target_selected": 600,
+      "trajectory_balance": {
+        "available_by_type": {
+          "stable_correct": 986,
+          "stable_wrong": 417,
+          "unstable_correct": 862,
+          "unstable_wrong": 735
+        },
+        "infeasible_types": [],
+        "per_type_target": {
+          "stable_correct": 150,
+          "stable_wrong": 150,
+          "unstable_correct": 150,
+          "unstable_wrong": 150
+        },
+        "required_types": [
+          "stable_correct",
+          "stable_wrong",
+          "unstable_correct",
+          "unstable_wrong"
+        ],
+        "selected_by_type": {
+          "stable_correct": 150,
+          "stable_wrong": 150,
+          "unstable_correct": 150,
+          "unstable_wrong": 150
+        },
+        "selected_total": 600,
+        "target_met": true,
+        "target_total": 600,
+        "trajectory_quota_feasible": true
+      },
+      "trajectory_counts": {
+        "stable_correct": 150,
+        "stable_wrong": 150,
+        "unstable_correct": 150,
+        "unstable_wrong": 150
+      }
+    },
+    "mistralai/Mistral-7B-Instruct-v0.3": {
+      "difficult_domain_balance": {
+        "actual_difficult_count": 247,
+        "actual_difficult_share": 0.4116666666666667,
+        "available_difficult_count": 250,
+        "min_difficult_share": 0.3,
+        "target_difficult_count": 180
+      },
+      "difficult_domains": [
+        "mathematics"
+      ],
+      "domain_difficulty": [
+        {
+          "coarse_domain": "mathematics",
+          "correct_rate": 0.344,
+          "difficulty": 0.656,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "chemistry",
+          "correct_rate": 0.412,
+          "difficulty": 0.5880000000000001,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "physics_engineering",
+          "correct_rate": 0.424,
+          "difficulty": 0.5760000000000001,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "economics_finance_business",
+          "correct_rate": 0.464,
+          "difficulty": 0.536,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "law",
+          "correct_rate": 0.468,
+          "difficulty": 0.532,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "biology",
+          "correct_rate": 0.536,
+          "difficulty": 0.46399999999999997,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "psychology_social",
+          "correct_rate": 0.572,
+          "difficulty": 0.42800000000000005,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "medicine",
+          "correct_rate": 0.584,
+          "difficulty": 0.41600000000000004,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "computer_science",
+          "correct_rate": 0.628,
+          "difficulty": 0.372,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "history_politics",
+          "correct_rate": 0.628,
+          "difficulty": 0.372,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "philosophy_religion",
+          "correct_rate": 0.716,
+          "difficulty": 0.28400000000000003,
+          "n_prompts": 250
+        },
+        {
+          "coarse_domain": "general_knowledge",
+          "correct_rate": 0.796,
+          "difficulty": 0.20399999999999996,
+          "n_prompts": 250
+        }
+      ],
+      "domain_replication": {
+        "actual_max_domain_share": 0.4116666666666667,
+        "max_domain_share": 0.6,
+        "min_domains_covered": 2,
+        "min_prompts_per_domain": 0,
+        "selected_domain_count": 10,
+        "selected_domain_counts": {
+          "biology": 32,
+          "computer_science": 17,
+          "economics_finance_business": 30,
+          "history_politics": 107,
+          "law": 34,
+          "mathematics": 247,
+          "medicine": 39,
+          "philosophy_religion": 35,
+          "physics_engineering": 18,
+          "psychology_social": 41
+        }
+      },
+      "failing_gates": [],
+      "gates": {
+        "difficult_domain_balance": true,
+        "difficult_domain_feasible": true,
+        "domain_coverage": true,
+        "domain_max_share": true,
+        "domain_prompt_floor": true,
+        "nonempty_selection": true,
+        "selection_target_met": true,
+        "trajectory_balance": true,
+        "trajectory_quota_feasible": true
+      },
+      "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/tracing_subset_mistralai__Mistral-7B-Instruct-v0.3.json",
+      "pass": true,
+      "selected": 600,
+      "target_selected": 600,
+      "trajectory_balance": {
+        "available_by_type": {
+          "stable_correct": 333,
+          "stable_wrong": 204,
+          "unstable_correct": 1310,
+          "unstable_wrong": 1153
+        },
+        "infeasible_types": [],
+        "per_type_target": {
+          "stable_correct": 150,
+          "stable_wrong": 150,
+          "unstable_correct": 150,
+          "unstable_wrong": 150
+        },
+        "required_types": [
+          "stable_correct",
+          "stable_wrong",
+          "unstable_correct",
+          "unstable_wrong"
+        ],
+        "selected_by_type": {
+          "stable_correct": 150,
+          "stable_wrong": 150,
+          "unstable_correct": 150,
+          "unstable_wrong": 150
+        },
+        "selected_total": 600,
+        "target_met": true,
+        "target_total": 600,
+        "trajectory_quota_feasible": true
+      },
+      "trajectory_counts": {
+        "stable_correct": 150,
+        "stable_wrong": 150,
+        "unstable_correct": 150,
+        "unstable_wrong": 150
+      }
+    }
+  },
+  "pass": true
+}

@@ -1,0 +1,63 @@
+{
+  "ablation_rows": 3600,
+  "ablation_target_layers": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27
+  ],
+  "component_coverage": {
+    "ablation": {
+      "attention": true,
+      "mlp": true
+    },
+    "patching": {
+      "attention": true,
+      "mlp": true
+    }
+  },
+  "failing_gates": [],
+  "gates": {
+    "ablation_components_complete": true,
+    "ablation_delta_shift_finite": true,
+    "ablation_expected_models_present": true,
+    "min_ablation_rows": true,
+    "min_patching_rows": true,
+    "patching_components_complete": true,
+    "patching_delta_shift_finite": true,
+    "patching_expected_models_present": true
+  },
+  "model_coverage": {
+    "ablation_present": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ],
+    "expected_models": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ],
+    "patching_present": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ]
+  },
+  "pass": true,
+  "patching_rows": 1800,
+  "patching_target_layers": [
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27
+  ]
+}

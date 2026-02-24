@@ -1,0 +1,123 @@
+{
+  "done_sentinel": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/00a_generate_baseline_outputs.done",
+  "execution": {
+    "batch_chain": [
+      12,
+      10,
+      8,
+      6,
+      4,
+      2,
+      1
+    ],
+    "checkpoint_every_prompts": 1,
+    "deterministic_seed": 12345
+  },
+  "failing_gates": [],
+  "gates": {
+    "all_model_validations_pass": true,
+    "layer_index_contract_transformer_only": true,
+    "manifest_hash_contract": true,
+    "manifest_nonempty": true,
+    "manifest_row_count_expected": true,
+    "models_selected": true,
+    "rows_complete_per_model": true,
+    "thermal_checkpoint_not_triggered": true
+  },
+  "layer_index_contract": "transformer_only",
+  "manifest": {
+    "copied_from_source": false,
+    "expected_sha256": "bfe2557316cb1e0eae6a684eb8de84885f74e446ac72f1847a7da80baf2de56c",
+    "manifest_empty_placeholder": false,
+    "path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/manifests/ccc_baseline.jsonl",
+    "rows": 3000,
+    "rows_expected_full": 3000,
+    "sha256": "bfe2557316cb1e0eae6a684eb8de84885f74e446ac72f1847a7da80baf2de56c",
+    "source_exists": true,
+    "source_is_file": true,
+    "source_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/manifests/ccc_baseline.jsonl"
+  },
+  "pass": true,
+  "rows_per_second": 0.0,
+  "run_id": "gpu_full_20260224T145646Z",
+  "stats_per_model": {
+    "Qwen/Qwen2.5-7B-Instruct": {
+      "batch_sizes_used": [],
+      "checkpoint_flush_count": 0,
+      "failing_gates": [],
+      "gates": {
+        "layer_index_contract_transformer_only": true,
+        "rows_complete": true,
+        "schema_and_uniqueness": true
+      },
+      "output_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/outputs/Qwen__Qwen2.5-7B-Instruct/baseline_outputs.jsonl",
+      "pass": true,
+      "pending_rows": 0,
+      "resume_rows_skipped": 3000,
+      "resume_rows_total": 3000,
+      "rows_in_output": 3000,
+      "rows_per_second": 0.0,
+      "rows_written": 0,
+      "stopped_early": false,
+      "target_rows": 3000,
+      "validation": {
+        "errors": [],
+        "pass": true,
+        "rows": 3000
+      }
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+      "batch_sizes_used": [],
+      "checkpoint_flush_count": 0,
+      "failing_gates": [],
+      "gates": {
+        "layer_index_contract_transformer_only": true,
+        "rows_complete": true,
+        "schema_and_uniqueness": true
+      },
+      "output_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/outputs/meta-llama__Llama-3.1-8B-Instruct/baseline_outputs.jsonl",
+      "pass": true,
+      "pending_rows": 0,
+      "resume_rows_skipped": 3000,
+      "resume_rows_total": 3000,
+      "rows_in_output": 3000,
+      "rows_per_second": 0.0,
+      "rows_written": 0,
+      "stopped_early": false,
+      "target_rows": 3000,
+      "validation": {
+        "errors": [],
+        "pass": true,
+        "rows": 3000
+      }
+    },
+    "mistralai/Mistral-7B-Instruct-v0.3": {
+      "batch_sizes_used": [],
+      "checkpoint_flush_count": 0,
+      "failing_gates": [],
+      "gates": {
+        "layer_index_contract_transformer_only": true,
+        "rows_complete": true,
+        "schema_and_uniqueness": true
+      },
+      "output_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/outputs/mistralai__Mistral-7B-Instruct-v0.3/baseline_outputs.jsonl",
+      "pass": true,
+      "pending_rows": 0,
+      "resume_rows_skipped": 3000,
+      "resume_rows_total": 3000,
+      "rows_in_output": 3000,
+      "rows_per_second": 0.0,
+      "rows_written": 0,
+      "stopped_early": false,
+      "target_rows": 3000,
+      "validation": {
+        "errors": [],
+        "pass": true,
+        "rows": 3000
+      }
+    }
+  },
+  "stop_reason": null,
+  "stopped_early": false,
+  "thermal_action": null
+}

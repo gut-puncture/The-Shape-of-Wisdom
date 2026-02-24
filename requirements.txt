@@ -1,0 +1,19 @@
+# Shape of Wisdom – Python Dependencies
+# Tested with Python 3.10+
+
+# Deep learning
+torch>=2.1
+transformers>=4.43
+
+# Data & numerics
+numpy>=1.24
+pandas>=2.0
+pyarrow>=14.0
+scipy>=1.11
+
+# Visualization
+matplotlib>=3.7
+
+# Config & utilities
+pyyaml>=6.0
+tqdm>=4.65

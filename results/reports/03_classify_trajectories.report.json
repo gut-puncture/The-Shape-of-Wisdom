@@ -1,0 +1,59 @@
+{
+  "counts": {
+    "stable_correct": 1711,
+    "stable_wrong": 1097,
+    "unstable_correct": 3790,
+    "unstable_wrong": 2402
+  },
+  "expected_model_ids": [
+    "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct",
+    "mistralai/Mistral-7B-Instruct-v0.3"
+  ],
+  "failing_gates": [],
+  "gates": {
+    "expected_models_present": true,
+    "min_count_per_type_per_model": true,
+    "required_types_per_model": true
+  },
+  "observed_model_ids": [
+    "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct",
+    "mistralai/Mistral-7B-Instruct-v0.3"
+  ],
+  "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/prompt_types.parquet",
+  "pass": true,
+  "per_model_type_counts": {
+    "Qwen/Qwen2.5-7B-Instruct": {
+      "stable_correct": 392,
+      "stable_wrong": 476,
+      "unstable_correct": 1618,
+      "unstable_wrong": 514
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+      "stable_correct": 986,
+      "stable_wrong": 417,
+      "unstable_correct": 862,
+      "unstable_wrong": 735
+    },
+    "mistralai/Mistral-7B-Instruct-v0.3": {
+      "stable_correct": 333,
+      "stable_wrong": 204,
+      "unstable_correct": 1310,
+      "unstable_wrong": 1153
+    }
+  },
+  "rows": 9000,
+  "trajectory_stability_contract": {
+    "max_late_flip_count": 0,
+    "min_abs_delta_tail_floor": 0.3,
+    "min_count_per_type_per_model": 1,
+    "required_types": [
+      "stable_correct",
+      "stable_wrong",
+      "unstable_correct",
+      "unstable_wrong"
+    ],
+    "tail_len": 8
+  }
+}

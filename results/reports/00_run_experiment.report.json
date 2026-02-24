@@ -1,0 +1,23 @@
+{
+  "complete": false,
+  "executed_scripts": [],
+  "failed_exit_code": null,
+  "failed_script": null,
+  "mode": "full",
+  "model_name": null,
+  "pass": true,
+  "ready_to_execute_full_experiment": true,
+  "requires_gpu_handoff": false,
+  "run_id": "gpu_full_20260224T145646Z",
+  "run_start_metadata_snapshot": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/meta/run_start_metadata_snapshot.json",
+  "runtime_source_precedence": {
+    "ordered_sources": [
+      "stage00a_report",
+      "pilot_report",
+      "default_fallback_0.2"
+    ],
+    "selected_source": "unset"
+  },
+  "skipped_scripts": [],
+  "snapshot_only": true
+}

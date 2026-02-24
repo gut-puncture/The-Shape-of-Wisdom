@@ -37,6 +37,9 @@ logs/
 *.tmp
 *.temp
 
+# Large archives (never commit)
+*.tar.gz
+
 # Experiment outputs / caches (never commit)
 runs/*
 
@@ -46,8 +49,11 @@ artifacts/*
 artifacts/parser_edge_case_regression/*
 !artifacts/parser_edge_case_regression/regression_cases.json
 
-# Paid/large inputs and derived data (never commit)
+# Paid/large inputs and derived data (never commit raw data)
 data/
+
+# GPU downloads (large, never commit)
+downloads/
 
 # Legacy archive (kept local only; never commit)
 v1/

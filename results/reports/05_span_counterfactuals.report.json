@@ -1,0 +1,83 @@
+{
+  "allow_proxy_fallback": false,
+  "counterfactual_mode": "model",
+  "done_sentinel": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/sentinels/05_span_counterfactuals.done",
+  "effects": 4200,
+  "failing_gates": [],
+  "gates": {
+    "paraphrase_expected_models_present": true,
+    "paraphrase_label_agreement": true,
+    "paraphrase_label_agreement_per_model": true,
+    "paraphrase_sample_nonempty": true,
+    "paraphrase_span_jaccard": true,
+    "paraphrase_span_jaccard_per_model": true,
+    "sampling_full_mode_prompt_count": true
+  },
+  "model_level_proxy_fallback": {},
+  "paraphrase_stability": {
+    "expected_models": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ],
+    "label_agreement_mean": 0.9977777777777778,
+    "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/span_paraphrase_stability.parquet",
+    "per_model": {
+      "Qwen/Qwen2.5-7B-Instruct": {
+        "label_agreement_mean": 1.0,
+        "rows": 50,
+        "span_jaccard_mean": 0.857142857142857
+      },
+      "meta-llama/Llama-3.1-8B-Instruct": {
+        "label_agreement_mean": 0.9966666666666667,
+        "rows": 50,
+        "span_jaccard_mean": 0.857142857142857
+      },
+      "mistralai/Mistral-7B-Instruct-v0.3": {
+        "label_agreement_mean": 0.9966666666666667,
+        "rows": 50,
+        "span_jaccard_mean": 0.857142857142857
+      }
+    },
+    "rows": 150,
+    "sample_size_per_model": 50,
+    "span_jaccard_mean": 0.857142857142857
+  },
+  "pass": true,
+  "prompts_processed": 600,
+  "proxy_fallback_count": 0,
+  "sampling_contract": {
+    "available_prompt_counts": {
+      "Qwen/Qwen2.5-7B-Instruct": 3000,
+      "meta-llama/Llama-3.1-8B-Instruct": 3000,
+      "mistralai/Mistral-7B-Instruct-v0.3": 3000
+    },
+    "is_full_mode": true,
+    "requested_prompt_counts": {
+      "Qwen/Qwen2.5-7B-Instruct": 200,
+      "meta-llama/Llama-3.1-8B-Instruct": 200,
+      "mistralai/Mistral-7B-Instruct-v0.3": 200
+    },
+    "selected_prompt_counts": {
+      "Qwen/Qwen2.5-7B-Instruct": 200,
+      "meta-llama/Llama-3.1-8B-Instruct": 200,
+      "mistralai/Mistral-7B-Instruct-v0.3": 200
+    },
+    "span_counterfactual_max_prompts_per_model": 1000,
+    "span_counterfactual_prompts_per_model": 200
+  },
+  "span_labels": {
+    "distractor": 1965,
+    "evidence": 2156,
+    "neutral": 79
+  },
+  "spans": 4200,
+  "stop_reason": null,
+  "stopped_early": false,
+  "thermal_action": null,
+  "thermal_policy": {
+    "enabled": true,
+    "events_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/meta/thermal_events_span_counterfactuals.jsonl",
+    "pause_mode": "checkpoint_exit"
+  }
+}

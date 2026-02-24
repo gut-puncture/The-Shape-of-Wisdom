@@ -1,0 +1,6 @@
+{
+  "figure": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/fig_region_entry_exit.png",
+  "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/basin_gap.parquet",
+  "pass": true,
+  "rows": 276000
+}

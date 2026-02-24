@@ -1,8 +1,8 @@
 experiment:
   name: shape_of_wisdom_v2
-  objective_doc: /Users/shaileshrana/shape-of-wisdom/docs/PAPER_OBJECTIVE_V3.md
-  implementation_doc: /Users/shaileshrana/shape-of-wisdom/docs/IMPLEMENTATION_PLAN_V3.md
-  preregistration_doc: /Users/shaileshrana/shape-of-wisdom/docs/PREREGISTERED_HYPOTHESES_V3.md
+  objective_doc: ./docs/PAPER_OBJECTIVE_V3.md
+  implementation_doc: ./docs/IMPLEMENTATION_PLAN_V3.md
+  preregistration_doc: ./docs/PREREGISTERED_HYPOTHESES_V3.md
 
 models:
   - name: qwen2.5-7b-instruct
@@ -17,7 +17,7 @@ models:
 
 data_scope:
   baseline_manifest_name: ccc_baseline.jsonl
-  baseline_manifest_source: /Users/shaileshrana/shape-of-wisdom/prompt_packs/ccc_baseline_v1_3000.jsonl
+  baseline_manifest_source: ./prompt_packs/ccc_baseline_v1_3000.jsonl
   baseline_manifest_sha256: bfe2557316cb1e0eae6a684eb8de84885f74e446ac72f1847a7da80baf2de56c
   baseline_manifest_expected_rows_full: 3000
   robustness_enabled: false

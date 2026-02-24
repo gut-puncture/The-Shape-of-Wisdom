@@ -1,0 +1,10 @@
+{
+  "models": [
+    "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct",
+    "mistralai/Mistral-7B-Instruct-v0.3"
+  ],
+  "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/layerwise.parquet",
+  "pass": true,
+  "rows": 276000
+}

@@ -1,0 +1,79 @@
+{
+  "drift_decomposition_r2_min": 0.7,
+  "drift_target_alignment": "delta_current_minus_delta_prev_per_prompt",
+  "drift_target_alignment_per_model": {
+    "Qwen/Qwen2.5-7B-Instruct": "delta_current_minus_delta_prev_per_prompt",
+    "meta-llama/Llama-3.1-8B-Instruct": "delta_current_minus_delta_prev_per_prompt",
+    "mistralai/Mistral-7B-Instruct-v0.3": "delta_current_minus_delta_prev_per_prompt"
+  },
+  "failing_gates": [],
+  "failing_models": [],
+  "gates": {
+    "drift_decomposition_r2": true,
+    "expected_models_present": true,
+    "split_r2_min": true,
+    "split_test_rows_min": true,
+    "split_train_rows_min": true
+  },
+  "models": {
+    "Qwen/Qwen2.5-7B-Instruct": {
+      "coef_attn": 0.9487710893810798,
+      "coef_mlp": 0.8942794115137891,
+      "intercept": 0.2498719874759146,
+      "r2": 0.8941817177513246
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+      "coef_attn": 0.8481021972007521,
+      "coef_mlp": 0.8288667341747454,
+      "intercept": 0.21353939037162,
+      "r2": 0.771434212910334
+    },
+    "mistralai/Mistral-7B-Instruct-v0.3": {
+      "coef_attn": 0.9283251995631739,
+      "coef_mlp": 0.9383700862370389,
+      "intercept": 0.16042642386520395,
+      "r2": 0.9058550873220862
+    }
+  },
+  "pass": true,
+  "split_contract": {
+    "expected_model_ids": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ],
+    "min_test_rows": 100,
+    "min_train_rows": 100,
+    "models": {
+      "Qwen/Qwen2.5-7B-Instruct": {
+        "split_unit": "prompt_uid",
+        "test_prompt_count": 180,
+        "test_r2": 0.8983026173789344,
+        "test_rows": 5040,
+        "train_prompt_count": 420,
+        "train_r2": 0.892742975651567,
+        "train_rows": 11760
+      },
+      "meta-llama/Llama-3.1-8B-Instruct": {
+        "split_unit": "prompt_uid",
+        "test_prompt_count": 180,
+        "test_r2": 0.7577002177194804,
+        "test_rows": 5760,
+        "train_prompt_count": 420,
+        "train_r2": 0.7763960860836459,
+        "train_rows": 13440
+      },
+      "mistralai/Mistral-7B-Instruct-v0.3": {
+        "split_unit": "prompt_uid",
+        "test_prompt_count": 180,
+        "test_r2": 0.9075474614920785,
+        "test_rows": 5760,
+        "train_prompt_count": 420,
+        "train_r2": 0.9055525982120062,
+        "train_rows": 13440
+      }
+    },
+    "require_split_r2": true,
+    "split_train_fraction": 0.7
+  }
+}

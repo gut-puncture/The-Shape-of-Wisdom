@@ -1,0 +1,7 @@
+{
+  "correctness_source": "final_layer_top1_logits",
+  "out_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/decision_metrics.parquet",
+  "pass": true,
+  "prompts": 3000,
+  "rows": 276000
+}

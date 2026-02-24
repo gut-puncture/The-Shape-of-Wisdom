@@ -1,0 +1,24 @@
+{
+  "device": "cuda",
+  "done_sentinel": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/sentinels/07_run_tracing.done",
+  "models_completed": 3,
+  "models_requested": [
+    "Qwen/Qwen2.5-7B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct",
+    "mistralai/Mistral-7B-Instruct-v0.3"
+  ],
+  "pass": true,
+  "prompts_attempted": 1800,
+  "rows": {
+    "attention_contrib_by_span": 386400,
+    "attention_mass_by_span": 386400,
+    "tracing_scalars": 55200
+  },
+  "run_id": "gpu_full_20260224T145646Z",
+  "seed": 12345,
+  "thermal_policy": {
+    "enabled": true,
+    "events_path": "/workspace/shape-of-wisdom/runs/gpu_full_20260224T145646Z/v2/meta/thermal_events_tracing.jsonl",
+    "pause_mode": "checkpoint_exit"
+  }
+}
