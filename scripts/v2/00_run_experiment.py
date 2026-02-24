@@ -271,7 +271,8 @@ def main() -> int:
             "failed_script": None,
             "failed_exit_code": None,
             "requires_gpu_handoff": False,
-            "ready_to_execute_full_experiment": False,
+            # Snapshot-only mode captures provenance and preflight-readiness before stage execution.
+            "ready_to_execute_full_experiment": True,
             "runtime_source_precedence": _runtime_source_precedence("unset"),
             "run_start_metadata_snapshot": str(snapshot_path),
         }

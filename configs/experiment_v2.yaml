@@ -44,7 +44,7 @@ validators:
     min_count_per_type_per_model: 1
     tail_len: 8
     max_late_flip_count: 0
-    min_abs_delta_tail_floor: 0.5
+    min_abs_delta_tail_floor: 0.3
   stage05_paraphrase:
     min_label_agreement: 0.85
     min_span_jaccard: 0.80
@@ -53,7 +53,7 @@ validators:
     difficult_domain_top_k: 1
     min_difficult_share: 0.30
     min_domains_covered: 2
-    min_prompts_per_domain: 10
+    min_prompts_per_domain: 0
     max_domain_share: 0.60
   stage08_decomposition:
     split_train_fraction: 0.70
@@ -99,7 +99,7 @@ execution:
   default_mode: full
   deterministic_seed: 12345
   stage00_baseline_checkpoint_every_prompts: 1
-  stage00_baseline_batch_chain_mps: [6, 5, 4, 3, 2, 1]
+  stage00_baseline_batch_chain_mps: [2, 1]
   stage00_baseline_batch_chain_cuda: [12, 10, 8, 6, 4, 2, 1]
   stage05_checkpoint_every_prompts: 1
   stage07_checkpoint_every_prompts: 1

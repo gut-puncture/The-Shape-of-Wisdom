@@ -424,6 +424,14 @@ def run_baseline_for_model(
         device = torch.device("cpu")
         default_dtype = torch.float32
 
+    # Release stale MPS cache from prior model execution within the same process.
+    if hasattr(torch, "mps") and hasattr(torch.mps, "empty_cache"):
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            try:
+                torch.mps.empty_cache()
+            except Exception:
+                pass
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         revision=model_revision if model_revision else None,
@@ -624,6 +632,12 @@ def run_baseline_for_model(
             pass
         if hasattr(torch, "cuda") and torch.cuda.is_available():
             torch.cuda.empty_cache()
+        if hasattr(torch, "mps") and hasattr(torch.mps, "empty_cache"):
+            if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                try:
+                    torch.mps.empty_cache()
+                except Exception:
+                    pass
 
     elapsed = max(1e-9, float(time.monotonic() - start))
     if stopped_early:

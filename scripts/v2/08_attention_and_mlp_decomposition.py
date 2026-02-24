@@ -37,6 +37,27 @@ def _split_model_rows(sub: pd.DataFrame, *, train_fraction: float) -> tuple[pd.D
     return train, test, "layer_row_fallback"
 
 
+def _with_drift_target(sub: pd.DataFrame) -> tuple[pd.DataFrame, str]:
+    tmp = sub.sort_values(["prompt_uid", "layer_index"]).copy()
+    if "delta" in tmp.columns:
+        delta = pd.to_numeric(tmp["delta"], errors="coerce")
+        if "prompt_uid" in tmp.columns:
+            prev = delta.groupby(tmp["prompt_uid"].astype(str)).shift(1)
+        else:
+            prev = delta.shift(1)
+        target = delta - prev
+        if "drift" in tmp.columns:
+            drift = pd.to_numeric(tmp["drift"], errors="coerce")
+            target = target.where(target.notna(), drift)
+        tmp["drift_target"] = target.fillna(0.0).astype(float)
+        return tmp, "delta_current_minus_delta_prev_per_prompt"
+    if "drift" in tmp.columns:
+        tmp["drift_target"] = pd.to_numeric(tmp["drift"], errors="coerce").fillna(0.0).astype(float)
+        return tmp, "reported_drift_fallback"
+    tmp["drift_target"] = 0.0
+    return tmp, "zero_fallback"
+
+
 def main() -> int:
     ap = base_parser("V2: validate attention+MLP decomposition against drift")
     args = ap.parse_args()
@@ -79,11 +100,14 @@ def main() -> int:
     split_train_ok = True
     split_test_ok = True
     split_r2_ok = True
+    drift_target_alignment_per_model = {}
     observed_model_ids = []
     for model_id, sub in df.groupby("model_id", sort=False):
         observed_model_ids.append(str(model_id))
+        sub, drift_target_alignment = _with_drift_target(sub)
+        drift_target_alignment_per_model[str(model_id)] = str(drift_target_alignment)
         q = drift_reconstruction_quality(
-            observed_drift=sub["drift"].to_numpy(),
+            observed_drift=sub["drift_target"].to_numpy(),
             attn_scalar=sub["s_attn"].to_numpy(),
             mlp_scalar=sub["s_mlp"].to_numpy(),
         )
@@ -93,12 +117,12 @@ def main() -> int:
 
         train_df, test_df, split_unit = _split_model_rows(sub, train_fraction=float(split_train_fraction))
         q_train = drift_reconstruction_quality(
-            observed_drift=train_df["drift"].to_numpy(),
+            observed_drift=train_df["drift_target"].to_numpy(),
             attn_scalar=train_df["s_attn"].to_numpy(),
             mlp_scalar=train_df["s_mlp"].to_numpy(),
         )
         q_test = drift_reconstruction_quality(
-            observed_drift=test_df["drift"].to_numpy(),
+            observed_drift=test_df["drift_target"].to_numpy(),
             attn_scalar=test_df["s_attn"].to_numpy(),
             mlp_scalar=test_df["s_mlp"].to_numpy(),
         )
@@ -140,6 +164,13 @@ def main() -> int:
     }
     failing_gates = sorted([k for k, v in gates.items() if not bool(v)])
     pass_flag = len(failing_gates) == 0
+    alignment_values = sorted(set(drift_target_alignment_per_model.values()))
+    if len(alignment_values) == 1:
+        drift_target_alignment = alignment_values[0]
+    elif alignment_values:
+        drift_target_alignment = "mixed:" + ",".join(alignment_values)
+    else:
+        drift_target_alignment = "none"
 
     write_json(
         report_path,
@@ -149,6 +180,8 @@ def main() -> int:
             "failing_models": failing_models,
             "models": model_reports,
             "split_contract": split_contract,
+            "drift_target_alignment": str(drift_target_alignment),
+            "drift_target_alignment_per_model": drift_target_alignment_per_model,
             "gates": gates,
             "failing_gates": failing_gates,
         },

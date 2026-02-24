@@ -10,6 +10,40 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class TestOrchestratorGatePropagation(unittest.TestCase):
+    def test_snapshot_only_reports_ready_for_execution(self) -> None:
+        run_id = "test_v2_orchestrator_snapshot_ready"
+        run_root = REPO_ROOT / "runs" / run_id
+        if run_root.exists():
+            shutil.rmtree(run_root)
+
+        try:
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(REPO_ROOT / "scripts" / "v2" / "00_run_experiment.py"),
+                    "--run-id",
+                    run_id,
+                    "--mode",
+                    "full",
+                    "--snapshot-only",
+                ],
+                cwd=str(REPO_ROOT),
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0)
+            report_path = run_root / "v2" / "00_run_experiment.report.json"
+            self.assertTrue(report_path.exists())
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            self.assertTrue(bool(report.get("snapshot_only")))
+            self.assertTrue(bool(report.get("pass")))
+            self.assertFalse(bool(report.get("complete")))
+            self.assertTrue(bool(report.get("ready_to_execute_full_experiment")))
+            self.assertEqual(report.get("executed_scripts"), [])
+            self.assertEqual(report.get("skipped_scripts"), [])
+        finally:
+            if run_root.exists():
+                shutil.rmtree(run_root)
+
     def test_orchestrator_writes_report_on_stage_failure(self) -> None:
         run_id = "test_v2_orchestrator_gate_failure"
         run_root = REPO_ROOT / "runs" / run_id
