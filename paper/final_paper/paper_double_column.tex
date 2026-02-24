@@ -135,15 +135,14 @@ A trajectory is \textbf{stable} if, within a tail window of the last $\tau$ laye
 We use $\tau = 8$, require zero sign flips, and enforce $b_{\min} = 0.3$.  These thresholds were pre-registered.  Sensitivity analysis appears in \cref{sec:appendix_sensitivity}.
 
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=\columnwidth]{fig1_three_primitives_1771964631694.png}}
+    \centerline{\includegraphics[width=0.95\textwidth]{fig1_three_primitives_1771964631694.png}}
     \caption{The three primitives and four trajectory types.  \textbf{Left:}~The state $\delta(l)$ is a point in logit-margin space; the boundary $|\delta|$ measures distance to a decision flip.  \textbf{Center:}~Motion $g(l)$ describes layer-by-layer drift toward or away from the correct answer.  \textbf{Right:}~Four trajectory types arise from combinations of final correctness and tail stability.}
     \label{fig:primitives}
   \end{center}
-  \vskip -0.2in
-\end{figure}
+\end{figure*}
 
 
 %% ============================================================
@@ -175,7 +174,6 @@ We study three instruction-tuned transformers spanning distinct pre-training rec
   \end{sc}
   \end{small}
   \end{center}
-  \vskip -0.1in
 \end{table}
 
 \subsection{Data}
@@ -211,6 +209,7 @@ Each prompt~$\times$~model pair is classified into exactly one of four types (\c
   \vskip 0.1in
   \begin{center}
   \begin{small}
+  \resizebox{\columnwidth}{!}{%
   \begin{tabular}{lccl}
     \toprule
     Type & Corr. & Stab. & Interpretation \\
@@ -220,10 +219,10 @@ Each prompt~$\times$~model pair is classified into exactly one of four types (\c
     Unstable-corr. & \checkmark & $\times$ & Oscillated, landed right \\
     Unstable-wrong & $\times$   & $\times$ & Oscillated and failed \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}%
+  }
   \end{small}
   \end{center}
-  \vskip -0.1in
 \end{table}
 
 \subsection{Phase Structure in $(\delta, \Sigma g)$ Space}
@@ -237,7 +236,6 @@ Plotting the final-layer margin $\delta(L)$ against cumulative drift $\Sigma g$ 
     \caption{Phase diagram in decision-evidence space.  Each point is one prompt~$\times$~model pair.  The four types separate cleanly in the $(\delta,\,\Sigma g)$ plane.}
     \label{fig:phase}
   \end{center}
-  \vskip -0.2in
 \end{figure}
 
 
@@ -291,7 +289,6 @@ For unstable trajectories, the two components are often \emph{misaligned}: atten
     \caption{\textbf{Top:}~Per-layer drift decomposition into attention and MLP components with confidence bands ($R^2 > 0.70$).  \textbf{Bottom:}~Mean absolute component magnitudes by trajectory type.}
     \label{fig:decomposition}
   \end{center}
-  \vskip -0.2in
 \end{figure}
 
 
@@ -317,15 +314,14 @@ We distinguish \textbf{attention mass} (raw weight from answer position to span 
 
 \cref{fig:routing} shows that mass is necessary but not sufficient.  Stable-correct trajectories route mass to the correct-option span with large positive contribution.  Stable-wrong trajectories route to the wrong-option span.
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=\columnwidth]{fig5_attention_routing_1771964757745.png}}
+    \centerline{\includegraphics[width=0.95\textwidth]{fig5_attention_routing_1771964757745.png}}
     \caption{\textbf{Left:}~Attention mass by span across layers. \textbf{Right:}~Decision-aligned contribution heatmap by trajectory type.}
     \label{fig:routing}
   \end{center}
-  \vskip -0.2in
-\end{figure}
+\end{figure*}
 
 
 %% ============================================================
@@ -376,15 +372,14 @@ Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\text
 \emph{Caveat.}  Our experiments use \emph{counterfactual simulation}---not live intervention.  Simulated ablation assumes sufficient linearity.  Live ablation would be stronger but introduces nonlinear propagation effects.
 
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=\columnwidth]{fig4_causal_validation_1771964729842.png}}
+    \centerline{\includegraphics[width=0.95\textwidth]{fig4_causal_validation_1771964729842.png}}
     \caption{Causal validation.  \textbf{(a)}~Component ablation: ablating attention from stable-correct decreases $\delta$; ablating MLP from stable-wrong increases $\delta$.  \textbf{(b)}~Activation patching shifts failing trajectories positive.  \textbf{(c)}~Evidence spans produce larger causal effects than distractor or shuffled controls ($^{***}p < 0.001$).}
     \label{fig:causal}
   \end{center}
-  \vskip -0.2in
-\end{figure}
+\end{figure*}
 
 
 
@@ -439,15 +434,14 @@ A transformer's decision on a multiple-choice question is not a point but a traj
 The framework is deliberately modest: we claim sufficiency for classification, not necessity; causal relevance, not sole causation; and insight from logit-margin space, not complete representation coverage.  The phase diagram is a map.  The two-force decomposition is a compass.  Together, they provide a vocabulary for navigating the space between a prompt and an answer.
 
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=\columnwidth]{fig6_prompt_flow_1771964787286.png}}
+    \centerline{\includegraphics[width=0.90\textwidth]{fig6_prompt_flow_1771964787286.png}}
     \caption{A prompt's journey through decision space.  \textbf{Left:}~Structured input with evidence and distractor spans identified via counterfactual deletion.  \textbf{Center:}~Layer-by-layer attention routing and MLP injection.  \textbf{Right:}~Convergence trajectory in the $(\delta,\,\Sigma g)$ phase diagram.}
     \label{fig:flow}
   \end{center}
-  \vskip -0.2in
-\end{figure}
+\end{figure*}
 
 
 %% ============================================================
