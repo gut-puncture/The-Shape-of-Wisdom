@@ -13,7 +13,7 @@ We introduce three quantities — **state** (logit-margin δ), **motion** (per-l
 
 We decompose motion into **attention-driven routing** and **MLP-driven injection**, and validate causal claims via component ablation, activation patching, and span-deletion experiments with multiple-comparison correction.
 
-**Paper**: See [`paper/final_paper/paper.pdf`](paper/final_paper/paper.pdf) for the full manuscript (ICML 2026 format).
+**Paper**: See [`paper/final_paper/paper_publish.pdf`](paper/final_paper/paper_publish.pdf) for the full manuscript.
 
 ---
 
@@ -60,8 +60,7 @@ shape-of-wisdom/
 │   └── reports/                    # Stage-level validation reports (JSON)
 ├── tests/                          # Test suite (pytest)
 ├── paper/
-│   ├── final_paper/                # Compiled PDF + LaTeX source
-│   └── icml2026_style/             # ICML 2026 LaTeX template + figures
+│   └── final_paper/                # Publish-ready PDF + LaTeX source
 ├── requirements.txt
 └── LICENSE
 ```
