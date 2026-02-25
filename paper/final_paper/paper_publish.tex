@@ -62,7 +62,7 @@ The \textbf{state} is the logit margin between the model's preferred answer and 
 \textbf{Boundary} is its absolute magnitude, measuring proximity to a decision flip.
 Across three 7--8B instruction-tuned transformers, these primitives separate prompts into four trajectory types---\emph{stable-correct}, \emph{stable-wrong}, \emph{unstable-correct}, and \emph{unstable-wrong}---producing a phase diagram that replicates across models and knowledge domains.
 We decompose motion into attention-driven \emph{routing} and MLP-driven \emph{injection}, achieving reconstruction $R^2 \geq 0.70$ on held-out data.
-Causal validation via component ablation, activation patching, and span-deletion experiments---controlled against shuffled and sign-flipped baselines with Benjamini--Hochberg correction---confirms directionally consistent, finite effects on the decision margin.
+Linearized counterfactual accounting via simulated component removal, activation substitution, and input-level span-deletion experiments---controlled against shuffled and sign-flipped baselines with Benjamini--Hochberg correction---confirms directionally consistent, finite effects on the decision margin.
 \end{abstract}
 \vspace{0.2cm}
 \end{@twocolumnfalse}
@@ -80,14 +80,14 @@ These approaches identify \emph{what} a model knows and \emph{where} it stores t
 
 We propose a complementary perspective.  Rather than asking what a model has learned, we ask: \emph{what does the trajectory of a model's decision look like as it propagates through layers, and can we predict convergence outcomes from a small set of trajectory-level quantities?}
 
-Our answer is yes.  We define three primitives---\textbf{state} (the logit margin~$\delta$), \textbf{motion} (per-layer drift~$g$), and \textbf{boundary} (the absolute margin~$|\delta|$)---and show that they suffice to classify decision trajectories into four outcome types that replicate across models and domains.  We then decompose motion into attention and MLP contributions and validate the resulting mechanistic claims causally.
+Our answer is yes.  We define three primitives---\textbf{state} (the logit margin~$\delta$), \textbf{motion} (per-layer drift~$g$), and \textbf{boundary} (the absolute margin~$|\delta|$)---and show that they suffice to classify decision trajectories into four outcome types that replicate across models and domains.  We then decompose motion into attention and MLP contributions and assess the resulting mechanistic claims via counterfactual accounting.
 
 \paragraph{Contributions.}
 \begin{enumerate}
 \item A physics-inspired framework for analyzing transformer decisions as trajectories in logit-margin space, characterized by three measurable quantities.
 \item A phase diagram with four well-separated trajectory types, replicated across three architectures and multiple knowledge domains.
 \item A linear decomposition of per-layer drift into attention and MLP components with $R^2 \geq 0.70$ on held-out data and a mechanistic interpretation of routing versus injection.
-\item Causal validation through ablation, patching, and span-deletion experiments with multiple-comparison-corrected tests and negative controls.
+\item Counterfactual accounting experiments---simulated component removal, activation substitution, and input-level span deletion---with multiple-comparison-corrected tests and negative controls.
 \end{enumerate}
 
 
@@ -97,7 +97,7 @@ Our answer is yes.  We define three primitives---\textbf{state} (the logit margi
 \section{Margin, Drift, and Boundary}
 \label{sec:primitives}
 
-We study four-choice (A/B/C/D) questions.  At each transformer layer $l \in \{0,\ldots,L\}$, we extract logits for the four answer tokens and define all quantities in this subspace.
+We study four-choice (A/B/C/D) questions.  At each transformer layer $l \in \{0,\ldots,L{-}1\}$, we extract logits for the four answer tokens and define all quantities in the restricted four-candidate subspace.  All logits, probabilities, and correctness decisions reported in this paper are computed over the set $\{\mathrm{A}, \mathrm{B}, \mathrm{C}, \mathrm{D}\}$ only; this is a \emph{restricted-choice} readout, not a full-vocabulary prediction.  Correctness is determined by argmax within these four tokens at the final transformer layer.
 
 \subsection{State: The Decision Margin}
 
@@ -138,8 +138,8 @@ We use $\tau = 8$, require zero sign flips, and enforce $b_{\min} = 0.3$.  These
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.95\textwidth]{fig1_three_primitives_1771964631694.png}}
-    \caption{The three primitives and four trajectory types.  \textbf{Left:}~The state $\delta(l)$ is a point in logit-margin space; the boundary $|\delta|$ measures distance to a decision flip.  \textbf{Center:}~Motion $g(l)$ describes layer-by-layer drift toward or away from the correct answer.  \textbf{Right:}~Four trajectory types arise from combinations of final correctness and tail stability.}
+    \centerline{\includegraphics[width=0.95\textwidth]{fig1_three_primitives.png}}
+    \caption{The three primitives and four trajectory types, averaged across all three models with layer depth normalized to $[0,1]$.  \textbf{Left:}~Mean decision margin $\delta$ by trajectory type.  \textbf{Center:}~Mean per-layer drift $g$.  \textbf{Right:}~Mean boundary distance $|\delta|$.}
     \label{fig:primitives}
   \end{center}
 \end{figure*}
@@ -188,7 +188,7 @@ For a tracing subset (600 prompts per model, balanced over trajectory type and d
 
 \subsection{Why Logit Space?}
 
-$\delta$, $g$, and $b$ are computed directly from logged logits; trajectory type is a deterministic function of these.  The attention/MLP decomposition involves a linear fit, and causal experiments use counterfactual simulation.  We maintain this distinction throughout.
+$\delta$, $g$, and $b$ are computed directly from logged logits; trajectory type is a deterministic function of these.  The attention/MLP decomposition involves a linear fit, and counterfactual experiments use both linearized drift bookkeeping and input-level span deletion.  We maintain this distinction throughout.
 
 Softmax probabilities compress high-confidence decisions into a near-saturated regime.  Logit margins preserve ordinality and scale.  Probability-space analyses appear in \cref{sec:appendix_prob}.
 
@@ -225,15 +225,17 @@ Each prompt~$\times$~model pair is classified into exactly one of four types (\c
   \end{center}
 \end{table}
 
-\subsection{Phase Structure in $(\delta, \Sigma g)$ Space}
+\subsection{Phase Structure}
 
-Plotting the final-layer margin $\delta(L)$ against cumulative drift $\Sigma g$ over the last 8 layers produces four well-separated clusters (\cref{fig:phase}).  Stable-correct trajectories occupy the upper-right quadrant (large positive margin, reinforcing drift); stable-wrong occupy the lower-left.  Unstable types are sparser, near the axes.
+We plot boundary proximity at tail entry $|\delta(L{-}\tau)|$ against the number of sign flips of $\delta$ in the last $\tau = 8$ layers (\cref{fig:phase}).  These two axes are algebraically independent---unlike the pair $(\delta(L),\, \Sigma g)$ where $\Sigma g$ telescopes to $\delta(L) - \delta(L{-}\tau)$, creating partial redundancy.
+
+Stable types cluster at high boundary proximity and zero tail flips; unstable types populate the higher-flip region with lower boundary values.
 
 \begin{figure}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=\columnwidth]{fig2_phase_diagram_1771964653879.png}}
-    \caption{Phase diagram in decision-evidence space.  Each point is one prompt~$\times$~model pair.  The four types separate cleanly in the $(\delta,\,\Sigma g)$ plane.}
+    \centerline{\includegraphics[width=\columnwidth]{fig2_phase_diagram.png}}
+    \caption{Phase diagram with non-redundant axes.  $x$-axis: boundary proximity at tail entry $|\delta(L{-}\tau)|$; $y$-axis: number of sign flips in the last $\tau$ layers.  Each point is one prompt~$\times$~model pair.}
     \label{fig:phase}
   \end{center}
 \end{figure}
@@ -241,7 +243,7 @@ Plotting the final-layer margin $\delta(L)$ against cumulative drift $\Sigma g$ 
 
 \subsection{Cross-Model and Cross-Domain Replication}
 
-The phase structure replicates qualitatively across all three models.  Absolute magnitudes differ---Qwen produces larger $|\delta|$ than Mistral---but the four-quadrant geometry and bimodal $\Sigma g$ marginal are consistent.  Domain shifts the \emph{proportion} of types but not the geometry.
+The phase structure replicates qualitatively across all three models.  Absolute magnitudes differ---Qwen produces larger $|\delta|$ than Mistral---but the four-region geometry and the separation between stable and unstable types are consistent.  Domain shifts the \emph{proportion} of types but not the geometry.
 
 \emph{Caveat.}  The clean separation partly reflects our threshold choices.  Clusters remain visually distinct under perturbations ($\tau \in \{6, 8, 10\}$, $b_{\min} \in \{0.1, 0.3, 0.5\}$), but the boundary between stable and unstable is a convention, not a phase transition.
 
@@ -285,8 +287,8 @@ For unstable trajectories, the two components are often \emph{misaligned}: atten
 \begin{figure}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=\columnwidth]{fig3_decomposition_1771964676769.png}}
-    \caption{\textbf{Top:}~Per-layer drift decomposition into attention and MLP components with confidence bands ($R^2 > 0.70$).  \textbf{Bottom:}~Mean absolute component magnitudes by trajectory type.}
+    \centerline{\includegraphics[width=\columnwidth]{fig3_decomposition.png}}
+    \caption{\textbf{Top:}~Per-layer drift decomposition into attention and MLP components, with layer depth normalized to $[0,1]$ across models ($R^2 > 0.70$).  \textbf{Bottom:}~Mean absolute component magnitudes by trajectory type.}
     \label{fig:decomposition}
   \end{center}
 \end{figure}
@@ -300,25 +302,27 @@ For unstable trajectories, the two components are often \emph{misaligned}: atten
 
 \subsection{Prompt Span Taxonomy}
 
-Multiple-choice prompts have natural structure: \emph{instruction}, \emph{question stem}, and \emph{option spans} (A--D).  We parse these via regex-based boundary detection.
+Multiple-choice prompts have natural structure: \emph{instruction}, \emph{question stem}, and \emph{option spans} (A--D).  We parse these via regex-based boundary detection.  For analysis, option spans are re-indexed \emph{relative to correctness}: \texttt{option\_correct} (the ground-truth answer), \texttt{option\_competitor} (the strongest wrong option at the final layer), and \texttt{option\_other} (remaining wrong options, averaged).
 
-\subsection{Span Labeling via Counterfactual Effect}
+\subsection{Span Labeling via Counterfactual Effect (Operational Definition)}
 
-Rather than hand-labeling, we define spans operationally.  For each span $s$, we delete it and re-run inference.  The span effect is $\mathrm{effect}(s) = \delta_{\mathrm{full}} - \delta_{\mathrm{mutated}}$.  Spans with effect $\geq 0.05$ are labeled \emph{evidence}; $\leq -0.05$ are \emph{distractor}; otherwise \emph{neutral}.
+We \emph{define} evidence and distractor spans operationally via counterfactual deletion.  For each span $s$, we delete it and re-run inference.  The span effect is $\mathrm{effect}(s) = \delta_{\mathrm{full}} - \delta_{\mathrm{mutated}}$.  Spans with effect $\geq 0.05$ are labeled \emph{evidence}; $\leq -0.05$ are \emph{distractor}; otherwise \emph{neutral}.
+
+\emph{Important:} Because evidence/distractor labels are assigned using the same quantity ($\Delta$) that we later report, the observation that evidence spans have larger $\Delta$ than distractor spans is \emph{true by construction} and does not constitute independent validation of the labels.  We treat this labeling as a useful operational definition rather than a finding.
 
 Label stability under paraphrase requires $\geq 85\%$ agreement and $\geq 0.80$ Jaccard similarity.
 
 \subsection{Attention Mass vs.\ Contribution}
 
-We distinguish \textbf{attention mass} (raw weight from answer position to span tokens) from \textbf{decision-aligned contribution} (the attention output projected onto $d$).
+We distinguish \textbf{attention mass} (raw weight from answer position to span tokens, normalized per token) from \textbf{decision-aligned contribution} (the attention output projected onto $d$).
 
-\cref{fig:routing} shows that mass is necessary but not sufficient.  Stable-correct trajectories route mass to the correct-option span with large positive contribution.  Stable-wrong trajectories route to the wrong-option span.
+\cref{fig:routing} shows heatmaps with option columns indexed relative to correctness.  Stable-correct trajectories route disproportionate mass per token to \texttt{option\_correct} with large positive contribution.  Stable-wrong trajectories route to \texttt{option\_competitor}.
 
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.95\textwidth]{fig5_attention_routing_1771964757745.png}}
-    \caption{\textbf{Left:}~Attention mass by span across layers. \textbf{Right:}~Decision-aligned contribution heatmap by trajectory type.}
+    \centerline{\includegraphics[width=0.95\textwidth]{fig5_attention_routing.png}}
+    \caption{Attention routing with option spans indexed relative to correctness.  \textbf{Top row:}~Attention mass per token by trajectory type across normalized depth.  \textbf{Bottom row:}~Decision-aligned contribution.  Columns: \texttt{option\_correct}, \texttt{option\_competitor}, \texttt{option\_other}.}
     \label{fig:routing}
   \end{center}
 \end{figure*}
@@ -342,41 +346,40 @@ The MLP scalar $s_{\mathrm{mlp}}(l)$ measures how much parametric knowledge each
 %% ============================================================
 %% 8. CAUSAL VALIDATION
 %% ============================================================
-\section{Causal Experiments}
+\section{Counterfactual Accounting Experiments}
 \label{sec:causal}
 
-Sections~\ref{sec:decomposition}--\ref{sec:mlp} are correlational.  We conduct three families of causal experiments.
+Sections~\ref{sec:decomposition}--\ref{sec:mlp} are correlational.  We conduct three families of counterfactual experiments.  The first two (simulated removal and substitution) operate on a \emph{linearized drift-bookkeeping model} rather than full forward-pass interventions; only span deletion involves true input-level interventions with full re-inference.
 
-\subsection{Component Ablation}
+\subsection{Simulated Component Removal}
 
-We simulate ablating a component by subtracting its scalar from drift at target layers ($l = 20,\ldots,27$) and recomputing the counterfactual final margin:
+We estimate the effect of removing a component by subtracting its scalar from drift at target layers ($l = 20,\ldots,27$) and recomputing the counterfactual final margin:
 \begin{equation}
   \delta^{\mathrm{cf}}_L = \delta_0 + \sum_{l=0}^{L-1}\! \left[g(l) - \mathbb{1}[l \in T]\cdot s_{\mathrm{comp}}(l)\right]\!.
   \label{eq:ablation}
 \end{equation}
+This is a \emph{linearized counterfactual estimate}: it assumes that later layers do not adapt to the modified intermediate state.  Both attention and MLP removal produce finite, directionally consistent shifts across all three models (\cref{fig:causal}a).
 
-Both attention and MLP ablation produce finite, directionally consistent shifts across all three models (\cref{fig:causal}a).
+\subsection{Simulated Activation Substitution}
 
-\subsection{Activation Patching}
+We substitute the component scalar from a \emph{successful} trajectory into a \emph{failing} trajectory at target layers, again under the linearized drift model.  Substituting attention scalars from stable-correct into stable-wrong produces positive $\Delta\delta$ for the majority of pairs (\cref{fig:causal}b).  MLP substitution is less consistent, reflecting prompt-specific knowledge.
 
-We patch the component scalar from a \emph{successful} trajectory into a \emph{failing} trajectory at target layers.  Patching attention from stable-correct into stable-wrong produces positive $\Delta\delta$ for the majority of pairs (\cref{fig:causal}b).  MLP patching is less consistent, reflecting prompt-specific knowledge.
+\subsection{Span Deletion (True Input-Level Intervention)}
 
-\subsection{Span Deletion Tests}
-
-Evidence-labeled spans produce significantly larger effects than distractor-labeled spans (\cref{fig:causal}c).  The gap remains positive after Benjamini--Hochberg correction ($\alpha = 0.05$); permutation-test $p < 0.01$ across all three models.
+Span deletion is the only experiment in this section that involves re-running inference and is therefore a true counterfactual intervention.  \cref{fig:causal}c shows the distribution of $\Delta = \delta_{\mathrm{full}} - \delta_{\mathrm{deleted}}$ by operationally defined span type.  As noted in \cref{sec:routing}, evidence spans have positive $\Delta$ and distractor spans have negative $\Delta$ \emph{by construction}, since these labels are defined by the sign and magnitude of $\Delta$.  The figure displays span-type distributions rather than validation of the labeling.
 
 \subsection{Negative Controls}
 
-Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\textbf{sign-flipped}---randomly flipping effect signs 256 times.  Both baselines center near zero.  The observed evidence mean exceeds both by $\geq 0.05$, a pre-registered margin.
+Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\textbf{sign-flipped}---randomly flipping effect signs 256 times.  Both baselines center near zero.  The observed evidence-labeled mean exceeds both by $\geq 0.05$.
 
-\emph{Caveat.}  Our experiments use \emph{counterfactual simulation}---not live intervention.  Simulated ablation assumes sufficient linearity.  Live ablation would be stronger but introduces nonlinear propagation effects.
+\paragraph{Limitations of linearized counterfactual accounting.}  Simulated component removal and substitution operate on a drift-bookkeeping model.  They are \emph{not} full forward-pass interventions: later layers are not allowed to react to the modified state.  These estimates are valid under a linearity assumption that has not been independently verified here.  True in-graph ablation and activation patching would provide stronger evidence but would require additional model runs, which are outside the scope of this study.
 
 
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.95\textwidth]{fig4_causal_validation_1771964729842.png}}
-    \caption{Causal validation.  \textbf{(a)}~Component ablation: ablating attention from stable-correct decreases $\delta$; ablating MLP from stable-wrong increases $\delta$.  \textbf{(b)}~Activation patching shifts failing trajectories positive.  \textbf{(c)}~Evidence spans produce larger causal effects than distractor or shuffled controls ($^{***}p < 0.001$).}
+    \centerline{\includegraphics[width=0.95\textwidth]{fig4_causal_validation.png}}
+    \caption{Counterfactual accounting.  \textbf{(a)}~Simulated component removal: removing attention from stable-correct decreases $\delta$; removing MLP from stable-wrong increases $\delta$.  \textbf{(b)}~Simulated activation substitution shifts failing trajectories positive.  \textbf{(c)}~Distribution of counterfactual effect $\Delta$ by operationally defined span type.  Evidence/distractor separation is by construction (see \S\ref{sec:routing}).}
     \label{fig:causal}
   \end{center}
 \end{figure*}
@@ -398,9 +401,10 @@ Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\text
 \textbf{Limitations.}
 \vspace{-0.5em}
 \begin{enumerate}\setlength{\itemsep}{0pt}
-\item \textbf{Logit-space projection.}  All quantities live in a 4D logit subspace; full hidden-state structure may be missed.
+\item \textbf{Restricted-choice readout.}  All quantities live in a 4-token logit subspace (\{A,B,C,D\}); full hidden-state and vocabulary structure may be missed.
 \item \textbf{Linear decomposition.}  Up to 30\% of variance remains in $\varepsilon$.
-\item \textbf{Simulated interventions.}  We simulate rather than execute ablations.
+\item \textbf{Linearized counterfactual accounting.}  Component removal and substitution experiments use a drift-bookkeeping model, not full forward-pass interventions.  Later layers are not allowed to react to modified states.
+\item \textbf{Circular span labeling.}  Evidence/distractor labels are defined by counterfactual effect on $\delta$, so their separation by $\Delta$ is tautological rather than a finding (see \S\ref{sec:routing}).
 \item \textbf{Scale.}  Only 7--8B models studied.
 \item \textbf{Prompt format.}  Only four-choice MC; open-ended generation may differ.
 \item \textbf{Threshold sensitivity.}  Classification depends on pre-registered but conventional thresholds.
@@ -421,7 +425,7 @@ Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\text
 
 \textbf{Causal tracing.}  \citet{meng2022} localize factual associations.  Our span-deletion tests operate at the prompt level; ablations target component types rather than individual positions.
 
-\textbf{Decision dynamics.}  Recent work~\cite{din2023,geva2023} studies layerwise prediction evolution.  We contribute a unified framework connecting descriptive dynamics, mechanistic decomposition, and causal validation.
+\textbf{Decision dynamics.}  Recent work~\cite{din2023,geva2023} studies layerwise prediction evolution.  We contribute a unified framework connecting descriptive dynamics, mechanistic decomposition, and counterfactual accounting.
 
 
 %% ============================================================
@@ -429,16 +433,16 @@ Two controls: (1)~\textbf{shuffled}---permuting span labels 256 times; (2)~\text
 %% ============================================================
 \section{Conclusion}
 
-A transformer's decision on a multiple-choice question is not a point but a trajectory.  Three measurable quantities---the logit margin $\delta$, its per-layer drift $g$, and the boundary distance $|\delta|$---suffice to classify this trajectory into four outcome types, producing a phase diagram that replicates across architectures and domains.  Decomposing drift into attention routing and MLP injection reveals that attention steers early, MLP commits late, and their disagreement creates instability.  Causal validation confirms directionally consistent effects.
+A transformer's decision on a multiple-choice question is not a point but a trajectory.  Three measurable quantities---the logit margin $\delta$, its per-layer drift $g$, and the boundary distance $|\delta|$---suffice to classify this trajectory into four outcome types, producing a phase diagram that replicates across architectures and domains.  Decomposing drift into attention routing and MLP injection reveals that attention steers early, MLP commits late, and their disagreement creates instability.  Counterfactual accounting experiments---both linearized estimates and true input-level span deletions---confirm directionally consistent effects.
 
-The framework is deliberately modest: we claim sufficiency for classification, not necessity; causal relevance, not sole causation; and insight from logit-margin space, not complete representation coverage.  The phase diagram is a map.  The two-force decomposition is a compass.  Together, they provide a vocabulary for navigating the space between a prompt and an answer.
+The framework is deliberately modest: we claim sufficiency for classification, not necessity; counterfactual relevance under linearity assumptions, not sole causation; and insight from a restricted-choice logit-margin space, not complete representation coverage.  The phase diagram is a map.  The two-force decomposition is a compass.  Together, they provide a vocabulary for navigating the space between a prompt and an answer.
 
 
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.90\textwidth]{fig6_prompt_flow_1771964787286.png}}
-    \caption{A prompt's journey through decision space.  \textbf{Left:}~Structured input with evidence and distractor spans identified via counterfactual deletion.  \textbf{Center:}~Layer-by-layer attention routing and MLP injection.  \textbf{Right:}~Convergence trajectory in the $(\delta,\,\Sigma g)$ phase diagram.}
+    \centerline{\includegraphics[width=0.90\textwidth]{fig6_prompt_flow.png}}
+    \caption{A prompt's journey through decision space with normalized depth axis.  \textbf{Left:}~Decision margin $\delta$ trajectory.  \textbf{Center:}~Attention and MLP scalar decomposition.  \textbf{Right:}~Cumulative drift convergence.}
     \label{fig:flow}
   \end{center}
 \end{figure*}
@@ -498,15 +502,17 @@ STEM domains show higher stable-wrong rates (confident factual errors).  Humanit
 \section{Methods}
 \label{sec:methods}
 
-\textbf{Metric computation.}  For each prompt~$\times$~model pair, layerwise candidate logits (A/B/C/D) are extracted from every transformer block.  $\delta(l)$, $g(l)$, $b(l)$, and $k^*(l)$ are computed per \cref{sec:primitives}.  Probabilities are softmax-normalized over four candidates; entropy is $H(l) = -\!\sum_c p_c(l)\log p_c(l)$ with clipping at $10^{-12}$.  Correctness derives from the final-layer top-1 logit.
+\textbf{Metric computation.}  For each prompt~$\times$~model pair, layerwise candidate logits for the four answer tokens (A/B/C/D) are extracted from every transformer block.  All logits and probabilities are computed over this \emph{restricted four-candidate subspace} only; correctness is argmax within $\{\mathrm{A},\mathrm{B},\mathrm{C},\mathrm{D}\}$ at the final layer.  $\delta(l)$, $g(l)$, $b(l)$, and $k^*(l)$ are computed per \cref{sec:primitives}.  Probabilities are softmax-normalized over four candidates; entropy is $H(l) = -\!\sum_c p_c(l)\log p_c(l)$ with clipping at $10^{-12}$.
+
+\textbf{Layer indexing.}  Models in this study have different layer counts (Qwen: 28, Llama: 32, Mistral: 32).  Cross-model figures use \emph{normalized depth} $l/(L{-}1) \in [0,1]$ to enable comparison.
 
 \textbf{Trajectory classification.}  Sign flips are computed on the sign sequence of $\delta$, ignoring zeros.  Late flips are restricted to the tail window.  Stability requires zero late flips and $\min_{l\, \in\, \mathrm{tail}} b(l) \geq 0.3$.
 
-\textbf{Span parsing.}  Prompt spans are identified via regular-expression boundary detection, recognizing parenthesized, bracketed, and colon-delimited option markers.  Span effects are computed by deletion and re-inference.  Labels use symmetric thresholds at $\pm 0.05$.  Paraphrase stability is validated on 50 prompts per model.
+\textbf{Span parsing.}  Prompt spans are identified via regular-expression boundary detection.  Option spans are re-indexed relative to correctness (\texttt{option\_correct}, \texttt{option\_competitor}, \texttt{option\_other}).  Span effects are computed by deletion and re-inference (true input-level intervention).  Evidence/distractor labels are an \emph{operational definition} using symmetric thresholds at $\pm 0.05$; they are not independently validated.  Paraphrase stability is assessed on 50 prompts per model.
 
 \textbf{Tracing and decomposition.}  For the tracing subset, attention and MLP outputs are captured via forward hooks using eager attention.  The decision direction $d$ is computed per \cref{eq:direction}.  OLS fit uses a 70/30 train/test split at the prompt level with $R^2 \geq 0.70$ enforced.
 
-\textbf{Causal experiments.}  Ablation subtracts component scalars at layers 20--27 per \cref{eq:ablation}.  Patching substitutes the failing trajectory's component with the successful trajectory's.  Span deletion removes labeled spans and re-measures $\delta$.  Negative controls: label-shuffle (256 permutations) and sign-flip (256 iterations).
+\textbf{Counterfactual experiments.}  Simulated component removal subtracts component scalars at layers 20--27 per \cref{eq:ablation}; this is a linearized estimate, not a forward-pass intervention.  Simulated substitution replaces the failing trajectory's component scalar with the successful trajectory's.  Span deletion actually removes spans and re-runs inference.  Negative controls: label-shuffle (256 permutations) and sign-flip (256 iterations).
 
 \textbf{Statistics.}  Bootstrap CIs use 2{,}000 resamples.  Permutation tests use 5{,}000 permutations.  Multiple-comparison correction uses Benjamini--Hochberg with $\alpha = 0.05$.  All random operations use deterministic seeds.
 
