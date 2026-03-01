@@ -465,6 +465,19 @@ Two controls establish baselines: (1)~\textbf{shuffled}---permuting span labels 
   \end{center}
 \end{figure*}
 
+\begin{figure*}[!t]
+  \vskip 0.1in
+  \begin{center}
+    \centerline{\includegraphics[width=0.90\textwidth]{figures/fig6_prompt_journey.pdf}}
+    \caption{A single prompt's journey through decision space (stable-correct trajectory).
+    \textbf{(a)}~Prompt structure: coloured blocks show span roles and operationally defined labels (evidence green, distractor red), with deletion effect~$\Delta$.
+    \textbf{(b)}~Decision margin $\delta$ vs.\ normalised depth: green fill where $\delta > 0$, red where $\delta < 0$; yellow band marks the tail window (last 8 layers); coloured strip below $x$-axis shows competitor identity at each layer.
+    \textbf{(c)}~Cumulative component-space path: $x = \Sigma s_{\mathrm{attn}}$, $y = \Sigma s_{\mathrm{mlp}}$; arrowed path coloured by depth (light $\to$ dark blue); open circle = layer~0, filled circle = final layer.
+    Data: \texttt{decision\_metrics.parquet}, \texttt{tracing\_scalars.parquet}, \texttt{span\_labels.parquet}.}
+    \label{fig:flow}
+  \end{center}
+\end{figure*}
+
 
 
 %% ============================================================
@@ -519,20 +532,6 @@ A transformer's decision on a multiple-choice question is not a point but a traj
 Decomposing drift into attention and MLP contributions reveals that attention is the sustained positive force across mid-layers for correct answers, while MLP provides a brief supportive burst at depth $0.7$--$0.8$ within an otherwise opposing signal.  For wrong answers, both forces reinforce the incorrect basin.  Counterfactual accounting experiments---both linearized estimates and true input-level span deletions---confirm directionally consistent effects, with MLP substitution producing a 4$\times$ larger mean shift than attention substitution.
 
 The framework is deliberately modest: we claim sufficiency for classification, not necessity; counterfactual relevance under linearity assumptions, not sole causation; and insight from a restricted-choice logit-margin space, not complete representation coverage.  The phase diagram is a map.  The two-force decomposition is a compass.  Together, they provide a vocabulary for navigating the space between a prompt and an answer.
-
-
-\begin{figure*}[t]
-  \vskip 0.1in
-  \begin{center}
-    \centerline{\includegraphics[width=0.90\textwidth]{figures/fig6_prompt_journey.pdf}}
-    \caption{A single prompt's journey through decision space (stable-correct trajectory).
-    \textbf{(a)}~Prompt structure: coloured blocks show span roles and operationally defined labels (evidence green, distractor red), with deletion effect~$\Delta$.
-    \textbf{(b)}~Decision margin $\delta$ vs.\ normalised depth: green fill where $\delta > 0$, red where $\delta < 0$; yellow band marks the tail window (last 8 layers); coloured strip below $x$-axis shows competitor identity at each layer.
-    \textbf{(c)}~Cumulative component-space path: $x = \Sigma s_{\mathrm{attn}}$, $y = \Sigma s_{\mathrm{mlp}}$; arrowed path coloured by depth (light $\to$ dark blue); open circle = layer~0, filled circle = final layer.
-    Data: \texttt{decision\_metrics.parquet}, \texttt{tracing\_scalars.parquet}, \texttt{span\_labels.parquet}.}
-    \label{fig:flow}
-  \end{center}
-\end{figure*}
 
 
 %% ============================================================
