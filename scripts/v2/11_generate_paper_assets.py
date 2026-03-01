@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 from _common import base_parser, run_v2_root_for, write_json, write_text_atomic
 from sow.v2.assets import write_phase_diagram, write_sha_manifest, write_trajectory_plots
+from sow.v2.figures.paper_figures import generate_all_figures as generate_paper_figures
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -212,6 +213,16 @@ def main() -> int:
     region_fig = out_root / "fig_region_entry_exit.png"
     _write_routing_vs_contribution_figure(out_root=out_root, out_path=routing_fig)
     _write_causal_panel_figure(out_root=out_root, out_path=causal_fig)
+
+    # Generate new vector-PDF paper figures from parquet data
+    paper_fig_dir = REPO_ROOT / "paper" / "final_paper" / "figures"
+    parquet_dir = REPO_ROOT / "results" / "parquet"
+    if parquet_dir.exists():
+        try:
+            generate_paper_figures(parquet_dir=parquet_dir, output_dir=paper_fig_dir)
+            print(f"Paper figures written to {paper_fig_dir}")
+        except Exception as exc:
+            print(f"WARNING: paper figure generation failed: {exc}")
 
     final_root = REPO_ROOT / "artifacts" / "final_result_v2" / args.run_id
     final_root.mkdir(parents=True, exist_ok=True)
