@@ -61,3 +61,4 @@ v1/
 # Paper build artifacts (keep vector figure PDFs under paper/final_paper/figures/)
 paper/final_paper/*.png
 paper/final_paper/paper_publish*.pdf
+results/parquet/layerwise.parquet
