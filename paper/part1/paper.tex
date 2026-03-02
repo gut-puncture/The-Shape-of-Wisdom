@@ -1,0 +1,510 @@
+%% ═══════════════════════════════════════════════════════════════
+%% The Shape of Wisdom, Part I
+%% Camera-ready manuscript — all numbers macro-driven
+%% ═══════════════════════════════════════════════════════════════
+\documentclass{article}
+\usepackage[preprint]{neurips_2025}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage[capitalize,noabbrev]{cleveref}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit}
+
+\raggedbottom
+
+%% ── Auto-generated macros (every number in this paper) ──
+\input{auto_numbers.tex}
+
+\title{The Shape of Wisdom, Part~I:\\
+Layerwise Decision Dynamics in Instruction-Tuned Transformers}
+
+\author{%
+  \textbf{Shailesh Rana} \\
+  Independent Researcher \\
+}
+
+\makeatletter\renewcommand{\@notice}{}\makeatother
+
+\begin{document}
+
+\twocolumn[
+\begin{@twocolumnfalse}
+\maketitle
+
+\begin{abstract}
+When a transformer answers a multiple-choice question, every layer updates the preference scores for the four answer options.
+We study this layer-by-layer evolution across \NModels{} instruction-tuned models (Qwen~2.5-7B, Llama~3.1-8B, Mistral~7B-v0.3), each evaluated on \NPromptsPerModel{} MMLU prompts, using \emph{only} cached per-layer option scores---no new inference is performed, and all results derive from a single deterministic run (seed~\Seed{}).
+We define a \emph{soft margin}~$\delta_{\mathrm{soft}}$ that aggregates all incorrect options via temperature-scaled log-sum-exp, eliminating the jagged discontinuities that arise when the hardest competitor switches identity between layers.
+Using $\delta_{\mathrm{soft}}$, we classify each of the \NPromptsTotal{} model--prompt pairs into three regimes---\emph{Stable-Correct}, \emph{Stable-Wrong}, and \emph{Unstable}---based on commitment depth and sign-flip count.
+In a four-dimensional ``decision space'' whose axes are the option scores, PCA reveals coherent trajectory bundles separated by regime.
+A flow field computed over normalised depth and soft margin shows convergent dynamics, with commitment concentrating in late layers.
+Robustness analysis across temperature $\tau \in \{0.5, 1.0, 2.0\}$ and commitment threshold $M \in \{0.5, 0.75, 1.0\}$ confirms that regime proportions shift smoothly rather than discontinuously.
+All results derive from cached four-option logit vectors.
+We make no mechanistic claims about internal circuits; causal attribution is deferred to Part~II.
+\end{abstract}
+\vspace{0.15cm}
+\end{@twocolumnfalse}
+]
+
+%% ═══════════════════════════════════════════════════════════════
+%% 1. INTRODUCTION
+%% ═══════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:intro}
+
+A transformer answering a four-choice question does not make a single decision.
+At each layer, the model updates the logit scores of four possible answers.
+By the final layer, one score dominates and the model commits.
+What happens in between---the geometry of how the model arrives at that commitment---is the subject of this paper.
+
+Prior work studies transformer internals through probing classifiers~\cite{belinkov2022,hewitt2019}, causal tracing~\cite{meng2022}, and circuit-level analysis~\cite{olsson2022,conmy2023}.
+These methods typically require running the model, injecting perturbations, or training auxiliary networks.
+We take a complementary approach: given a cache of per-layer logit scores for four answer options, \emph{what can we learn about how a model decides?}
+
+The simplest summary statistic is the \emph{hard margin}: the score of the correct option minus the score of the strongest incorrect option.
+But the hard margin has a practical problem.
+When the identity of the strongest incorrect option changes between layers---a \emph{competitor switch}---the hard margin can exhibit sharp jumps that reflect a change in the comparison target, not a change in the model's confidence.
+\cref{fig:why_soft} makes this concrete: the hard margin trajectory of a single prompt shows jagged discontinuities at every competitor switch, while a \emph{soft margin} that pools all incorrect options smoothly reveals the underlying decision dynamics.
+
+Our answer to the opening question is structured around three ideas.
+First, we define a soft margin $\delta_{\mathrm{soft}}$ that replaces the hardest-competitor comparison with a temperature-scaled log-sum-exp over all incorrect options, resolving competitor-switching artifacts (\cref{sec:defs}).
+Second, we classify model--prompt pairs into three regimes (Stable-Correct, Stable-Wrong, Unstable) based on the trajectory of $\delta_{\mathrm{soft}}$ across depth, quantifying commitment depth and sign-flip count without overclaiming sharp phase boundaries (\cref{sec:results}).
+Third, we construct a ``decision space'' by treating the four option scores as coordinates, making explicit that this is a four-dimensional proxy space defined by the readout---not the high-dimensional internal representation (\cref{sec:pca}).
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item A soft-margin definition that resolves competitor-switching artifacts inherent in hard-max margins (\cref{sec:margins}).
+\item A regime classification with measurable commitment depth and flip count, replicated across \NModels{} architectures (\cref{sec:results}).
+\item Decision-space visualizations (PCA trajectories, flow fields) revealing convergent structure without model-internal access (\cref{sec:pca,sec:flow}).
+\item Robustness analysis showing smooth regime variation under hyperparameter perturbation (\cref{sec:robust}).
+\end{enumerate}
+
+All results derive from \NRowsCore{} cached layerwise score records.
+No new model inference was performed.
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% FIGURE A: WHY δSOFT
+%% ═══════════════════════════════════════════════════════════════
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/figA_why_delta_soft.pdf}}
+\caption{\textbf{Why $\delta_{\mathrm{soft}}$}?
+\textbf{(A)}~Hard margin (vermillion) and soft margin (blue) for the same unstable prompt (Qwen~2.5-7B).
+Thin vertical lines mark layers where the strongest incorrect option switches identity (competitor switches).
+The hard margin jumps at each switch; the soft margin tracks smoothly.
+\textbf{(B)}~Distribution of jump magnitude at all \NSwitchEvents{} competitor-switch events across all models.
+The hard margin exhibits a heavy right tail; the soft margin dampens switch-induced discontinuities.}
+\label{fig:why_soft}
+\end{center}
+\end{figure*}
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% FIGURE 1: PIPELINE (TikZ)
+%% ═══════════════════════════════════════════════════════════════
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\resizebox{0.92\textwidth}{!}{%
+\begin{tikzpicture}[
+    box/.style={draw, rounded corners=3pt, minimum width=2.1cm, minimum height=0.75cm,
+                font=\small, align=center, fill=#1!12, draw=#1!50},
+    box/.default=blue,
+    arrow/.style={-{Stealth[length=4pt]}, thick, draw=gray!60},
+    note/.style={font=\scriptsize\itshape, text=gray!70},
+]
+\node[box=blue] (input) {Cached scores\\$s_A, s_B, s_C, s_D$\\per layer};
+\node[box=orange, right=1.2cm of input, yshift=0.7cm] (dyn) {Dynamic\\$k_{\mathrm{dyn}}(l)$};
+\node[box=orange, right=1.2cm of input, yshift=-0.7cm] (soft) {Soft (LSE)\\$\mathrm{softcomp}_\tau$};
+\node[box=red, right=1.2cm of dyn] (dhard) {$\delta_{\mathrm{hard}}$};
+\node[box=red, right=1.2cm of soft] (dsoft) {$\delta_{\mathrm{soft}}$};
+\node[box=purple, right=1.6cm of $(dhard)!0.5!(dsoft)$] (regime) {Regime\\classification};
+\node[box=teal, right=1.2cm of regime, yshift=0.9cm] (pca) {Decision-space\\PCA};
+\node[box=teal, right=1.2cm of regime] (flow) {Flow field};
+\node[box=teal, right=1.2cm of regime, yshift=-0.9cm] (commit) {Commitment\\+ flips};
+\draw[arrow] (input) -- (dyn); \draw[arrow] (input) -- (soft);
+\draw[arrow] (dyn) -- (dhard); \draw[arrow] (soft) -- (dsoft);
+\draw[arrow] (dhard) -- (regime); \draw[arrow] (dsoft) -- (regime);
+\draw[arrow] (regime) -- (pca); \draw[arrow] (regime) -- (flow); \draw[arrow] (regime) -- (commit);
+\draw[arrow] (input) to[bend left=28] (pca);
+\node[note, below=0.1cm of input] {\NRowsCore{} rows};
+\node[note, below=0.1cm of regime] {3 regimes};
+\node[note, above=0.1cm of pca] {Fig~4};
+\node[note, right=0.1cm of flow] {Fig~5};
+\node[note, below=0.1cm of commit] {Fig~6};
+\node[note, above right=0.1cm and -0.5cm of input, text=red!60, font=\scriptsize\bfseries] {No new inference};
+\end{tikzpicture}
+}
+\caption{Pipeline overview.
+Cached per-layer option scores for \NModels{} models flow through competitor definitions and margin computations into regime classification and three downstream analyses.
+All computations use only the four cached logit scores per layer; no hidden states or weights are accessed.}
+\label{fig:pipeline}
+\end{center}
+\end{figure*}
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% 2. MEASUREMENT SETUP AND DEFINITIONS
+%% ═══════════════════════════════════════════════════════════════
+\section{Measurement Setup and Definitions}
+\label{sec:defs}
+
+We study four-choice (A/B/C/D) MMLU questions~\cite{hendrycks2021}.
+At each transformer layer $l \in \{0, \ldots, L{-}1\}$, we extract logit scores for the four answer tokens via a token-bucket readout~\cite{nostalgebraist2020} and work exclusively in this four-dimensional subspace.
+Layer~$0$ corresponds to the first logged layer (output of the first transformer block), not the raw embedding.
+We analyse \NModels{} instruction-tuned models (\cref{tab:models}), each evaluated on \NPromptsPerModel{} prompts, giving \NRowsCore{} total layerwise records.
+
+\input{tables/table1_models.tex}
+
+\subsection{Score vector}
+Let $s_A(l), s_B(l), s_C(l), s_D(l)$ denote the four option scores at layer $l$, and let $c$ denote the correct answer.
+The score vector at layer $l$ is $\mathbf{v}(l) = [s_A(l),\, s_B(l),\, s_C(l),\, s_D(l)]$.
+Normalised depth is $d = l / (L{-}1) \in [0,1]$.
+
+\subsection{Competitors}
+
+\textbf{Dynamic competitor.}
+At each layer, the strongest incorrect option:
+$k_{\mathrm{dyn}}(l) = \arg\max_{j \neq c}\; s_j(l)$,
+with ties broken alphabetically.
+
+\textbf{Fixed competitor.}
+The dynamic competitor at the final layer: $k_{\mathrm{fix}} = k_{\mathrm{dyn}}(L{-}1)$.
+
+\textbf{Soft competitor.}
+A temperature-scaled aggregation of all incorrect options:
+$\mathrm{softcomp}_\tau(l) = \tau \cdot \mathrm{logsumexp}_{j \neq c}(s_j(l) / \tau)$.
+
+\subsection{Margin definitions}
+\label{sec:margins}
+
+\textbf{Hard dynamic margin.}
+$\delta_{\mathrm{hard,dyn}}(l) = s_c(l) - \max_{j \neq c}\, s_j(l)$.
+
+\textbf{Soft margin.}
+$\delta_{\mathrm{soft}}(l;\tau) = s_c(l) - \mathrm{softcomp}_\tau(l)$.
+Throughout this paper, \textbf{$\delta \equiv \delta_{\mathrm{soft}}(\cdot\,;\tau{=}\TauDefault{})$} unless stated otherwise.
+
+\emph{Interpretation.}
+$\delta_{\mathrm{soft}}$ with $\tau = 1$ equals $s_c - \log\sum_{j\neq c} e^{s_j}$.
+In a four-choice softmax, $\delta_{\mathrm{soft}} = 0$ corresponds to the point where the correct option's probability equals the total probability mass of all three incorrect options combined.
+We refer to this as the \emph{zero-margin boundary} ($\delta_{\mathrm{soft}} = 0$).
+
+\emph{Why soft?}
+The hard margin can exhibit sharp jumps when $k_{\mathrm{dyn}}$ changes between layers---a competitor switch (\cref{fig:why_soft}A).
+The soft margin pools all competitors smoothly, producing a trajectory that reflects the correct option's overall advantage.
+At $\tau \to 0$, $\delta_{\mathrm{soft}}$ converges to $\delta_{\mathrm{hard,dyn}}$; at large $\tau$, it converges to $s_c - \bar{s}_{\mathrm{incorrect}}$.
+
+\subsection{Derived quantities}
+
+\textbf{Competitor switch indicator.}
+$\mathrm{switch}(l) = \mathbb{1}[l \geq 1 \wedge k_{\mathrm{dyn}}(l) \neq k_{\mathrm{dyn}}(l{-}1)]$.
+
+\textbf{Flip count.}
+The number of sign changes in the sign sequence of $\delta$ across layers, dropping exact zeros.
+
+\textbf{Commitment layer $\ell^*$.}
+The smallest $l$ such that $\delta_{\mathrm{signed}}(l') \geq M$ for all $l' \geq l$, where $\delta_{\mathrm{signed}} = \mathrm{sign}(\delta(L{-}1)) \cdot \delta$ and $M = \MDefault$ by default.
+If no such $l$ exists, $\ell^* = \varnothing$.
+
+\subsection{Regime classification}
+\label{sec:regimes}
+
+A model--prompt pair is classified into one of three regimes.
+This classification is a \textbf{convention}---a useful partition whose boundaries are definitional, not discovered.
+\begin{itemize}
+\item \textbf{Stable-Correct.}  Flip count $\leq \MaxFlips$, $\ell^*$ exists, and $\delta(L{-}1) > 0$.
+\item \textbf{Stable-Wrong.}  Flip count $\leq \MaxFlips$, $\ell^*$ exists, and $\delta(L{-}1) < 0$.
+\item \textbf{Unstable.}  All other cases.
+\end{itemize}
+We explicitly do not claim a natural discontinuity between regimes.
+\cref{sec:robust} shows that regime proportions shift smoothly under parameter perturbation.
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% 3. FINDINGS
+%% ═══════════════════════════════════════════════════════════════
+\section{Findings}
+\label{sec:results}
+
+We analyse \NPromptsTotal{} model--prompt pairs (\NModels{} models $\times$ \NPromptsPerModel{} MMLU questions).
+All figures show $\delta_{\mathrm{soft}}(\tau{=}\TauDefault)$ unless noted.
+
+\subsection{Example trajectories}
+\label{sec:examples}
+
+\cref{fig:examples} shows representative margin trajectories for each regime.
+Stable-Correct trajectories rise toward positive values and stay above the commitment threshold $M = \MDefault$ for the remainder of depth.
+Stable-Wrong trajectories mirror this pattern below zero.
+Unstable trajectories oscillate across the zero-margin boundary, sometimes recovering and sometimes not.
+Thin dotted lines in stable examples indicate the commitment layer $\ell^*$.
+
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/fig2_examples.pdf}}
+\caption{Representative margin trajectories for each regime (Qwen~2.5-7B, five randomly sampled trajectories per regime, seed~\Seed{}).
+Stable-Correct trajectories converge above the zero-margin boundary; Stable-Wrong converge below; Unstable oscillate.
+Dotted vertical lines mark commitment layers.}
+\label{fig:examples}
+\end{center}
+\end{figure*}
+
+
+\subsection{Regime proportions and margin distributions}
+\label{sec:regime_props}
+
+\cref{tab:regimes} reports regime counts per model.
+Stable-Correct is the majority regime for Qwen (\PctStableCorrectQwen\%) but not for Llama (\PctStableCorrectLlama\%) or Mistral (\PctStableCorrectMistral\%).
+Stable-Wrong accounts for \PctStableWrongQwen\% (Qwen), \PctStableWrongLlama\% (Llama), and \PctStableWrongMistral\% (Mistral).
+The Unstable fraction ranges from \PctUnstableMistral\% (Mistral) to \PctUnstableLlama\% (Llama).
+
+\input{tables/table2_regimes.tex}
+
+\cref{fig:distributions} presents the distribution of $\delta_{\mathrm{soft}}$ at five depth slices across all three models.
+At the first logged layer (layer~0), all regimes overlap near zero.
+By normalised depth~$0.50$, Stable-Correct and Stable-Wrong distributions have begun to diverge.
+By the final layer (depth~$1.0$), the three regime distributions occupy largely distinct regions---a consequence of the regime definition, which uses the final-layer sign, combined with the commitment constraint that forces sustained margin above~$M$.
+
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/fig3_distributions.pdf}}
+\caption{Regime separation emerges across depth.
+Violin plots of $\delta_{\mathrm{soft}}(\tau{=}\TauDefault)$ at five normalised-depth slices (0\%, 25\%, 50\%, 75\%, 100\%) for each model, coloured by regime.
+At depth~0, regimes overlap; by depth~1, they are well separated.
+Final-layer separation is partly tautological (regimes are defined by final-layer sign); the informative observation is the \emph{gradual} separation at intermediate depths.}
+\label{fig:distributions}
+\end{center}
+\end{figure*}
+
+
+\subsection{Decision-space trajectories}
+\label{sec:pca}
+
+The four option scores define a four-dimensional space we call ``decision space.''
+We emphasise: this is \emph{not} the model's internal representation space.
+It is a low-dimensional proxy defined by the four-token readout.
+
+\cref{fig:pca} shows PCA projections of $\mathbf{v}(l)$ for each model.
+Trajectories (paths through layers, shown with depth-graded transparency) form coherent bundles by regime.
+Final-layer points cluster by regime in the first two principal components, which together explain \PCATotalVarQwen\% (Qwen), \PCATotalVarLlama\% (Llama), and \PCATotalVarMistral\% (Mistral) of variance---unsurprisingly high for a four-dimensional space where the first component captures the dominant correct-vs-incorrect axis.
+
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/fig4_decision_space.pdf}}
+\caption{Trajectories in decision space form regime-coherent bundles.
+PCA of the four-option score vector $[s_A, s_B, s_C, s_D]$ across all layers, one panel per model.
+Lines trace sampled trajectories with increasing opacity as depth increases; dots mark final-layer positions.
+PC1 explains \PCAOneVarQwen\% (Qwen), \PCAOneVarLlama\% (Llama), \PCAOneVarMistral\% (Mistral) of variance.
+This is a proxy \emph{decision} space (4 option scores), not the internal representation space.}
+\label{fig:pca}
+\end{center}
+\end{figure*}
+
+
+\subsection{Flow field}
+\label{sec:flow}
+
+To visualise aggregate dynamics, we bin the (normalised depth, $\delta_{\mathrm{soft}}$) plane and compute two quantities per bin (\cref{fig:flow}).
+Panel~(A) shows population density: where in the depth--margin plane do data points concentrate?
+Panel~(B) shows mean per-layer drift: the average change in $\delta_{\mathrm{soft}}$ from one layer to the next.
+
+The flow field reveals three zones of behaviour.
+At early depth, drift is noisy and population density is concentrated near zero---scores are uninformed.
+At mid-depth, the mean drift field shows divergence: points above $\delta = 0$ drift further positive, and points below drift further negative.
+At late depth, drift converges toward the signed final value and population density peaks at the extremes.
+The yellow band marks the region $|\delta| < \epsilon$ ($\epsilon = 0.2$) where decisions are most fragile.
+Bins with fewer than 5 observations are masked.
+
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/fig5_flow_field.pdf}}
+\caption{Population density and mean drift in the depth--margin plane, pooled across all \NModels{} models.
+\textbf{(A)}~Relative density per depth column: most observations begin near $\delta = 0$ and fan out.
+\textbf{(B)}~Mean per-layer drift: blue means positive drift (toward correct), red means negative.
+Dashed line is the zero-margin boundary ($\delta_{\mathrm{soft}} = 0$); yellow band marks $|\delta| < 0.2$.
+Bins with count $< 5$ masked.}
+\label{fig:flow}
+\end{center}
+\end{figure*}
+
+
+\subsection{Commitment and instability}
+\label{sec:commitment}
+
+\cref{fig:commitment} quantifies four aspects of decision dynamics.
+\textbf{(A)}~Commitment depth concentrates in late layers: median normalised commitment depth is \CommitMedDepthQwen{} (Qwen), \CommitMedDepthLlama{} (Llama), and \CommitMedDepthMistral{} (Mistral).
+\textbf{(B)}~Flip counts follow a heavy-tailed distribution with mean flip counts of \MeanFlipCountQwen{} (Qwen), \MeanFlipCountLlama{} (Llama), \MeanFlipCountMistral{} (Mistral).
+\textbf{(C)}~For Unstable prompts, the last sign flip concentrates in the final third of depth, suggesting late-layer processing as the primary source of instability.
+\textbf{(D)}~The competitor switch rate peaks at mid-depth and declines toward the output, consistent with the model locking onto a competitor.
+
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/fig6_commitment.pdf}}
+\caption{Commitment concentrates late; instability peaks at mid-to-late depth.
+\textbf{(A)}~Commitment depth distribution (normalised).
+\textbf{(B)}~Flip count histogram.
+\textbf{(C)}~Last flip layer for Unstable prompts.
+\textbf{(D)}~Competitor switch rate vs.\ normalised depth.
+All \NModels{} models shown; $\delta = \delta_{\mathrm{soft}}(\tau{=}\TauDefault{})$, $M = \MDefault$.}
+\label{fig:commitment}
+\end{center}
+\end{figure*}
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% 4. ROBUSTNESS
+%% ═══════════════════════════════════════════════════════════════
+\section{Robustness}
+\label{sec:robust}
+
+We verify that the regime structure is not an artifact of our particular parameter choices by varying both the temperature $\tau$ and the commitment threshold $M$.
+
+\cref{fig:robustness} shows regime proportions under $\tau \in \{0.5, 1.0, 2.0\}$ and $M \in \{0.5, 0.75, 1.0\}$, separately for each model.
+Two patterns emerge.
+First, higher~$\tau$ (softer margins) produces slightly fewer Stable classifications as the margin signal is diluted.
+Second, higher~$M$ (stricter commitment) shifts prompts from Stable to Unstable, as expected.
+Crucially, the transitions are smooth: no parameter combination produces a discontinuous jump in regime proportions.
+This smooth variation is what we would expect from a continuous underlying distribution rather than a sharp phase boundary.
+
+\begin{figure*}[t]
+\vskip 0.1in
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{figures/fig7_robustness.pdf}}
+\caption{Regime proportions vary smoothly under hyperparameter perturbation.
+Stacked bars for each model under $\tau \in \{0.5, 1.0, 2.0\}$, grouped by $M \in \{0.5, 0.75, 1.0\}$.
+No discontinuous jumps appear.
+Stricter thresholds increase the Unstable fraction; softer margins dilute the Stable fractions slightly.}
+\label{fig:robustness}
+\end{center}
+\end{figure*}
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% 5. LIMITATIONS AND NON-CLAIMS
+%% ═══════════════════════════════════════════════════════════════
+\section{Limitations and Non-Claims}
+\label{sec:limits}
+
+\begin{enumerate}
+\item \textbf{Restricted four-choice readout.}
+All analyses operate on four option-token logit scores.
+The model's full vocabulary and internal representations remain invisible.
+
+\item \textbf{No mechanistic claims.}
+This paper deliberately avoids causal claims about attention heads, MLP sublayers, or any internal circuit.
+We report phenomenology: what the output trajectory looks like, not \emph{why} it looks that way.
+Causal attribution (targeted intervention experiments, span ablation) is reserved for Part~II.
+
+\item \textbf{Decision space is a proxy.}
+The PCA trajectories in \cref{fig:pca} live in a four-dimensional option-score space, not in the model's high-dimensional internal representation space.
+This space captures the readout signal but not the full representational dynamics.
+
+\item \textbf{Regime boundaries are conventions.}
+$\tau = \TauDefault$, $M = \MDefault$, and max flips $= \MaxFlips$ \emph{define} regime boundaries rather than discover them.
+\cref{sec:robust} shows smooth degradation, but the partition is a modelling choice.
+
+\item \textbf{Scale.}
+Only 7--8\,B models are studied.
+Scaling behavior at 13\,B or 70\,B is unknown.
+
+\item \textbf{Format.}
+Only four-choice MMLU; open-ended generation may differ.
+
+\item \textbf{Single deterministic run.}
+All results from seed~\Seed{}.
+\end{enumerate}
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% 6. CONCLUSION
+%% ═══════════════════════════════════════════════════════════════
+\section{Conclusion}
+\label{sec:conclusion}
+
+A transformer's decision on a multiple-choice question is not a point but a path.
+By tracking four option scores across every layer, we defined a soft margin that smooths competitor-switching artifacts, classified trajectories into three regimes, and visualised the resulting dynamics in a decision space defined entirely by cached logit vectors.
+
+Three observations stand out.
+First, regime separation emerges gradually across depth: all regimes overlap at the first logged layer and separate by the final layer.
+Second, commitment is a late phenomenon, with median normalised commitment depth ranging from \CommitMedDepthMistral{} (Mistral) to \CommitMedDepthLlama{} (Llama).
+Third, the regime structure is robust to hyperparameter perturbation, varying smoothly rather than discontinuously.
+
+These results establish the phenomenology.
+What \emph{causes} the observed trajectories---which components push toward or away from the correct answer---is the subject of Part~II, which will require additional inference.
+
+
+%% ═══════════════════════════════════════════════════════════════
+\section*{Impact Statement}
+This paper presents an observational analysis of existing model outputs.
+It does not train models, generate text for end users, or recommend deployment decisions.
+We do not foresee specific negative societal consequences beyond those generally associated with advances in understanding language model internals.
+
+
+%% ═══════════════════════════════════════════════════════════════
+\bibliography{references}
+\bibliographystyle{plainnat}
+
+
+%% ═══════════════════════════════════════════════════════════════
+%% APPENDIX
+%% ═══════════════════════════════════════════════════════════════
+\clearpage
+\appendix
+
+\section{Reproducibility}
+\label{sec:appendix_repro}
+
+The data, code, and build process are fully specified.
+The build script \texttt{build\_part1\_assets.py} reads cached parquet files, computes all metrics, generates all figures, and writes \texttt{BUILD\_INFO.json} containing:
+\begin{itemize}
+\item SHA-256 hashes of every source parquet file.
+\item SHA-256 hashes of every generated figure PDF.
+\item Git commit hash and UTC build timestamp.
+\end{itemize}
+
+\noindent To reproduce:
+\begin{verbatim}
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  python3 scripts/part1/build_part1_assets.py \
+    --parquet-dir results/parquet \
+    --output-dir paper/part1
+\end{verbatim}
+
+All random operations use \texttt{numpy.random.Generator} with seed~\Seed{}.
+Groupby operations sort keys \texttt{(model\_id, prompt\_uid, layer\_index)} before iteration.
+Every numeric value in this paper is generated by \texttt{compute\_numbers.py} and inserted via a LaTeX macro from \texttt{auto\_numbers.tex}.
+
+
+\section{Robustness Details}
+\label{sec:appendix_robust}
+
+\paragraph{Flip-count threshold.}
+Setting \texttt{max\_flips} to~0 (stricter) reduces the Stable classes.
+Setting it to~2 (looser) expands them.
+The qualitative three-regime structure is preserved in both cases.
+
+\paragraph{Layer~0 semantics.}
+Layer~0 in our cached data corresponds to the output of the first transformer block, not the raw token embedding.
+All references to ``first logged layer'' in this paper refer to this post-first-block output.
+
+\end{document}

@@ -1,0 +1,104 @@
+{
+  "file_exists_decision_metrics.parquet": {
+    "pass": true,
+    "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/decision_metrics.parquet"
+  },
+  "file_exists_layerwise.parquet": {
+    "pass": true,
+    "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/layerwise.parquet"
+  },
+  "row_count_decision_metrics": {
+    "pass": true,
+    "expected": 276000,
+    "actual": 276000
+  },
+  "uniqueness_decision_metrics": {
+    "pass": true,
+    "duplicates": 0
+  },
+  "model_coverage": {
+    "pass": true,
+    "found": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ],
+    "expected": [
+      "Qwen/Qwen2.5-7B-Instruct",
+      "meta-llama/Llama-3.1-8B-Instruct",
+      "mistralai/Mistral-7B-Instruct-v0.3"
+    ]
+  },
+  "prompt_coverage_Qwen2.5-7B-Instruct": {
+    "pass": true,
+    "actual": 3000,
+    "expected": 3000
+  },
+  "prompt_coverage_Llama-3.1-8B-Instruct": {
+    "pass": true,
+    "actual": 3000,
+    "expected": 3000
+  },
+  "prompt_coverage_Mistral-7B-Instruct-v0.3": {
+    "pass": true,
+    "actual": 3000,
+    "expected": 3000
+  },
+  "no_nan_delta": {
+    "pass": true,
+    "nan_count": 0
+  },
+  "no_nan_boundary": {
+    "pass": true,
+    "nan_count": 0
+  },
+  "no_nan_drift": {
+    "pass": true,
+    "nan_count": 0
+  },
+  "layerwise_has_logits": {
+    "pass": true,
+    "columns": [
+      "model_id",
+      "model_revision",
+      "prompt_uid",
+      "example_id",
+      "wrapper_id",
+      "coarse_domain",
+      "is_correct",
+      "layer_index",
+      "candidate_logits_json",
+      "candidate_probs_json",
+      "candidate_entropy",
+      "top_candidate",
+      "top2_margin_prob",
+      "projected_hidden_128_json"
+    ]
+  },
+  "no_nan_scores_sample": {
+    "pass": true,
+    "nan_in_sample_1000": 0
+  },
+  "sha256_manifest": {
+    "pass": true,
+    "hashes": {
+      "ablation_results.parquet": "b099afe520b456fe658eb10f73fe1eebcd427f7635f96dbffe30b00c00949656",
+      "attention_contrib_by_span.parquet": "f8eed874565c53879151a12c06a74558df08a586dee7fd6a1957cd16c691e2e2",
+      "attention_mass_by_span.parquet": "5ecc924ae856e502dced49257217229de6c3384f78f1b328280f38639eb13b66",
+      "basin_gap.parquet": "942402fc540684384c59f6994aefe17f2c72fb669caab2aee909a84fca5f2ff0",
+      "decision_metrics.parquet": "48e686a9d4deec13451bb84829c7a0dfa0953f659f164989f41bcc7ee4febf71",
+      "layerwise.parquet": "db7af7218b9b2fa48a2212f88ff01b3c2a9772a496e27995221f4c529c95cfcd",
+      "negative_controls.parquet": "ac35898f8383548439af7d4a6fd41f40e19c95c65e4c421d86b8a4fcdaec16a8",
+      "patching_results.parquet": "c69a1ce09e6a84deb30d8101277901bd8856728f2739701752fd4dc7d0c0bdb3",
+      "prompt_types.parquet": "11d1be44277dcff3d53632f0a782cbd3981d7dd64e0826eb8d4b63e196c6ee79",
+      "span_deletion_causal.parquet": "6d6e1dc31d7ed74c76c209022ce3b434d877104f05ce72d1268b2e32919283d6",
+      "span_effects.parquet": "74081de2c823e80547a2b0ffe48a6b709c0de83d029e5741d86f225f0bd1a0c9",
+      "span_labels.parquet": "591a75da9c1c5f82c494ddabea2d4a49e6ce219877f25e5b173c2c7ef48e4776",
+      "span_paraphrase_stability.parquet": "168977b42f851512e48b82d602960a0717ce8f0495a0c9e5b42fe33010823f37",
+      "tracing_scalars.parquet": "19cfe92550f81b94cd6efd4ef9804f2aa30199092c4e3f7d2e43b202b9a6c4a1"
+    }
+  },
+  "OVERALL": {
+    "pass": true
+  }
+}

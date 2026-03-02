@@ -1,0 +1,45 @@
+{
+  "definitions": {
+    "score_vector": "v(l) = [s_A(l), s_B(l), s_C(l), s_D(l)] — four option scores at layer l from cached token-bucket readouts",
+    "k_dyn": "argmax_{j != c} s_j(l), tie-break A < B < C < D",
+    "k_fix": "k_dyn(L-1) — dynamic competitor at the final layer",
+    "softcomp": "tau * logsumexp_{j != c}(s_j(l) / tau)",
+    "delta_hard_dyn": "s_c(l) - max_{j != c} s_j(l)",
+    "delta_hard_fix": "s_c(l) - s_{k_fix}(l)",
+    "delta_soft": "s_c(l) - tau * logsumexp_{j != c}(s_j(l) / tau)",
+    "delta_soft_prob_interpretation": "delta_soft(tau=1) equals the log-odds of the correct option vs the geometric mean of incorrect options under softmax over the four-choice subspace. delta_soft=0 corresponds to p(correct) = sum(p(incorrect))/3, not exactly p(correct)=0.5 in general.",
+    "switch_indicator": "1 if l >= 1 and k_dyn(l) != k_dyn(l-1), else 0",
+    "flip_count": "number of sign changes in the sign sequence of delta_default across layers, dropping exact zeros",
+    "final_sign": "sign(delta_default(L-1)); 0 if exactly zero",
+    "delta_signed": "final_sign * delta_default(l)",
+    "commitment_layer": "smallest l such that delta_signed(l') >= M for all l' >= l; null if none exists",
+    "depth_norm": "l / (L-1)",
+    "regime_stable_correct": "flip_count <= max_flips AND commitment_layer is not null AND delta_default(L-1) > 0",
+    "regime_stable_wrong": "flip_count <= max_flips AND commitment_layer is not null AND delta_default(L-1) < 0",
+    "regime_unstable": "all other cases"
+  },
+  "parameters": {
+    "tau_default": 1.0,
+    "M_default": 0.75,
+    "max_flips_for_stability": 1,
+    "epsilon_boundary_band": 0.2,
+    "seed": 12345,
+    "pca_n_components": 2
+  },
+  "forbidden_ambiguous_phrases": [
+    "embedding layer",
+    "phase transition",
+    "causal ablation",
+    "causal patching",
+    "activation patching",
+    "latent space",
+    "hidden-state space",
+    "about \\d+--\\d+%",
+    "approximately \\d+--\\d+%",
+    "roughly \\d+%"
+  ],
+  "allowed_qualified_phrases": {
+    "decision boundary": "must be qualified as 'zero-margin boundary (delta_soft = 0)' or 'equal-odds boundary'",
+    "decision space": "must be defined explicitly as '4-dimensional option-score space'"
+  }
+}

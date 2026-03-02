@@ -1,8 +1,7 @@
 {
   "parquet_dir": "/Users/shaileshrana/shape-of-wisdom/results/parquet",
-  "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
-  "build_timestamp_utc": "2026-03-02T20:09:24.468970+00:00",
-  "cached_delta_column_definition": "delta = s_correct - max(s_{j!=correct}) at each layer (hard dynamic margin, from src/sow/v2/metrics.py). Paper 1 recomputes all margins from raw sA/sB/sC/sD; cached delta is NOT used.",
+  "git_commit": "8caab44ee66b3a09946e8cc6601b477fdd3a923a",
+  "build_timestamp_utc": "2026-03-02T22:16:51.938830+00:00",
   "file_hashes": {
     "ablation_results.parquet": "b099afe520b456fe658eb10f73fe1eebcd427f7635f96dbffe30b00c00949656",
     "attention_contrib_by_span.parquet": "f8eed874565c53879151a12c06a74558df08a586dee7fd6a1957cd16c691e2e2",
@@ -18,5 +17,16 @@
     "span_labels.parquet": "591a75da9c1c5f82c494ddabea2d4a49e6ce219877f25e5b173c2c7ef48e4776",
     "span_paraphrase_stability.parquet": "168977b42f851512e48b82d602960a0717ce8f0495a0c9e5b42fe33010823f37",
     "tracing_scalars.parquet": "19cfe92550f81b94cd6efd4ef9804f2aa30199092c4e3f7d2e43b202b9a6c4a1"
-  }
+  },
+  "figure_hashes": {
+    "figA_why_delta_soft.pdf": "107d0c99320ca3d0ce7f8a189ae141871b182859a2b1395d99cc6a592149db11",
+    "fig1_pipeline.pdf": "0694a1bcc6cc5d27810c47a25d42a6c26b1a5707a6cb54de5cd9f7451e65ce88",
+    "fig2_examples.pdf": "91a9e839438bf044c41c50138d12f859c7af97a7bb05463522fb60c257ef83f8",
+    "fig3_distributions.pdf": "2b0eff997fe41d070c828f4e7e82f1237a1487b631449f331145ff00efe098ba",
+    "fig4_decision_space.pdf": "66af69ee90b46d7995d01ffa890cb6262a2416bb73a54ae6e3f200d305022daf",
+    "fig5_flow_field.pdf": "306644ff3bfee17dff0b5bdc087eec568fcb9109204f3776e5442e9b9fdcddfd",
+    "fig6_commitment.pdf": "3cb23c40d284fc1dceeb4262e1432ba39558eb2b9d3ae8167d132eed382333f2",
+    "fig7_robustness.pdf": "7eec0b0f702d03363f014ae28a94eca0560019fbb3e4362029db7e6f7f1467ee"
+  },
+  "robustness_max_shift_pct": 32.2
 }

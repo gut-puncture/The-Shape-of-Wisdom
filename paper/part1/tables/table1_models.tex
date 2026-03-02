@@ -1,19 +1,14 @@
 \begin{table}[t]
-  \caption{Models studied.  All are 7--8B instruction-tuned transformers
-  with pinned HuggingFace revisions.}
+  \caption{Models studied. All are 7--8\,B instruction-tuned transformers with pinned revisions.}
   \label{tab:models}
   \vskip 0.1in
-  \begin{center}
-  \begin{small}
-  \begin{tabular}{lccc}
+  \begin{center}\begin{small}\begin{tabular}{lccc}
     \toprule
     Model & Params & Layers & Prompts \\
     \midrule
-    Qwen 2.5-7B-Instruct  & 7.6\,B & 28 & 3\,000 \\
-    Llama 3.1-8B-Instruct  & 8.0\,B & 32 & 3\,000 \\
-    Mistral 7B-v0.3 & 7.2\,B & 32 & 3\,000 \\
+    Qwen 2.5-7B-Instruct  & 7.6\,B & \NLayersQwen{} & \NPromptsPerModel{} \\
+    Llama 3.1-8B-Instruct  & 8.0\,B & \NLayersLlama{} & \NPromptsPerModel{} \\
+    Mistral 7B-v0.3 & 7.2\,B & \NLayersMistral{} & \NPromptsPerModel{} \\
     \bottomrule
-  \end{tabular}
-  \end{small}
-  \end{center}
+  \end{tabular}\end{small}\end{center}
 \end{table}
