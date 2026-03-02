@@ -1,5 +1,42 @@
 # CHANGELOG — Correctness Audit
 
+## Round 2 — Three targeted changes (2026-03-01)
+
+### Change 1 — Fix Simulated Activation Substitution (rigor + correctness)
+
+**Problem:** Both `src/sow/v2/causal/patching.py` and Algorithm 2 in the paper implemented a simple overwrite (`g_patched[l] ← s_success[l]`) instead of the correct remove-then-add: `g_patched[l] = g_fail[l] - s_fail[l] + s_succ[l]`.
+
+**Fix:**
+- `src/sow/v2/causal/patching.py`: Corrected overwrite to `patched[i] = fail_drift[i] - fail_comp[i] + succ_comp[i]`.
+- `results/parquet/patching_results.parquet`: Recomputed from stored `tracing_scalars.parquet` (no model inference). Updated numbers: attention 35.78% positive (mean −0.31 logits); MLP 85.00% positive (mean +5.75 logits).
+- `paper/final_paper/paper_publish_v2.tex`: Algorithm 2 KwIn now lists `s_f[0..L-1]`; if-branch now reads `g_f[l] - s_f[l] + s_s[l]`. Introductory sentence, result numbers, and Figure 5 panel (c) caption updated.
+- `paper/final_paper/figures/fig5_counterfactuals.pdf`: Regenerated.
+
+### Change 2 — Proxy Validation: Token-Bucket vs Single-Token Readout (rigor)
+
+**Problem:** Decomposition scalars use a single-token tracing readout as a proxy for the token-bucket readout, but no numerical validation of how close the proxy is was reported.
+
+**Fix:**
+- Computed on full tracing subset (55,200 prompt × layer pairs): Pearson r = 0.55, sign agreement = 75.4%. Proxy is moderate; claims are now honestly scoped.
+- `src/sow/v2/figures/paper_figures.py`: Added `fig_appendix_proxy_validation()`.
+- `paper/final_paper/figures/figA1_proxy_validation.pdf`: New appendix figure (hexbin δ_bucket vs δ_single, y=x reference line).
+- `paper/final_paper/paper_publish_v2.tex`: New appendix section "Tracing-Readout Proxy Validation"; Methods paragraph updated with r = 0.55, sign agreement = 75.4%, and restriction of decomposition claims to single-token readout.
+
+### Change 3 — Visual Redesign of Figure 2 and Figure 6 (clarity)
+
+**Figure 2:** Replaced 9,000 opaque scatter points with hexbin density (`YlOrRd`). Covariance ellipses kept as unfilled overlays. Four region labels added inside quadrants. Threshold lines thickened to lw=1.4. Legend uses patch proxies.
+
+**Figure 6:** Removed ribbon-stack schematic and phase-space panel. New 3-panel layout:
+- Panel A: prompt spans (unchanged content).
+- Panel B (full height): δ(l) vs real layer index; tail shaded; sign flips marked ▼; competitor strip below x-axis.
+- Panel C: s_attn and s_mlp vs layer (same x-axis); zero reference; tail shaded.
+Caption updated to match new layout.
+
+- `paper/final_paper/figures/fig2_phase_diagram.pdf`: Regenerated.
+- `paper/final_paper/figures/fig6_prompt_journey.pdf`: Regenerated.
+
+---
+
 All changes target logical correctness using only existing data artifacts. No new model runs were performed.
 
 ## 1. Circularity in span labeling (Issue #1)

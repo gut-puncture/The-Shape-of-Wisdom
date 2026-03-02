@@ -44,17 +44,19 @@ def run_activation_patching(
 
         fail_delta = fail["delta"].to_numpy(dtype=np.float64)
         fail_drift = fail["drift"].to_numpy(dtype=np.float64)
+        fail_comp = fail[comp_col].to_numpy(dtype=np.float64)
         fail_li = fail["layer_index"].to_numpy(dtype=np.int64)
         succ_comp = succ[comp_col].to_numpy(dtype=np.float64)
 
-        n = min(fail_drift.size, succ_comp.size, fail_li.size)
+        n = min(fail_drift.size, fail_comp.size, succ_comp.size, fail_li.size)
         if n == 0:
             continue
 
         patched = fail_drift[:n].copy()
         for i in range(n):
             if int(fail_li[i]) in target:
-                patched[i] = succ_comp[i]
+                # Remove failing component contribution, add success component contribution
+                patched[i] = fail_drift[i] - fail_comp[i] + succ_comp[i]
 
         start = float(fail_delta[0])
         trace = np.zeros((n + 1,), dtype=np.float64)

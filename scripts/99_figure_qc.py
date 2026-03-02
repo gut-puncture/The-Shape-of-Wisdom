@@ -16,7 +16,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 PAPER_DIR = REPO / "paper" / "final_paper"
-TEX_FILE = PAPER_DIR / "paper_publish.tex"
+TEX_FILE = PAPER_DIR / "paper_publish_v2.tex"
 
 MODEL_LAYERS = {
     "Qwen": 28,
@@ -37,9 +37,10 @@ def check_absolute_option_in_tex():
 
 
 def check_figure_filenames_no_absolute():
-    """Attention routing figure should not use absolute option letters in filename."""
-    for fig in PAPER_DIR.glob("fig5_*.png"):
-        if re.search(r"option_[ABCD]", fig.name):
+    """Figure files should not encode absolute option letters in filenames."""
+    fig_dir = PAPER_DIR / "figures"
+    for fig in fig_dir.glob("fig*.pdf"):
+        if re.search(r"option[_-]?[ABCD]", fig.name):
             ERRORS.append(f"Figure filename contains absolute option letter: {fig.name}")
 
 
@@ -63,11 +64,14 @@ def check_causal_language():
 
 
 def check_no_old_figure_refs():
-    """Ensure no old timestamped figure filenames remain."""
+    """Ensure no old timestamped/PNG references remain in v2 TeX."""
     text = TEX_FILE.read_text()
     old_refs = re.findall(r"fig\d_\w+_\d{10,}\.png", text)
     for ref in old_refs:
         ERRORS.append(f"Old timestamped figure reference still in tex: {ref}")
+    png_refs = re.findall(r"figures/fig\d_[A-Za-z0-9_]+\.png", text)
+    for ref in png_refs:
+        ERRORS.append(f"Legacy PNG figure reference still in tex: {ref}")
 
 
 def main() -> int:

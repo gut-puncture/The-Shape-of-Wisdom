@@ -29,6 +29,8 @@
 \usepackage{multirow}
 \usepackage{balance}
 \usepackage[ruled,vlined]{algorithm2e}
+\crefname{algocf}{Algorithm}{Algorithms}
+\Crefname{algocf}{Algorithm}{Algorithms}
 
 % Avoid stretched vertical whitespace in two-column layout.
 \raggedbottom
@@ -257,7 +259,7 @@ Stable types cluster at high boundary proximity and zero tail flips; unstable ty
   \vskip 0.1in
   \begin{center}
     \centerline{\includegraphics[width=\columnwidth]{figures/fig2_phase_diagram.pdf}}
-    \caption{Phase diagram with non-redundant axes.  $x$-axis: boundary proximity at tail entry $|\delta(L{-}\tau)|$ (logits); $y$-axis: number of sign flips in the last $\tau = 8$ layers; jittered $\pm 0.12$.  Each point is one prompt~$\times$~model pair ($N = 9{,}000$).  Dashed lines: $b_{\min} = 0.3$ (vertical), flip threshold $= 0.5$ (horizontal).
+    \caption{Phase diagram with non-redundant axes.  $x$-axis: boundary proximity at tail entry $|\delta(L{-}\tau)|$ (logits); $y$-axis: number of sign flips in the last $\tau = 8$ layers; jittered $\pm 0.10$.  Each point is one prompt~$\times$~model pair ($N = 9{,}000$).  Dashed lines: $b_{\min} = 0.3$ (vertical), flip threshold $= 0.5$ (horizontal).
     Data: \texttt{decision\_metrics.parquet}, \texttt{prompt\_types.parquet}.}
     \label{fig:phase}
   \end{center}
@@ -287,6 +289,8 @@ We define the \textbf{attention scalar} and \textbf{MLP scalar} as the change in
   s_{\mathrm{mlp}}(l) &= \delta(h_{\mathrm{in}} + a + m) - \delta(h_{\mathrm{in}} + a), \label{eq:s_mlp}
 \end{align}
 where $\delta(h)$ denotes applying the unembedding matrix $W_U$ to the hidden state~$h$ and computing the correct-minus-competitor margin among token-bucket scores.
+In the tracing pipeline, this margin is read out from canonical single-token option labels (\texttt{A}/\texttt{B}/\texttt{C}/\texttt{D}) to match stored tracing artifacts.
+Baseline trajectory metrics elsewhere in the paper use token-bucket scoring (\cref{eq:bucket}), so decomposition scalars are a tracing-specific linear proxy under the same per-layer competitor rule.
 
 \paragraph{Equivalence to a dot product.}
 Because $\delta(h) = h^\top W_U^\top (e_c - e_{k^*})$ and $W_U$ is a linear operator,
@@ -311,23 +315,23 @@ We fit via OLS on a 70/30 train/test split (at the prompt level).  The pipeline 
 
 \cref{fig:decomposition} reveals the following patterns:
 
-\textbf{Attention is the net positive force for correct answers.}  In stable-correct trajectories, mean $s_{\mathrm{attn}}$ is positive across mid-layers (depth $0.3$--$0.7$), accumulating approximately $+5$ logit units of cumulative contribution (\cref{fig:decomposition}c).  This is consistent with attention routing evidence-bearing spans toward the answer position.
+\textbf{Attention is the dominant positive force early and mid-depth.}  In stable-correct trajectories (\cref{fig:decomposition}a), $s_{\mathrm{attn}}$ is broadly positive through the central depth range and tracks positive observed drift.
 
-\textbf{MLP contribution is context-dependent.}  For stable-correct trajectories, cumulative MLP contribution is net negative (${\sim}{-}6$ logit units), meaning MLP \emph{opposes} the correct answer on average.  However, MLP provides a brief positive push in depth $0.7$--$0.8$ before reverting.  For stable-wrong trajectories, both components are net negative (\cref{fig:decomposition}b), reinforcing the wrong answer throughout.
+\textbf{MLP contribution is context-dependent and often late-weighted.}  In stable-correct trajectories, MLP contributes a short late positive burst while remaining mixed elsewhere; in stable-wrong trajectories, both components are frequently negative and reinforce wrong commitment (\cref{fig:decomposition}b).
 
-\textbf{Dominance oscillates by depth.}  The attention fraction $|s_{\mathrm{attn}}|/(|s_{\mathrm{attn}}| + |s_{\mathrm{mlp}}|)$ starts modestly attention-dominant (${\sim}0.58$ at early layers) and drifts below $0.5$ by depth ${\sim}0.7$ (\cref{fig:decomposition}d), but the pattern is noisy and does not cleanly separate trajectory types.
+\textbf{Dominance depends on the diagnostic.}  Using positive-steering share, attention contributes most early positive shifts while MLP contributes most late positive shifts (\cref{fig:decomposition}c).  Sign-alignment and oscillation diagnostics vary by trajectory type but do not yield a single clean separating threshold (\cref{fig:decomposition}d,e).
 
 
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.95\textwidth]{figures/fig3_decomposition.pdf}}
-    \caption{Drift decomposition into attention and MLP components.
-    \textbf{(a)}~Stable-correct: mean $s_{\mathrm{attn}}$ (blue fill) and $s_{\mathrm{mlp}}$ (red fill) vs.\ normalised depth in 20 bins; dashed gray line is observed drift $g$; units: logit-margin.
-    \textbf{(b)}~Stable-wrong: same layout, showing both components negative.
-    \textbf{(c)}~Cumulative contributions for stable-correct: $\Sigma s_{\mathrm{attn}}$ (blue) and $\Sigma s_{\mathrm{mlp}}$ (red) vs.\ depth; attention accumulates ${\sim}{+}5$ logits, MLP ${\sim}{-}6$ logits.
-    \textbf{(d)}~Dominance ratio $|s_{\mathrm{attn}}|/(|s_{\mathrm{attn}}|{+}|s_{\mathrm{mlp}}|)$ in 10 depth bins, one line per trajectory type; dashed line at $0.5$.
-    Data: \texttt{tracing\_scalars.parquet} (55{,}200 rows), \texttt{prompt\_types.parquet}.}
+    \centerline{\includegraphics[width=\textwidth]{figures/fig3_decomposition.pdf}}
+    \caption{Drift decomposition and diagnostics from stored traces.
+    \textbf{(a,b)}~Mean component traces for stable-correct and stable-wrong with SEM bands, plus observed drift $g$ (all in logit-margin units per layer).
+    \textbf{(c)}~Early-vs-late positive-steering dominance (attention share vs.\ MLP share) with bootstrap 95\% CI.
+    \textbf{(d)}~Fraction of layers where attention and MLP contributions share sign.
+    \textbf{(e)}~Oscillation proxy (drift sign-change rate).
+    Data: \texttt{tracing\_scalars.parquet} (55{,}200 rows), \texttt{decision\_metrics.parquet}, \texttt{prompt\_types.parquet}.}
     \label{fig:decomposition}
   \end{center}
 \end{figure*}
@@ -362,16 +366,17 @@ Label stability under paraphrase: $\geq 85\%$ agreement, $\geq 0.80$ Jaccard sim
 
 We distinguish \textbf{attention mass} (raw weight from answer position to span tokens, normalized per token) from \textbf{decision-aligned contribution} (the attention output projected onto $d$, per \cref{eq:attn_dot}).
 
-\cref{fig:routing} shows the difference between correct-option and competitor-option values at each depth.  Stable-correct trajectories route disproportionate mass and positive contribution toward \texttt{option\_correct}, peaking around depth $0.55$.  Stable-wrong trajectories show a clean mirror: they route toward \texttt{option\_competitor}.  This sign reversal at mid-depth is the clearest evidence that attention routing discriminates between trajectory outcomes.
+\cref{fig:routing} presents routing in two complementary views.  The stacked-mass panels (\cref{fig:routing}a,b) show how span-role allocation evolves with depth for stable-correct versus stable-wrong trajectories.  The contribution heatmap (\cref{fig:routing}c) shows that decision-aligned attention on \texttt{option\_correct} is strongest for stable-correct trajectories, while stable-wrong trajectories shift contribution toward competitor-aligned structure.
 
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.95\textwidth]{figures/fig4_attention_routing.pdf}}
-    \caption{Attention routing difference (correct $-$ competitor option) vs.\ normalised depth.
-    \textbf{(a)}~Mass difference per token: stable-correct (green, peaks at $+0.055$) and stable-wrong (red, troughs at $-0.040$) show a clean mirror around zero at depth ${\sim}0.55$.  Fill to zero, $\alpha = 0.12$.
-    \textbf{(b)}~Decision-aligned contribution difference: same layout, same mirror pattern.
-    Data: \texttt{attention\_mass\_by\_span.parquet} (386{,}400 rows), \texttt{attention\_contrib\_by\_span.parquet} (386{,}400 rows), \texttt{decision\_metrics.parquet}, \texttt{prompt\_types.parquet}.  Only stable-correct and stable-wrong shown (2 lines per panel).}
+    \centerline{\includegraphics[width=\textwidth]{figures/fig4_attention_routing.pdf}}
+    \caption{Attention routing by span role.
+    \textbf{(a)}~Role-normalized stacked attention mass across depth for stable-correct trajectories.
+    \textbf{(b)}~Same stacked-mass view for stable-wrong trajectories.
+    \textbf{(c)}~Decision-aligned attention contribution heatmap (mean logit units) by span role and trajectory type; diverging color scale centered at zero.
+    Data: \texttt{attention\_mass\_by\_span.parquet} (386{,}400 rows), \texttt{attention\_contrib\_by\_span.parquet} (386{,}400 rows), \texttt{decision\_metrics.parquet}, \texttt{prompt\_types.parquet}.}
     \label{fig:routing}
   \end{center}
 \end{figure*}
@@ -385,7 +390,7 @@ We distinguish \textbf{attention mass} (raw weight from answer position to span 
 
 The MLP scalar $s_{\mathrm{mlp}}(l)$ measures how much each layer's feedforward network contributes to the decision margin (\cref{eq:s_mlp}).  Unlike attention, MLP can introduce information absent from the input---stored associations, factual recall, and learned biases.
 
-For stable-correct trajectories, the cumulative MLP contribution is surprisingly \emph{net negative} (${\sim}{-}6$ logit units), meaning MLP opposes the correct answer on aggregate (\cref{fig:decomposition}c).  However, MLP provides a brief positive push in depth $0.7$--$0.8$ before reverting.  The ``two-force'' story is therefore not ``attention steers early, MLP commits late'' but rather: \emph{attention is the sustained positive force across mid-layers, while MLP contributes a brief positive burst amid an otherwise opposing signal.}
+In stable-correct trajectories, MLP shows a brief late supportive phase but is not uniformly positive across depth (\cref{fig:decomposition}a,c).  The practical pattern is not a pure handoff where MLP simply \"takes over\" late; it is a mixed signal whose net effect depends on layer and trajectory context.
 
 For stable-wrong trajectories, both components are net negative---attention routes toward the competitor and MLP reinforces the wrong commitment.  The absence of a corrective force from either component explains why these trajectories are stable in the wrong basin.
 
@@ -416,20 +421,20 @@ $\delta^{\mathrm{cf}} \leftarrow \delta_0 + \displaystyle\sum_{l=0}^{L-1} g^{\ma
 \Return{$\Delta\delta \leftarrow \delta^{\mathrm{cf}} - \delta_{\mathrm{observed}}^{\mathrm{final}}$}\;
 \end{algorithm}
 
-We apply \cref{alg:removal} at layers $T = \{20, \ldots, 27\}$ for both attention and MLP.  Both produce finite, directionally consistent mean shifts (${\sim}0.3$ logits) across all three models (\cref{fig:causal}a), with broad per-prompt distributions reflecting heterogeneous trajectory shapes.
+We apply \cref{alg:removal} at layers $T = \{20, \ldots, 27\}$ for both attention and MLP.  Both produce finite mean shifts of about $0.3$ logits in aggregate, while model-level signs vary by component (\cref{fig:causal}a), with broad per-prompt distributions reflecting heterogeneous trajectory shapes.
 
 \subsection{Simulated Activation Substitution}
 
-We substitute the component scalar from a \emph{successful} trajectory into a \emph{failing} trajectory at target layers, again under the linearized drift model.
+At target layers we \emph{remove} the failing trajectory's component contribution and \emph{add} the successful trajectory's component contribution, leaving all other layers unchanged.
 
 \begin{algorithm}[t]
 \DontPrintSemicolon
 \caption{Simulated Activation Substitution}\label{alg:substitution}
-\KwIn{failing drift $g_f[0..L{-}1]$, success scalar $s_s[0..L{-}1]$, target layers $T$, failing initial $\delta_{f,0}$}
+\KwIn{failing drift $g_f[0..L{-}1]$, failing scalar $s_f[0..L{-}1]$, success scalar $s_s[0..L{-}1]$, target layers $T$, failing initial $\delta_{f,0}$}
 \KwOut{margin shift $\Delta\delta$}
 \For{$l \leftarrow 0$ \KwTo $L{-}1$}{
   \eIf{$l \in T$}{
-    $g^{\mathrm{patched}}[l] \leftarrow s_s[l]$\;
+    $g^{\mathrm{patched}}[l] \leftarrow g_f[l] - s_f[l] + s_s[l]$\;
   }{
     $g^{\mathrm{patched}}[l] \leftarrow g_f[l]$\;
   }
@@ -438,7 +443,7 @@ $\delta^{\mathrm{patched}} \leftarrow \delta_{f,0} + \displaystyle\sum_{l=0}^{L-
 \Return{$\Delta\delta \leftarrow \delta^{\mathrm{patched}} - \delta_{f}^{\mathrm{final}}$}\;
 \end{algorithm}
 
-Substituting attention scalars from stable-correct into stable-wrong produces positive $\Delta\delta$ for 63\% of pairs; MLP substitution produces positive $\Delta\delta$ for 82\% of pairs with a mean shift of 5.40 logits (\cref{fig:causal}b).
+Substituting attention scalars from stable-correct into stable-wrong produces positive $\Delta\delta$ for 36\% of pairs (mean shift $-0.31$ logits); MLP substitution produces positive $\Delta\delta$ for 85\% of pairs with a mean shift of 5.75 logits (\cref{fig:causal}b).  The contrast between components is substantial: MLP substitution consistently improves failing trajectories while attention substitution does not, suggesting that the decision-relevant MLP contribution is more transferable across prompts than the attention contribution.
 
 \subsection{Span Deletion (True Input-Level Intervention)}
 
@@ -454,12 +459,12 @@ Two controls establish baselines: (1)~\textbf{shuffled}---permuting span labels 
 \begin{figure*}[t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.95\textwidth]{figures/fig5_counterfactuals.pdf}}
+    \centerline{\includegraphics[width=\textwidth]{figures/fig5_counterfactuals.pdf}}
     \caption{Counterfactual validation.
-    \textbf{(a)}~Simulated component removal: violin plots of $\Delta\delta$ (logit shift) by component (attention blue, MLP red); mean ${\sim}0.3$ logits for both; $N = 1{,}800$ per component.
-    \textbf{(b)}~Substitution summary: mean $\Delta\delta$ with bootstrap 95\% CI and fraction positive; attention: $\mu = 1.35$, 63\% positive; MLP: $\mu = 5.40$, 82\% positive.
-    \textbf{(c)}~Span deletion effect densities by label (evidence green, distractor red, neutral gray); observed evidence mean (solid line) and shuffled/sign-flipped baselines (dashed).
-    \textbf{(d)}~Negative controls: observed evidence mean ($2.92$) vs.\ shuffled ($0.48$) and sign-flipped ($-0.002$).
+    \textbf{(a)}~Simulated removal by model and component: mean $\Delta\delta$ with bootstrap 95\% CI (logits), vertical zero line.
+    \textbf{(b)}~Activation patching distribution for failing trajectories: density of base final margin versus patched final margin, with mean-shift annotation.
+    \textbf{(c)}~Substitution summary (remove failing component contribution at target layers, add successful component contribution): mean $\Delta\delta$ with 95\% CI (top) and fraction of positive shifts (bottom).
+    \textbf{(d)}~Span deletion causal test: mean deletion effect by operational span label with bootstrap 95\% CI, plus horizontal baselines for observed/shuffled/sign-flipped controls.
     Data: \texttt{ablation\_results.parquet} (3{,}600 rows), \texttt{patching\_results.parquet} (1{,}800 rows), \texttt{span\_labels.parquet} (4{,}200 rows), \texttt{negative\_controls.parquet} (3 rows).}
     \label{fig:causal}
   \end{center}
@@ -468,16 +473,29 @@ Two controls establish baselines: (1)~\textbf{shuffled}---permuting span labels 
 \begin{figure*}[!t]
   \vskip 0.1in
   \begin{center}
-    \centerline{\includegraphics[width=0.90\textwidth]{figures/fig6_prompt_journey.pdf}}
+    \centerline{\includegraphics[width=\textwidth]{figures/fig6_prompt_journey.pdf}}
     \caption{A single prompt's journey through decision space (stable-correct trajectory).
-    \textbf{(a)}~Prompt structure: coloured blocks show span roles and operationally defined labels (evidence green, distractor red), with deletion effect~$\Delta$.
-    \textbf{(b)}~Decision margin $\delta$ vs.\ normalised depth: green fill where $\delta > 0$, red where $\delta < 0$; yellow band marks the tail window (last 8 layers); coloured strip below $x$-axis shows competitor identity at each layer.
-    \textbf{(c)}~Cumulative component-space path: $x = \Sigma s_{\mathrm{attn}}$, $y = \Sigma s_{\mathrm{mlp}}$; arrowed path coloured by depth (light $\to$ dark blue); open circle = layer~0, filled circle = final layer.
+    \textbf{(a)}~Structured prompt spans with role fills and operational labels (evidence/distractor/neutral), each annotated with deletion effect~$\Delta$.
+    \textbf{(b)}~Decision margin $\delta(l)$ versus real layer index; tail window ($\tau{=}8$, last 8 layers) shaded; per-layer closest-competitor identity shown as a colour strip below the axis; sign flips marked with~$\blacktriangledown$.
+    \textbf{(c)}~Component forces: attention scalar $s_{\mathrm{attn}}(l)$ and MLP scalar $s_{\mathrm{mlp}}(l)$ versus layer on the same axis, with positive/negative regions lightly shaded; tail window shaded as in~(b).
     Data: \texttt{decision\_metrics.parquet}, \texttt{tracing\_scalars.parquet}, \texttt{span\_labels.parquet}.}
     \label{fig:flow}
   \end{center}
 \end{figure*}
 
+
+
+\begin{figure*}[!t]
+  \vskip 0.1in
+  \begin{center}
+    \centerline{\includegraphics[width=\textwidth]{figures/fig7_decision_landscape.pdf}}
+    \caption{The Decision Landscape: all 276,000 (model, prompt, layer) observations projected onto the (normalised depth, $\delta$) plane.
+    \textbf{(a)}~\emph{Population Flow.}  Two-dimensional histogram over depth and $\delta$, with \emph{column-wise normalization}: each depth slice is scaled by its own maximum count, so colour encodes relative density within that depth bin (0--1).  Depth and margin bins are coarsened for readability in late layers.
+    \textbf{(b)}~\emph{Mean Drift Field.}  Grid over depth and clipped margin ($\delta \in [-8,8]$); each populated cell shows mean per-layer drift $\bar{g}$, with cells of count $<5$ masked to suppress noisy outliers.  Colours use a zero-centred diverging scale (blue: $\bar{g}>0$, red: $\bar{g}<0$).
+    Data: \texttt{decision\_metrics.parquet}.}
+    \label{fig:landscape}
+  \end{center}
+\end{figure*}
 
 
 %% ============================================================
@@ -598,6 +616,13 @@ Disjointness is enforced before any analysis: if $\mathrm{bucket}(L_1) \cap \mat
 
 The max-over-bucket scoring (\cref{eq:bucket}) ensures the readout captures the strongest signal for each letter regardless of how the tokenizer segments the surrounding context.
 
+\section{Tracing-Readout Proxy Validation}
+\label{sec:appendix_proxy}
+
+Baseline trajectory metrics use token-bucket scoring (\cref{eq:bucket}).  Decomposition scalars $s_{\mathrm{attn}}(l)$ and $s_{\mathrm{mlp}}(l)$ are computed in the tracing pipeline using canonical single-token option labels (\texttt{A}/\texttt{B}/\texttt{C}/\texttt{D}), not token buckets.  We validate this proxy relationship on the tracing subset by joining \texttt{decision\_metrics.parquet} and \texttt{tracing\_scalars.parquet} on $(\mathrm{model},\mathrm{prompt},\mathrm{layer})$, yielding 55{,}200 (prompt, layer) pairs.
+
+The Pearson correlation between $\delta_{\mathrm{bucket}}(l)$ and $\delta_{\mathrm{single}}(l)$ is $r = 0.55$; the sign-agreement rate is $75.4\%$.  These values indicate a moderate, imperfect proxy.  Decomposition claims should be understood as applying to the single-token tracing readout: directional conclusions (which component steers toward the correct answer) hold for the majority of (prompt, layer) pairs but are not guaranteed to transfer to every bucket-readout example.
+
 \section{Methods}
 \label{sec:methods}
 
@@ -609,7 +634,7 @@ The max-over-bucket scoring (\cref{eq:bucket}) ensures the readout captures the 
 
 \textbf{Span parsing.}  Prompt spans are identified via regular-expression boundary detection.  Option spans are re-indexed relative to correctness (\texttt{option\_correct}, \texttt{option\_competitor}, \texttt{option\_other}).  Span effects are computed by deletion and re-inference (true input-level intervention).  Evidence/distractor labels are an \emph{operational definition} using symmetric thresholds at $\pm 0.05$; separation by $\Delta$ is tautological.  Paraphrase stability is assessed on 50 prompts per model.
 
-\textbf{Tracing and decomposition.}  For the tracing subset, attention and MLP outputs are captured via forward hooks using eager attention.  Component scalars are computed as margin change (\cref{eq:s_attn,eq:s_mlp}), equivalent to the dot product with the decision direction (\cref{eq:attn_dot}).  OLS fit uses a 70/30 train/test split at the prompt level with $R^2 \geq 0.70$ enforced.
+\textbf{Tracing and decomposition.}  For the tracing subset, attention and MLP outputs are captured via forward hooks using eager attention.  Component scalars are computed as margin change (\cref{eq:s_attn,eq:s_mlp}), equivalent to the dot product with the decision direction (\cref{eq:attn_dot}).  OLS fit uses a 70/30 train/test split at the prompt level with $R^2 \geq 0.70$ enforced.  We validate the proxy relationship between tracing and bucket readouts on the tracing subset: Pearson $r = 0.55$, sign agreement $= 75.4\%$ (\cref{sec:appendix_proxy}); decomposition claims should be read as applying to the single-token tracing readout, which agrees in direction with the bucket readout for approximately three-quarters of (prompt, layer) pairs.
 
 \textbf{Counterfactual experiments.}  Simulated component removal follows \cref{alg:removal} at layers $T = \{20, \ldots, 27\}$; this is a linearized estimate, not a forward-pass intervention.  Simulated substitution follows \cref{alg:substitution}.  Span deletion actually removes spans and re-runs inference.  Negative controls: label-shuffle (256 permutations) and sign-flip (256 iterations).
 
