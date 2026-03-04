@@ -1,0 +1,43 @@
+setting_group,setting_name,component,n_pairs,mean,median,frac_positive,ci_lo,ci_hi,blocked_reason
+pairing_mode,all_pairs_within_model,attention,135000,1.1830127313401964,0.282958984375,0.5301851851851852,1.1615539236082855,1.2044942515493322,
+pairing_mode,all_pairs_within_model,mlp,135000,4.741921994951036,4.973236083984375,0.779874074074074,4.712231223667463,4.771887831523859,
+pairing_mode,domain_length_matched_seeded,attention,900,1.1971780776977539,0.32232666015625,0.5422222222222223,0.9077945784992643,1.478243575281567,
+pairing_mode,domain_length_matched_seeded,mlp,900,3.7213989554511175,3.73382568359375,0.7355555555555555,3.3645450598133935,4.089370300796297,
+pairing_mode,domain_matched_seeded,attention,900,1.310470666885376,0.19879150390625,0.53,1.0328758715258703,1.5943429241180418,
+pairing_mode,domain_matched_seeded,mlp,900,4.392790746688843,4.5679931640625,0.7611111111111111,4.016403366141849,4.763557600975036,
+pairing_mode,legacy_first_per_model,attention,900,-0.3099011018541124,-1.03070068359375,0.35777777777777775,-0.5938519173993005,-0.034675747632980695,
+pairing_mode,legacy_first_per_model,mlp,900,5.74789843665229,6.42376708984375,0.85,5.404094327158398,6.083924563884735,
+pairing_mode,one_to_one_seeded,attention,900,1.1687764845954047,0.2802734375,0.5311111111111111,0.8982583470344543,1.430795501152674,
+pairing_mode,one_to_one_seeded,mlp,900,4.725838570064968,5.04766845703125,0.7755555555555556,4.353265197541979,5.091751916752921,
+layer_range_mode,early,attention,135000,1.6624272661076651,1.1642175614833832,0.6354962962962963,1.6400461875158328,1.6846442708286644,
+layer_range_mode,early,mlp,135000,-1.779668183657858,-2.07470703125,0.3257111111111111,-1.8076643840806794,-1.7519567349945064,
+layer_range_mode,late,attention,135000,-0.2627855830722385,-0.591796875,0.459362962962963,-0.29128377739447137,-0.23460478413140334,
+layer_range_mode,late,mlp,135000,4.351737185584175,4.1666259765625,0.7845481481481481,4.320327133150277,4.3825768054015555,
+layer_range_mode,mid,attention,135000,5.6829882674747045,5.602294921875,0.918637037037037,5.662949334281241,5.702761599038221,
+layer_range_mode,mid,mlp,135000,-2.4645124827490914,-2.198047637939453,0.296837037037037,-2.485432745457578,-2.4437277013548657,
+layer_range_mode,paper-default,attention,135000,1.1830127313401964,0.282958984375,0.5301851851851852,1.1615539236082855,1.2044942515493322,
+layer_range_mode,paper-default,mlp,135000,4.741921994951036,4.973236083984375,0.779874074074074,4.712231223667463,4.771887831523859,
+normalization_mode,raw,attention,135000,1.1830127313401964,0.282958984375,0.5301851851851852,1.1615539236082855,1.2044942515493322,
+normalization_mode,raw,mlp,135000,4.741921994951036,4.973236083984375,0.779874074074074,4.712231223667463,4.771887831523859,
+normalization_mode,std_per_model_layer,attention,135000,-3.477784824940985,-3.1426260340921357,0.26755555555555555,-3.5068480142147798,-3.449872880269501,
+normalization_mode,std_per_model_layer,mlp,135000,1.633300317457808,1.667098437515028,0.693274074074074,1.61490344402086,1.6510024309689957,
+normalization_mode,zscore_per_model_layer,attention,135000,-3.477784824940985,-3.1426260340921357,0.26755555555555555,-3.5068480142147798,-3.4498728802695005,
+normalization_mode,zscore_per_model_layer,mlp,135000,1.633300317457808,1.667098437515028,0.693274074074074,1.61490344402086,1.6510024309689957,
+failing_set_mode,stable_wrong_only,attention,67500,1.990588633219401,1.131683349609375,0.5872444444444445,1.9576072477997672,2.0260253760980675,
+failing_set_mode,stable_wrong_only,mlp,67500,4.495281261867947,3.96337890625,0.7204,4.44700729835263,4.54411713141512,
+failing_set_mode,stable_wrong_plus_unstable_wrong,attention,135000,1.1830127313401964,0.282958984375,0.5301851851851852,1.1615539236082855,1.2044942515493322,
+failing_set_mode,stable_wrong_plus_unstable_wrong,mlp,135000,4.741921994951036,4.973236083984375,0.779874074074074,4.712231223667463,4.771887831523859,
+competitor_selection_mode,dynamic_per_layer,attention,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,dynamic_per_layer,mlp,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,fixed_final_layer_competitor,attention,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,fixed_final_layer_competitor,mlp,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,fixed_target_final_competitor,attention,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,fixed_target_final_competitor,mlp,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,strongest_noncorrect_aggregated,attention,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+competitor_selection_mode,strongest_noncorrect_aggregated,mlp,0,0.0,0.0,0.0,0.0,0.0,cached tracing scalars do not store per-layer logits for alternative competitor recomputation
+option_token_set,strict_single_token,attention,0,0.0,0.0,0.0,0.0,0.0,"substitution cache only stores scalar traces, not token-level option-logit decompositions"
+option_token_set,strict_single_token,mlp,0,0.0,0.0,0.0,0.0,0.0,"substitution cache only stores scalar traces, not token-level option-logit decompositions"
+option_token_set,inclusive_variant_bucket,attention,0,0.0,0.0,0.0,0.0,0.0,"substitution cache only stores scalar traces, not token-level option-logit decompositions"
+option_token_set,inclusive_variant_bucket,mlp,0,0.0,0.0,0.0,0.0,0.0,"substitution cache only stores scalar traces, not token-level option-logit decompositions"
+option_token_set,paper_default,attention,0,0.0,0.0,0.0,0.0,0.0,"substitution cache only stores scalar traces, not token-level option-logit decompositions"
+option_token_set,paper_default,mlp,0,0.0,0.0,0.0,0.0,0.0,"substitution cache only stores scalar traces, not token-level option-logit decompositions"

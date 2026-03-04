@@ -21,6 +21,7 @@ from _common import (
 )
 from sow.io_jsonl import iter_jsonl
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
+from sow.v2.inference_firewall import assert_inference_allowed
 from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor, pick_torch_dtype
 from sow.v2.span_counterfactuals import completed_span_keys_for_mode, compute_span_effect, delete_span, label_span_effects
 from sow.v2.span_paraphrase_stability import deterministic_paraphrase, proxy_mutated_delta, score_prompt_paraphrase
@@ -229,6 +230,8 @@ def main() -> int:
     span_cfg = cfg.get("span_counterfactual") or {}
     mode = str(args.counterfactual_mode or span_cfg.get("mode") or "proxy")
     allow_proxy_fallback = bool(args.allow_proxy_fallback or span_cfg.get("allow_proxy_fallback", False))
+    if mode == "model":
+        assert_inference_allowed("scripts/v2/05_span_counterfactuals.py")
 
     out_root = run_v2_root_for(args.run_id)
     thermal_cfg_obj = ThermalHygieneConfig.from_cfg(cfg.get("thermal_policy"))

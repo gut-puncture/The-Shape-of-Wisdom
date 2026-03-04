@@ -1,0 +1,262 @@
+{
+  "artifact_count": 32,
+  "artifacts": [
+    {
+      "description": "Layerwise decision metrics (delta, drift, boundary, competitor) for all prompts/models.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/02_compute_decision_metrics.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/decision_metrics.parquet",
+      "regenerate_command": "python3 scripts/v2/02_compute_decision_metrics.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "48e686a9d4deec13451bb84829c7a0dfa0953f659f164989f41bcc7ee4febf71"
+    },
+    {
+      "description": "Trajectory-type labels per (model,prompt).",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/03_classify_trajectories.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/prompt_types.parquet",
+      "regenerate_command": "python3 scripts/v2/03_classify_trajectories.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "11d1be44277dcff3d53632f0a782cbd3981d7dd64e0826eb8d4b63e196c6ee79"
+    },
+    {
+      "description": "Tracing scalars per layer (delta, drift, s_attn, s_mlp).",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/07_run_tracing.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/tracing_scalars.parquet",
+      "regenerate_command": "SOW_ALLOW_INFERENCE=1 python3 scripts/v2/07_run_tracing.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "19cfe92550f81b94cd6efd4ef9804f2aa30199092c4e3f7d2e43b202b9a6c4a1"
+    },
+    {
+      "description": "Attention mass routed to parsed span roles by layer.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/07_run_tracing.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/attention_mass_by_span.parquet",
+      "regenerate_command": "SOW_ALLOW_INFERENCE=1 python3 scripts/v2/07_run_tracing.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "5ecc924ae856e502dced49257217229de6c3384f78f1b328280f38639eb13b66"
+    },
+    {
+      "description": "Decision-aligned attention contribution by span role and layer.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/07_run_tracing.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/attention_contrib_by_span.parquet",
+      "regenerate_command": "SOW_ALLOW_INFERENCE=1 python3 scripts/v2/07_run_tracing.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "f8eed874565c53879151a12c06a74558df08a586dee7fd6a1957cd16c691e2e2"
+    },
+    {
+      "description": "Simulated component removal outputs.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/09_causal_tests.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/ablation_results.parquet",
+      "regenerate_command": "python3 scripts/v2/09_causal_tests.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "b099afe520b456fe658eb10f73fe1eebcd427f7635f96dbffe30b00c00949656"
+    },
+    {
+      "description": "Legacy simulated substitution outputs from stage-09 implementation.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/09_causal_tests.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/patching_results.parquet",
+      "regenerate_command": "python3 scripts/v2/09_causal_tests.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "c69a1ce09e6a84deb30d8101277901bd8856728f2739701752fd4dc7d0c0bdb3"
+    },
+    {
+      "description": "Per-span counterfactual effects before labeling.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/05_span_counterfactuals.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/span_effects.parquet",
+      "regenerate_command": "SOW_ALLOW_INFERENCE=1 python3 scripts/v2/05_span_counterfactuals.py --run-id gpu_full_20260224T145646Z --counterfactual-mode model",
+      "sha256": "74081de2c823e80547a2b0ffe48a6b709c0de83d029e5741d86f225f0bd1a0c9"
+    },
+    {
+      "description": "Operational span labels (evidence/distractor/neutral).",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/05_span_counterfactuals.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/span_labels.parquet",
+      "regenerate_command": "SOW_ALLOW_INFERENCE=1 python3 scripts/v2/05_span_counterfactuals.py --run-id gpu_full_20260224T145646Z --counterfactual-mode model",
+      "sha256": "591a75da9c1c5f82c494ddabea2d4a49e6ce219877f25e5b173c2c7ef48e4776"
+    },
+    {
+      "description": "Span deletion effect summary by label.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/10_causal_validation_tools.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/span_deletion_causal.parquet",
+      "regenerate_command": "python3 scripts/v2/10_causal_validation_tools.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "6d6e1dc31d7ed74c76c209022ce3b434d877104f05ce72d1268b2e32919283d6"
+    },
+    {
+      "description": "Negative-control baseline effects (observed/shuffled/sign-flipped).",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/10_causal_validation_tools.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/parquet/negative_controls.parquet",
+      "regenerate_command": "python3 scripts/v2/10_causal_validation_tools.py --run-id gpu_full_20260224T145646Z",
+      "sha256": "ac35898f8383548439af7d4a6fd41f40e19c95c65e4c421d86b8a4fcdaec16a8"
+    },
+    {
+      "description": "Span boundaries for prompts (used for prompt-length metadata in pairing).",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/v2/05_span_counterfactuals.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/spans.jsonl",
+      "regenerate_command": "SOW_ALLOW_INFERENCE=1 python3 scripts/v2/05_span_counterfactuals.py --run-id gpu_full_20260224T145646Z --counterfactual-mode model",
+      "sha256": "81b674b3a34ab76303b193fbb067a32b692d1eca23a558c55b11b0687916511a"
+    },
+    {
+      "description": "Canonical manuscript source audited for claim line mapping.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/paper/final_paper/paper_publish_v3.tex",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/paper/final_paper/paper_publish_v3.tex",
+      "regenerate_command": "Manual edit + latex build: cd paper/final_paper && latexmk -pdf paper_publish_v3.tex",
+      "sha256": "87f8a682c95b59853fdd96e83f999fb4c772986c6a0ca8322654a9aa70073e85"
+    },
+    {
+      "description": "Prior manuscript source used for contradiction scan.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/paper/final_paper/paper_publish_v2.tex",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/paper/final_paper/paper_publish_v2.tex",
+      "regenerate_command": "Manual historical artifact (no regeneration in this audit).",
+      "sha256": "1a5fbd0e1f122809aba6544f8214f3a27a0e29abeccec4272c205000322a84b1"
+    },
+    {
+      "description": "Legacy manuscript source used for contradiction scan.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/paper/final_paper/paper_publish.tex",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/paper/final_paper/paper_publish.tex",
+      "regenerate_command": "Manual historical artifact (no regeneration in this audit).",
+      "sha256": "c1702358c96ee6a35a77e0a2f728b3fbb154ef22af945f07fa944cc9b4e56061"
+    },
+    {
+      "description": "Code-grounded metric/component definitions and consistency diff.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/extract_definitions.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/definitions_extracted.json",
+      "regenerate_command": "python3 scripts/audit/extract_definitions.py --out-json results/audit/definitions_extracted.json",
+      "sha256": "da7daa7ef7ae26f7962ab7ba5b9265aaa8b425c8069b515dd4ca89895fa7b00e"
+    },
+    {
+      "description": "Integrity checks: shapes, NaN/inf, duplicates, reclassification, script safety table.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/check_artifacts_integrity.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/artifact_integrity.json",
+      "regenerate_command": "python3 scripts/audit/check_artifacts_integrity.py --parquet-dir results/parquet --reports-dir results/reports --out-json results/audit/artifact_integrity.json",
+      "sha256": "ee7858bbbe432f144db4e0d2079e254df72411b416881ae24625f8c8d056d246"
+    },
+    {
+      "description": "Per-layer spot-check dump for sampled trajectories.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/spotcheck_trajectories.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/trajectory_spotcheck_layers.csv",
+      "regenerate_command": "python3 scripts/audit/spotcheck_trajectories.py --parquet-dir results/parquet --out-dir results/audit --n-prompts 20 --seed 12345",
+      "sha256": "02d72edecbf3cac2317b209b046a587780baa9b99d87809db43c9a20b2c25da9"
+    },
+    {
+      "description": "Spot-check residual accounting summary.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/spotcheck_trajectories.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/trajectory_spotcheck_summary.json",
+      "regenerate_command": "python3 scripts/audit/spotcheck_trajectories.py --parquet-dir results/parquet --out-dir results/audit --n-prompts 20 --seed 12345",
+      "sha256": "5a06382de35b1f61b15d0c1bf02007183ee08aafe5b22bbda9443e621bcc92ca"
+    },
+    {
+      "description": "Independent per-pair substitution recomputation across sensitivity settings.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/substitution_rederive.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_pairs_vnext.csv",
+      "regenerate_command": "python3 scripts/audit/substitution_rederive.py --parquet-dir results/parquet --spans-jsonl results/spans.jsonl --out-csv results/audit/substitution_pairs_vnext.csv --out-json results/audit/substitution_rederive_diagnostics.json --seed 12345",
+      "sha256": "2981623f3c3a12223df48ab6c3f59287d471744cfb7e00d50d0c03ef4626970a"
+    },
+    {
+      "description": "Legacy reproduction, row-order sensitivity, all-pairs invariance diagnostics.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/substitution_rederive.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_rederive_diagnostics.json",
+      "regenerate_command": "python3 scripts/audit/substitution_rederive.py --parquet-dir results/parquet --spans-jsonl results/spans.jsonl --out-csv results/audit/substitution_pairs_vnext.csv --out-json results/audit/substitution_rederive_diagnostics.json --seed 12345",
+      "sha256": "fdbba1318e50547299140e934b2b0a4934d9ca7f5229d1384ed0a6cd8c61e7a3"
+    },
+    {
+      "description": "Bootstrap summary stats and blocked-toggle rows for substitution sensitivity.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/substitution_sensitivity.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_sensitivity_summary.csv",
+      "regenerate_command": "python3 scripts/audit/substitution_sensitivity.py --pairs-csv results/audit/substitution_pairs_vnext.csv --out-csv results/audit/substitution_sensitivity_summary.csv",
+      "sha256": "36ea9b64634d582c8dcab9961c46f16c11f7d86b6bfd0a529a79867af351cd80"
+    },
+    {
+      "description": "Per-layer reconstructed vs true delta errors for unit/OLS recurrences.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/drift_reconstruction_audit.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_detail.csv",
+      "regenerate_command": "python3 scripts/audit/drift_reconstruction_audit.py --parquet-dir results/parquet --out-dir results/audit --figures-dir figures_vNext",
+      "sha256": "da412d51fc7a3af28604e5243e9ca5e85dbcdf83cb2e3d9014910e815d455ba6"
+    },
+    {
+      "description": "Reconstruction error aggregates by layer.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/drift_reconstruction_audit.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_by_layer.csv",
+      "regenerate_command": "python3 scripts/audit/drift_reconstruction_audit.py --parquet-dir results/parquet --out-dir results/audit --figures-dir figures_vNext",
+      "sha256": "c603a6e9f312591fef8fca14a8e567a55b01a5725e3e73bb5ab13e103b47a530"
+    },
+    {
+      "description": "Reconstruction error aggregates by trajectory type.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/drift_reconstruction_audit.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_by_type.csv",
+      "regenerate_command": "python3 scripts/audit/drift_reconstruction_audit.py --parquet-dir results/parquet --out-dir results/audit --figures-dir figures_vNext",
+      "sha256": "b1e4c198ca3e601dd30a4c9a786783c844744a7dbf2c11ed5642c86fcfd0b892"
+    },
+    {
+      "description": "Top-level drift-model fidelity metrics and figure pointers.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/drift_reconstruction_audit.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_audit.json",
+      "regenerate_command": "python3 scripts/audit/drift_reconstruction_audit.py --parquet-dir results/parquet --out-dir results/audit --figures-dir figures_vNext",
+      "sha256": "01a3687be22fc5b9d8385b30c4fd915c7d4cf9325db4125c2fe4dac6b74c2142"
+    },
+    {
+      "description": "Contradiction resolution memo from source scans and code evidence.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/contradiction_memo.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/contradiction_memo.json",
+      "regenerate_command": "python3 scripts/audit/contradiction_memo.py --out-json results/audit/contradiction_memo.json",
+      "sha256": "a7abe25da42fc59f374176d4d8771bbbf9f8ce84a73422b948c66d10f9032497"
+    },
+    {
+      "description": "Manifest of regenerated vNext figures.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/generate_figures_vnext.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/figures_vNext/figures_vnext_manifest.json",
+      "regenerate_command": "python3 scripts/audit/generate_figures_vnext.py --parquet-dir results/parquet --audit-dir results/audit --output-dir figures_vNext --strict",
+      "sha256": "db03843ad9d9d20f6db2b96d361744d3d9b40bf9df4506ba822686abd26bd78e"
+    },
+    {
+      "description": "Orchestrator run manifest for the single-command audit reproduction.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/scripts/audit/reproduce_vnext.py",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/results/audit/reproduce_vnext_manifest.json",
+      "regenerate_command": "make audit-vnext",
+      "sha256": "f2d3bd27893d3a93daeeac670343fe3ab8ff11c5aaef615145b2b1432a174daa"
+    },
+    {
+      "description": "Human-readable audit conclusions and required changes.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/audit_report.md",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/audit_report.md",
+      "regenerate_command": "Manual synthesis from results/audit/*.json and *.csv (no inference).",
+      "sha256": "42f845671454e33e9a98e77d6a3a2e452f9828e0bb83cf6bbe5079b708e00c9b"
+    },
+    {
+      "description": "Claim-level traceability matrix for v3 manuscript.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/claim_evidence_matrix.md",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/claim_evidence_matrix.md",
+      "regenerate_command": "Manual synthesis from paper_publish_v3.tex line map + audit artifacts.",
+      "sha256": "be77c675eb2a326dcd4bc319fb2b7b94087440fe411bd45703d19f9ace17c035"
+    },
+    {
+      "description": "Claim-first paper restructure and figure placement plan.",
+      "generation_script": "/Users/shaileshrana/shape-of-wisdom/paper_restructure_plan.md",
+      "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+      "path": "/Users/shaileshrana/shape-of-wisdom/paper_restructure_plan.md",
+      "regenerate_command": "Manual synthesis using audit findings and figures_vNext outputs.",
+      "sha256": "fe4b42e0457d16b354954f10e3f6d940044dba09b2b34c7c2642097a2d99f62b"
+    }
+  ],
+  "generated_at": "2026-03-02"
+}

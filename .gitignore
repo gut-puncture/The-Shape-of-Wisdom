@@ -62,3 +62,10 @@ v1/
 paper/final_paper/*.png
 paper/final_paper/paper_publish*.pdf
 results/parquet/layerwise.parquet
+results/audit/substitution_pairs_vnext.csv
+tmp/
+# Large files
+artifacts/backups/
+downloads/
+results/audit/substitution_pairs_vnext.csv
+data/experiment_inputs/robustness_prompts_v2.jsonl

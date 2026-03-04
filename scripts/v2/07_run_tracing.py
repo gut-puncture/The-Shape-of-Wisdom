@@ -22,6 +22,7 @@ from _common import (
     write_text_atomic,
 )
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
+from sow.v2.inference_firewall import assert_inference_allowed
 from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor, get_model_nuance, pick_torch_dtype
 from sow.v2.span_parser import parse_prompt_spans
 from sow.v2.tracing.decomposition import attention_mass_by_span_per_layer, drift_series_from_deltas
@@ -120,6 +121,7 @@ def _merge_resume(existing: pd.DataFrame, new_df: pd.DataFrame, *, key_cols: Lis
 def main() -> int:
     ap = base_parser("V2: run tracing for attention routing and MLP injection")
     args = ap.parse_args()
+    assert_inference_allowed("scripts/v2/07_run_tracing.py")
 
     cfg = load_experiment_config(Path(args.config))
     models = resolve_models(cfg, model_name=args.model_name)

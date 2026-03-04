@@ -157,25 +157,26 @@ def load_and_build_core(parquet_dir: Path) -> pd.DataFrame:
 # FIGURES
 # ═══════════════════════════════════════════════════════════════════════════
 def figA_why_delta_soft(core: pd.DataFrame, out: Path) -> Path:
-    """Figure A: Why δsoft — comparing hard vs soft margin at competitor switches."""
+    """Figure A: Why δsoft — best-artifact-score example + switch-vs-non-switch violins."""
     apply_style()
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.0, 2.8), gridspec_kw={"width_ratios": [1.2, 1]})
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.5, 3.2), gridspec_kw={"width_ratios": [1.3, 1]})
 
-    # Left panel: single unstable example
+    # ── Panel A: Pick example that maximises artifact score ──
     model = EXPECTED_MODELS[0]
     sub = core[core["model_id"] == model]
-    pl = sub.groupby("prompt_uid").first().reset_index()
-    unstable = pl[pl["regime"] == "Unstable"]
-    # Pick one with at least 3 switches
-    rng = np.random.default_rng(SEED)
-    best_uid = None
-    for uid in rng.permutation(unstable["prompt_uid"].values):
-        p = sub[sub["prompt_uid"] == uid].sort_values("layer_index")
-        if p["switch_indicator"].sum() >= 3:
-            best_uid = uid
-            break
-    if best_uid is None:
-        best_uid = unstable["prompt_uid"].values[0]
+    # Artifact score = sum over switch layers of (|Δhard| - |Δsoft|)
+    best_uid, best_score = None, -np.inf
+    for uid, grp in sub.groupby("prompt_uid"):
+        grp = grp.sort_values("layer_index")
+        sw_v = grp["switch_indicator"].values
+        dh_v = grp["delta_hard_dyn"].values
+        ds_v = grp["delta_default"].values
+        score = 0.0
+        for i in range(1, len(sw_v)):
+            if sw_v[i] == 1:
+                score += abs(dh_v[i] - dh_v[i-1]) - abs(ds_v[i] - ds_v[i-1])
+        if score > best_score and sw_v.sum() >= 2:
+            best_score, best_uid = score, uid
 
     p = sub[sub["prompt_uid"] == best_uid].sort_values("layer_index")
     depth = p["depth_norm"].values
@@ -184,41 +185,70 @@ def figA_why_delta_soft(core: pd.DataFrame, out: Path) -> Path:
     sw = p["switch_indicator"].values
     kdyn = p["k_dyn"].values
 
-    ax1.plot(depth, dh, color="#D55E00", linewidth=1.2, alpha=0.8, label=r"$\delta_{\mathrm{hard}}$")
-    ax1.plot(depth, ds, color="#0072B2", linewidth=1.8, label=r"$\delta_{\mathrm{soft}}\,(\tau{=}1)$")
+    ax1.plot(depth, dh, color="#D55E00", linewidth=1.0, alpha=0.8, label=r"$\delta_{\mathrm{hard}}$")
+    ax1.plot(depth, ds, color="#0072B2", linewidth=1.6, label=r"$\delta_{\mathrm{soft}}$")
     ax1.axhline(0, color="black", linewidth=0.4, linestyle="--", alpha=0.4)
-    for i in range(len(sw)):
-        if sw[i] == 1:
-            ax1.axvline(depth[i], color="#999999", linewidth=0.5, alpha=0.5, linestyle=":")
-    # Competitor strip
+    # Vertical switch markers
+    switch_idxs = [i for i in range(len(sw)) if sw[i] == 1]
+    for i in switch_idxs:
+        ax1.axvline(depth[i], color="#999999", linewidth=0.5, alpha=0.5, linestyle=":")
+    # Competitor identity strip under x-axis
     for i in range(len(depth)):
         ax1.fill_between([depth[max(0,i-1)], depth[i]], -900, -800,
                          color=OPTION_COLORS.get(kdyn[i], "#999"), alpha=0.8,
                          transform=ax1.get_xaxis_transform())
+    # Inset zoom around best switch
+    if len(switch_idxs) >= 1:
+        best_sw = max(switch_idxs, key=lambda i: abs(dh[i]-dh[i-1]) - abs(ds[i]-ds[i-1]) if i > 0 else 0)
+        lo = max(0, best_sw - 3)
+        hi = min(len(depth) - 1, best_sw + 3)
+        axins = ax1.inset_axes([0.55, 0.55, 0.42, 0.42])
+        axins.plot(depth[lo:hi+1], dh[lo:hi+1], color="#D55E00", linewidth=1.2)
+        axins.plot(depth[lo:hi+1], ds[lo:hi+1], color="#0072B2", linewidth=1.8)
+        axins.axvline(depth[best_sw], color="#999", linewidth=0.8, linestyle=":")
+        axins.set_xlim(depth[lo]-0.01, depth[hi]+0.01)
+        axins.tick_params(labelsize=5)
+        axins.set_title("zoom at switch", fontsize=6, pad=2)
+        ax1.indicate_inset_zoom(axins, edgecolor="gray", alpha=0.6)
     ax1.set_xlabel("Normalised depth")
     ax1.set_ylabel("Margin (logits)")
-    ax1.set_title("(A) Single unstable trajectory", fontsize=9)
-    ax1.legend(fontsize=7, loc="upper left")
+    ax1.set_title("(A) Best-artifact-score trajectory", fontsize=9)
+    ax1.legend(fontsize=6, loc="upper left")
 
-    # Right panel: jump size distribution at switch events
-    jumps_hard, jumps_soft = [], []
+    # ── Panel B: Switch vs non-switch jump distributions (4 violins) ──
+    hard_sw, hard_nosw, soft_sw, soft_nosw = [], [], [], []
     for (mid, puid), grp in core.groupby(["model_id", "prompt_uid"]):
         grp = grp.sort_values("layer_index")
         sw_vals = grp["switch_indicator"].values
         dh_vals = grp["delta_hard_dyn"].values
         ds_vals = grp["delta_default"].values
         for i in range(1, len(sw_vals)):
+            jh = abs(dh_vals[i] - dh_vals[i-1])
+            js = abs(ds_vals[i] - ds_vals[i-1])
             if sw_vals[i] == 1:
-                jumps_hard.append(abs(dh_vals[i] - dh_vals[i-1]))
-                jumps_soft.append(abs(ds_vals[i] - ds_vals[i-1]))
+                hard_sw.append(jh)
+                soft_sw.append(js)
+            else:
+                hard_nosw.append(jh)
+                soft_nosw.append(js)
 
-    bins = np.linspace(0, 6, 40)
-    ax2.hist(jumps_hard, bins=bins, alpha=0.5, color="#D55E00", label=r"$|\Delta\delta_{\mathrm{hard}}|$", density=True)
-    ax2.hist(jumps_soft, bins=bins, alpha=0.5, color="#0072B2", label=r"$|\Delta\delta_{\mathrm{soft}}|$", density=True)
-    ax2.set_xlabel("Jump magnitude at switch (logits)")
-    ax2.set_ylabel("Density")
-    ax2.set_title("(B) Jump distribution at switches", fontsize=9)
-    ax2.legend(fontsize=7)
+    data = [hard_nosw, hard_sw, soft_nosw, soft_sw]
+    labels = ["Hard\nnon-sw", "Hard\nswitch", "Soft\nnon-sw", "Soft\nswitch"]
+    colors = ["#D55E00", "#D55E00", "#0072B2", "#0072B2"]
+    alphas = [0.35, 0.7, 0.35, 0.7]
+    parts = ax2.violinplot(data, positions=[1,2,3,4], showmedians=True, showextrema=False)
+    for i, pc in enumerate(parts["bodies"]):
+        pc.set_facecolor(colors[i])
+        pc.set_alpha(alphas[i])
+    parts["cmedians"].set_color("black")
+    ax2.set_xticks([1,2,3,4])
+    ax2.set_xticklabels(labels, fontsize=7)
+    ax2.set_ylabel("$|\\Delta\\delta|$ per layer")
+    ax2.set_title("(B) Switch vs non-switch jumps", fontsize=9)
+    # Annotate medians
+    for i, d in enumerate(data):
+        med = float(np.median(d))
+        ax2.text(i+1, med + 0.02, f"{med:.2f}", ha="center", fontsize=5.5, color="black")
 
     plt.tight_layout()
     return save_fig(fig, "figA_why_delta_soft", out)
@@ -321,12 +351,13 @@ def fig3_distributions(core: pd.DataFrame, out: Path) -> Path:
 
 
 def fig4_decision_space(core: pd.DataFrame, out: Path) -> Path:
-    """Figure 4: PCA of 4-option score vectors per model with explained variance."""
+    """Figure 4: PCA of 4-option score vectors with loadings inset and entropy annotation."""
+    from scipy.stats import pearsonr
     apply_style()
-    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.8))
+    fig, axes = plt.subplots(1, 3, figsize=(7.5, 3.2))
     rng = np.random.default_rng(SEED)
 
-    for ax, model in zip(axes, EXPECTED_MODELS):
+    for ax_i, (ax, model) in enumerate(zip(axes, EXPECTED_MODELS)):
         sub = core[core["model_id"] == model].copy()
         X = sub[["sA", "sB", "sC", "sD"]].values
         pca = PCA(n_components=2, random_state=SEED)
@@ -335,25 +366,32 @@ def fig4_decision_space(core: pd.DataFrame, out: Path) -> Path:
         sub["pc1"] = coords[:, 0]
         sub["pc2"] = coords[:, 1]
 
-        pl = sub.groupby("prompt_uid").first().reset_index()
-        sample_uids = rng.choice(pl["prompt_uid"].values, size=min(150, len(pl)), replace=False)
+        # Entropy correlation
+        probs = np.exp(X - np.max(X, axis=1, keepdims=True))
+        probs = probs / probs.sum(axis=1, keepdims=True)
+        entropy = -np.sum(probs * np.log(probs + 1e-12), axis=1)
+        r_ent, _ = pearsonr(coords[:, 0], entropy)
 
+        pl = sub.groupby("prompt_uid").first().reset_index()
+        sample_uids = rng.choice(pl["prompt_uid"].values, size=min(100, len(pl)), replace=False)
+
+        # Fewer trajectories, lower opacity
         for regime, color in REGIME_COLORS.items():
             r_uids = pl.loc[pl["regime"] == regime, "prompt_uid"].values
-            plot_uids = [u for u in sample_uids if u in r_uids][:25]
+            plot_uids = [u for u in sample_uids if u in r_uids][:15]
             for uid in plot_uids:
                 traj = sub[sub["prompt_uid"] == uid].sort_values("layer_index")
-                # Depth gradient via alpha
                 n = len(traj)
                 for j in range(1, n):
-                    alpha = 0.05 + 0.3 * (j / n)
+                    alpha = 0.03 + 0.2 * (j / n)
                     ax.plot(traj["pc1"].values[j-1:j+1], traj["pc2"].values[j-1:j+1],
-                            color=color, alpha=alpha, linewidth=0.4)
+                            color=color, alpha=alpha, linewidth=0.3)
 
+        # Final-layer point cloud
         final = sub[sub["layer_index"] == sub["L_model"]]
         for regime, color in REGIME_COLORS.items():
             rf = final[final["regime"] == regime]
-            ax.scatter(rf["pc1"], rf["pc2"], c=color, s=2, alpha=0.25, label=regime, zorder=5)
+            ax.scatter(rf["pc1"], rf["pc2"], c=color, s=1.5, alpha=0.2, label=regime, zorder=5)
 
         ev1 = 100 * pca.explained_variance_ratio_[0]
         ev2 = 100 * pca.explained_variance_ratio_[1]
@@ -361,7 +399,28 @@ def fig4_decision_space(core: pd.DataFrame, out: Path) -> Path:
         ax.set_ylabel(f"PC2 ({ev2:.0f}%)", fontsize=8)
         ax.set_title(MODEL_SHORT[model], fontsize=9)
 
-    axes[-1].legend(fontsize=6, markerscale=3, loc="upper right")
+        # Annotate entropy correlation
+        ax.text(0.03, 0.97, f"PC1–entropy\nr={r_ent:.2f}",
+                transform=ax.transAxes, fontsize=5.5, va="top",
+                bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7, ec="gray", lw=0.5))
+
+        # Inset: PC loadings bar chart
+        axins = ax.inset_axes([0.65, 0.02, 0.32, 0.25])
+        x_pos = np.arange(4)
+        w1 = pca.components_[0]
+        w2 = pca.components_[1]
+        axins.bar(x_pos - 0.15, w1, 0.28, color="#333333", alpha=0.7, label="PC1")
+        axins.bar(x_pos + 0.15, w2, 0.28, color="#AAAAAA", alpha=0.7, label="PC2")
+        axins.set_xticks(x_pos)
+        axins.set_xticklabels(["A","B","C","D"], fontsize=5)
+        axins.tick_params(axis="y", labelsize=4)
+        axins.set_ylim(-1, 1)
+        axins.axhline(0, color="k", linewidth=0.3)
+        if ax_i == 0:
+            axins.legend(fontsize=4, loc="upper left")
+        axins.set_title("Loadings", fontsize=5, pad=1)
+
+    axes[-1].legend(fontsize=5, markerscale=3, loc="upper right")
     plt.tight_layout()
     return save_fig(fig, "fig4_decision_space", out)
 
@@ -419,10 +478,14 @@ def fig5_flow_field(core: pd.DataFrame, out: Path) -> Path:
 
 
 def fig6_commitment(core: pd.DataFrame, out: Path) -> Path:
-    """Figure 6: Commitment, flips, switching — 2×2 grid."""
+    """Figure 6: Commitment, flips, switching — 2×2 grid (enlarged)."""
     apply_style()
-    fig, axes = plt.subplots(2, 2, figsize=(6.5, 5.0))
+    fig, axes = plt.subplots(2, 2, figsize=(7.5, 5.5))
     pl = core.groupby(["model_id", "prompt_uid"]).first().reset_index()
+
+    # Build-time assert: all normalised depths in [0,1]
+    assert core["depth_norm"].min() >= -1e-6, f"depth_norm min = {core['depth_norm'].min()}"
+    assert core["depth_norm"].max() <= 1.0 + 1e-6, f"depth_norm max = {core['depth_norm'].max()}"
 
     # (A) Commitment depth
     ax = axes[0, 0]
@@ -431,9 +494,11 @@ def fig6_commitment(core: pd.DataFrame, out: Path) -> Path:
         if len(sub) > 0:
             L = MODEL_LAYERS[m]
             d = sub["commitment_layer"].values / (L - 1)
+            assert d.min() >= -1e-6 and d.max() <= 1.0 + 1e-6, "commit depth out of [0,1]"
             ax.hist(d, bins=20, alpha=0.45, color=c, label=MODEL_SHORT[m], density=True, edgecolor="none")
-    ax.set_xlabel("Commitment depth (normalised)"); ax.set_ylabel("Density")
-    ax.set_title("(A) Commitment depth", fontsize=9); ax.legend(fontsize=6)
+    ax.set_xlabel("Commitment depth (normalised)", fontsize=9)
+    ax.set_ylabel("Density", fontsize=9)
+    ax.set_title("(A) Commitment depth", fontsize=10); ax.legend(fontsize=7)
 
     # (B) Flip count
     ax = axes[0, 1]
@@ -441,8 +506,8 @@ def fig6_commitment(core: pd.DataFrame, out: Path) -> Path:
         sub = pl[pl["model_id"] == m]
         ax.hist(sub["flip_count"].values, bins=range(0, 12), alpha=0.45, color=c,
                 label=MODEL_SHORT[m], density=True, edgecolor="none")
-    ax.set_xlabel("Flip count"); ax.set_ylabel("Density")
-    ax.set_title("(B) Flip count", fontsize=9); ax.legend(fontsize=6)
+    ax.set_xlabel("Flip count", fontsize=9); ax.set_ylabel("Density", fontsize=9)
+    ax.set_title("(B) Flip count", fontsize=10); ax.legend(fontsize=7)
 
     # (C) Last flip layer (Unstable)
     ax = axes[1, 0]
@@ -451,96 +516,108 @@ def fig6_commitment(core: pd.DataFrame, out: Path) -> Path:
         if len(sub) > 0:
             L = MODEL_LAYERS[m]
             d = sub["last_flip_layer"].values / (L - 1)
+            assert d.min() >= -1e-6 and d.max() <= 1.0 + 1e-6, "last_flip depth out of [0,1]"
             ax.hist(d, bins=20, alpha=0.45, color=c, label=MODEL_SHORT[m], density=True, edgecolor="none")
-    ax.set_xlabel("Last flip depth (normalised)"); ax.set_ylabel("Density")
-    ax.set_title("(C) Last flip layer (Unstable)", fontsize=9); ax.legend(fontsize=6)
+    ax.set_xlabel("Last flip depth (normalised)", fontsize=9)
+    ax.set_ylabel("Density", fontsize=9)
+    ax.set_title("(C) Last flip layer (Unstable)", fontsize=10); ax.legend(fontsize=7)
 
-    # (D) Switch rate vs depth
+    # (D) Switch rate vs depth — binned into 10 equal bins
     ax = axes[1, 1]
+    depth_bins = np.linspace(0, 1, 11)  # 10 bins
+    bin_centers = 0.5 * (depth_bins[:-1] + depth_bins[1:])
     for m, c in MODEL_COLORS.items():
-        sub = core[core["model_id"] == m]
-        sr = sub.groupby("depth_norm")["switch_indicator"].mean()
-        ax.plot(sr.index, sr.values, color=c, label=MODEL_SHORT[m], linewidth=1.2)
-    ax.set_xlabel("Normalised depth"); ax.set_ylabel("Switch rate")
-    ax.set_title("(D) Competitor switch rate", fontsize=9); ax.legend(fontsize=6)
+        sub = core[core["model_id"] == m].copy()
+        sub["depth_bin"] = pd.cut(sub["depth_norm"], bins=depth_bins, labels=False, include_lowest=True)
+        binned = sub.groupby("depth_bin")["switch_indicator"].agg(["mean", "std", "count"])
+        ax.plot(bin_centers[:len(binned)], binned["mean"].values, color=c,
+                label=MODEL_SHORT[m], linewidth=1.5, marker="o", markersize=3)
+        # Light confidence band (±1 SE)
+        se = binned["std"].values / np.sqrt(binned["count"].values)
+        ax.fill_between(bin_centers[:len(binned)],
+                        binned["mean"].values - se, binned["mean"].values + se,
+                        color=c, alpha=0.12)
+    ax.set_xlabel("Normalised depth", fontsize=9); ax.set_ylabel("Switch rate", fontsize=9)
+    ax.set_title("(D) Competitor switch rate (10 bins)", fontsize=10); ax.legend(fontsize=7)
 
     plt.tight_layout()
     return save_fig(fig, "fig6_commitment", out)
 
 
 def fig7_robustness(core: pd.DataFrame, out: Path) -> tuple[Path, float]:
-    """Figure 7: Robustness sweep. Returns (path, max_shift)."""
+    """Figure 7: Dense τ×M heatmap of Unstable proportion per model."""
     apply_style()
-    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.8))
+    fig, axes = plt.subplots(1, 3, figsize=(7.5, 3.0))
     pl = core.groupby(["model_id", "prompt_uid"]).first().reset_index()
 
-    tau_values = [0.5, 1.0, 2.0]
-    M_values = [0.5, 0.75, 1.0]
-    all_pcts = []
+    tau_grid = np.round(np.arange(0.5, 2.05, 0.25), 2)  # 7 values
+    M_grid = np.round(np.arange(0.50, 1.05, 0.1), 2)    # 6 values
+    all_maxshift = 0.0
 
     for ax_idx, model in enumerate(EXPECTED_MODELS):
         ax = axes[ax_idx]
         sub_pl = pl[pl["model_id"] == model]
         sub_all = core[core["model_id"] == model]
 
-        results = []
-        for tau in tau_values:
-            tau_col = f"delta_soft_tau_{str(tau).replace('.', '_')}"
-            for M in M_values:
-                sc, sw, unst = 0, 0, 0
+        # Pre-sort prompts for speed
+        prompt_data = {}
+        for uid, grp in sub_all.groupby("prompt_uid"):
+            prompt_data[uid] = grp.sort_values("layer_index")
+
+        unstable_grid = np.zeros((len(M_grid), len(tau_grid)))
+
+        for ti, tau in enumerate(tau_grid):
+            for mi, M in enumerate(M_grid):
+                unst = 0
+                total = len(sub_pl)
                 for _, row in sub_pl.iterrows():
-                    p_data = sub_all[sub_all["prompt_uid"] == row["prompt_uid"]].sort_values("layer_index")
-                    deltas = p_data[tau_col].values
+                    p_data = prompt_data[row["prompt_uid"]]
+                    scores = p_data[["sA","sB","sC","sD"]].values
+                    correct = row["correct_key"] if "correct_key" in row.index else None
+                    if correct is None:
+                        continue
+                    cidx = {"A":0,"B":1,"C":2,"D":3}.get(correct, 0)
+                    sc_vals = scores[:, cidx]
+                    incorrect_mask = np.ones(4, dtype=bool); incorrect_mask[cidx] = False
+                    lse = tau * np.log(np.sum(np.exp((scores[:, incorrect_mask] - np.max(scores[:, incorrect_mask], axis=1, keepdims=True)) / tau), axis=1) * np.exp(np.max(scores[:, incorrect_mask], axis=1) / tau))
+                    # More stable: use scipy-style
+                    inc_scores = scores[:, incorrect_mask]  # (L, 3)
+                    max_inc = np.max(inc_scores, axis=1, keepdims=True)
+                    lse = tau * (np.log(np.sum(np.exp((inc_scores - max_inc) / tau), axis=1)) + max_inc.ravel() / tau)
+                    deltas = sc_vals - lse
                     final_d = deltas[-1]
                     fs = np.sign(final_d) if final_d != 0 else 0
                     d_signed = fs * deltas
-                    committed = any(np.all(d_signed[i:] >= M) for i in range(len(d_signed)))
+                    committed = any(np.all(d_signed[k:] >= M) for k in range(len(d_signed)))
                     nz = deltas[deltas != 0]
                     signs = np.sign(nz)
                     fc = int(np.sum(signs[1:] != signs[:-1])) if len(signs) > 1 else 0
-                    if fc <= MAX_FLIPS and committed:
-                        if final_d > 0: sc += 1
-                        elif final_d < 0: sw += 1
-                        else: unst += 1
-                    else: unst += 1
-                total = sc + sw + unst
-                r = {"tau": tau, "M": M, "SC": 100*sc/total, "SW": 100*sw/total, "U": 100*unst/total}
-                results.append(r)
-                all_pcts.append(r)
+                    if not (fc <= MAX_FLIPS and committed):
+                        unst += 1
+                unstable_grid[mi, ti] = 100.0 * unst / total
 
-        res = pd.DataFrame(results)
-        x = np.arange(len(tau_values))
-        width = 0.25
-        for mi, M in enumerate(M_values):
-            m_data = res[res["M"] == M]
-            bottom = np.zeros(len(tau_values))
-            for regime, key, color in [("Stable-Correct", "SC", REGIME_COLORS["Stable-Correct"]),
-                                        ("Stable-Wrong", "SW", REGIME_COLORS["Stable-Wrong"]),
-                                        ("Unstable", "U", REGIME_COLORS["Unstable"])]:
-                vals = m_data[key].values
-                ax.bar(x + mi * width, vals, width, bottom=bottom, color=color, alpha=0.7,
-                       label=regime if ax_idx == 0 and mi == 0 else "")
-                bottom += vals
-        ax.set_xticks(x + width)
-        ax.set_xticklabels([f"τ={t}" for t in tau_values], fontsize=7)
-        ax.set_ylabel("Proportion (%)"); ax.set_ylim(0, 105)
+        im = ax.imshow(unstable_grid, aspect="auto", origin="lower",
+                       vmin=0, vmax=100, cmap="YlOrRd",
+                       extent=[tau_grid[0]-0.125, tau_grid[-1]+0.125,
+                               M_grid[0]-0.05, M_grid[-1]+0.05])
+        # Mark default
+        ax.plot(1.0, 0.75, marker="*", color="black", markersize=8, zorder=10)
+        ax.set_xlabel(r"$\tau$", fontsize=9)
+        if ax_idx == 0:
+            ax.set_ylabel("$M$", fontsize=9)
         ax.set_title(MODEL_SHORT[model], fontsize=9)
 
-    axes[0].legend(fontsize=6, loc="upper left")
+        # Smoothness: max absolute change between adjacent cells
+        for di in range(unstable_grid.shape[0]):
+            for dj in range(1, unstable_grid.shape[1]):
+                all_maxshift = max(all_maxshift, abs(unstable_grid[di, dj] - unstable_grid[di, dj-1]))
+        for di in range(1, unstable_grid.shape[0]):
+            for dj in range(unstable_grid.shape[1]):
+                all_maxshift = max(all_maxshift, abs(unstable_grid[di, dj] - unstable_grid[di-1, dj]))
+
+    cbar = fig.colorbar(im, ax=axes, shrink=0.85, label="Unstable (%)")
     plt.tight_layout()
-
-    # Smoothness metric: max shift between adjacent settings
-    pcts_df = pd.DataFrame(all_pcts)
-    max_shift = 0.0
-    for model in EXPECTED_MODELS:
-        m_pcts = pcts_df  # already combined
-        for col in ["SC", "SW", "U"]:
-            vals = pcts_df[col].values
-            for i in range(1, len(vals)):
-                shift = abs(vals[i] - vals[i-1])
-                max_shift = max(max_shift, shift)
-
-    return save_fig(fig, "fig7_robustness", out), max_shift
+    return save_fig(fig, "fig7_robustness", out), all_maxshift
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -587,7 +664,7 @@ def write_tables(core: pd.DataFrame, out: Path) -> None:
   \vskip 0.1in
   \begin{center}\begin{small}\begin{tabular}{llrrl}
     \toprule
-    Model & Regime & $N$ & \%% & Med.\ $\delta$ \\
+    Model & Regime & $N$ & {\%} & Med.\ $\delta$ \\
     \midrule
 """ + "\n".join(rows) + r"""
     \bottomrule
@@ -597,7 +674,7 @@ def write_tables(core: pd.DataFrame, out: Path) -> None:
 
     # Table 3: Robustness (smaller version — just tau=1 with varying M)
     (tables_dir / "table3_robustness.tex").write_text(r"""\begin{table}[t]
-  \caption{Regime proportions (\%%) under varying commitment threshold $M$, with $\tau = 1.0$, all models pooled.
+  \caption{Regime proportions ({\%}) under varying commitment threshold $M$, with $\tau = 1.0$, all models pooled.
   See \cref{fig:robustness} for the full $\tau \times M$ sweep.}
   \label{tab:robustness}
   \vskip 0.1in
@@ -714,6 +791,15 @@ def main() -> int:
     subprocess.run([sys.executable, str(Path(__file__).parent / "compute_numbers.py"),
                     "--core-parquet", str(odir / "data" / "part1_core.parquet"),
                     "--output", str(odir / "auto_numbers.tex")], check=True)
+
+    # Step 5b: Patch RobustnessMaxShift with actual value from fig7
+    auto_tex = (odir / "auto_numbers.tex").read_text()
+    auto_tex = auto_tex.replace(
+        r"\newcommand{\RobustnessMaxShift}{---}",
+        rf"\newcommand{{\RobustnessMaxShift}}{{{max_shift:.1f}}}"
+    )
+    (odir / "auto_numbers.tex").write_text(auto_tex)
+    print(f"  Patched RobustnessMaxShift = {max_shift:.1f}")
 
     # Step 6: Figure hashes
     print("[6] Computing figure hashes...")

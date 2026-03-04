@@ -20,6 +20,7 @@ from _common import (
 from sow.io_jsonl import iter_jsonl
 from sow.thermal.thermal_governor import ThermalGovernor, ThermalHygieneConfig
 from sow.v2.baseline_inference import run_baseline_for_model, validate_baseline_rows
+from sow.v2.inference_firewall import assert_inference_allowed
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -229,6 +230,7 @@ def _batch_chain_for_runtime(execution_cfg: Dict[str, Any]) -> List[int]:
 def main() -> int:
     ap = base_parser("V2: generate baseline outputs with deterministic fail-closed contract")
     args = ap.parse_args()
+    assert_inference_allowed("scripts/v2/00a_generate_baseline_outputs.py")
 
     cfg = load_experiment_config(Path(args.config))
     models = resolve_models(cfg, model_name=args.model_name)

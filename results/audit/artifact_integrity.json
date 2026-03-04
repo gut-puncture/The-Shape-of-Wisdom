@@ -1,0 +1,604 @@
+{
+  "duplicate_checks": {
+    "ablation_results": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "component",
+        "target_layers"
+      ]
+    },
+    "attention_contrib_by_span": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "layer_index",
+        "span_label"
+      ]
+    },
+    "attention_mass_by_span": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "layer_index",
+        "span_label"
+      ]
+    },
+    "decision_metrics": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "layer_index"
+      ]
+    },
+    "patching_results": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid_fail",
+        "prompt_uid_success",
+        "component",
+        "target_layers"
+      ]
+    },
+    "prompt_types": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid"
+      ]
+    },
+    "span_effects": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "span_id"
+      ]
+    },
+    "span_labels": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "span_id"
+      ]
+    },
+    "tracing_scalars": {
+      "duplicate_rows": 0,
+      "keys": [
+        "model_id",
+        "prompt_uid",
+        "layer_index"
+      ]
+    }
+  },
+  "failing_checks": [],
+  "finite_summary": {
+    "ablation_results.parquet": {
+      "columns": {
+        "delta_final_ablate": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "delta_final_base": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "delta_shift": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "attention_contrib_by_span.parquet": {
+      "columns": {
+        "attention_contribution": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "layer_index": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "attention_mass_by_span.parquet": {
+      "columns": {
+        "attention_mass": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "layer_index": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "decision_metrics.parquet": {
+      "columns": {
+        "boundary": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "drift": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "entropy": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "is_correct": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "layer_index": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "p_correct": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "prob_margin": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "negative_controls.parquet": {
+      "columns": {
+        "mean_effect_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "patching_results.parquet": {
+      "columns": {
+        "delta_final_base": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "delta_final_patched": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "delta_shift": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "prompt_types.parquet": {
+      "columns": {
+        "is_correct": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "late_flip_count": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "mean_abs_drift_last8": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "min_abs_delta_tail": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "sign_flip_count": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "span_deletion_causal.parquet": {
+      "columns": {
+        "mean_effect_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "median_effect_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "n": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "span_effects.parquet": {
+      "columns": {
+        "effect_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "full_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "mutated_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "span_labels.parquet": {
+      "columns": {
+        "effect_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "full_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "mutated_delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    },
+    "tracing_scalars.parquet": {
+      "columns": {
+        "delta": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "drift": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "layer_index": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "s_attn": {
+          "inf_count": 0,
+          "nan_count": 0
+        },
+        "s_mlp": {
+          "inf_count": 0,
+          "nan_count": 0
+        }
+      },
+      "inf_count": 0,
+      "nan_count": 0
+    }
+  },
+  "gates": {
+    "all_required_artifacts_present": true,
+    "decision_layers_complete": true,
+    "no_duplicate_keys": true,
+    "no_nan_or_inf": true,
+    "prompt_type_reclassification_matches": true,
+    "tracing_layers_complete": true
+  },
+  "layer_checks": {
+    "decision_metrics": {
+      "examples": [],
+      "groups": 9000,
+      "incomplete_groups": 0,
+      "out_of_order_groups": 0
+    },
+    "tracing_scalars": {
+      "examples": [],
+      "groups": 1800,
+      "incomplete_groups": 0,
+      "out_of_order_groups": 0
+    }
+  },
+  "pass": true,
+  "range_checks": {
+    "decision_final_delta": {
+      "mean": 1.239704861111111,
+      "p05": -5.789453125,
+      "p50": 1.046875,
+      "p95": 7.546875,
+      "sign_matches_is_correct_rate": 0.9994444444444445,
+      "std": 3.9934417707810845
+    },
+    "s_attn": {
+      "mean": -0.021966921602902204,
+      "p01": -3.671875,
+      "p99": 3.643618164062513,
+      "std": 1.2507392013720573
+    },
+    "s_mlp": {
+      "mean": -0.18996537804495597,
+      "p01": -3.4438623046875,
+      "p99": 2.9802270507812505,
+      "std": 1.2114300213246816
+    }
+  },
+  "reclassification": {
+    "agreement_rate": 1.0,
+    "agreement_rows": 9000,
+    "mismatch_examples": [],
+    "mismatch_rows": 0,
+    "rederived_rows": 9000,
+    "settings": {
+      "max_late_flip_count": 0,
+      "min_abs_delta_tail_floor": 0.3,
+      "tail_len": 8
+    },
+    "stored_rows": 9000
+  },
+  "sampling_checks": {
+    "deterministic_seed_from_config": 12345,
+    "tracing_subset_balance_check": {
+      "Qwen/Qwen2.5-7B-Instruct": {
+        "stable_correct": 150,
+        "stable_wrong": 150,
+        "unstable_correct": 150,
+        "unstable_wrong": 150
+      },
+      "meta-llama/Llama-3.1-8B-Instruct": {
+        "stable_correct": 150,
+        "stable_wrong": 150,
+        "unstable_correct": 150,
+        "unstable_wrong": 150
+      },
+      "mistralai/Mistral-7B-Instruct-v0.3": {
+        "stable_correct": 150,
+        "stable_wrong": 150,
+        "unstable_correct": 150,
+        "unstable_wrong": 150
+      }
+    }
+  },
+  "script_safety_table": {
+    "dangerous_scripts": [
+      {
+        "danger_signals": [
+          "AutoModelForCausalLM.from_pretrained",
+          "AutoTokenizer.from_pretrained",
+          ".generate(",
+          "torch.inference_mode(",
+          "run_baseline_for_model(",
+          "assert_inference_allowed("
+        ],
+        "path": "scripts/audit/check_artifacts_integrity.py"
+      },
+      {
+        "danger_signals": [
+          "run_baseline_for_model(",
+          "assert_inference_allowed("
+        ],
+        "path": "scripts/v2/00a_generate_baseline_outputs.py"
+      },
+      {
+        "danger_signals": [
+          "AutoModelForCausalLM.from_pretrained",
+          "AutoTokenizer.from_pretrained",
+          "torch.inference_mode(",
+          "assert_inference_allowed("
+        ],
+        "path": "scripts/v2/05_span_counterfactuals.py"
+      },
+      {
+        "danger_signals": [
+          "AutoModelForCausalLM.from_pretrained",
+          "AutoTokenizer.from_pretrained",
+          "torch.inference_mode(",
+          "assert_inference_allowed("
+        ],
+        "path": "scripts/v2/07_run_tracing.py"
+      }
+    ],
+    "named_script_status": [
+      {
+        "path": "scripts/v2/00a_generate_baseline_outputs.py",
+        "status": "dangerous"
+      },
+      {
+        "path": "scripts/v2/05_span_counterfactuals.py",
+        "status": "dangerous"
+      },
+      {
+        "path": "scripts/v2/07_run_tracing.py",
+        "status": "dangerous"
+      },
+      {
+        "path": "scripts/v2/08_attention_and_mlp_decomposition.py",
+        "status": "safe"
+      },
+      {
+        "path": "scripts/v2/regenerate_paper_figures.py",
+        "status": "safe"
+      }
+    ],
+    "safe_scripts": [
+      {
+        "danger_signals": [],
+        "path": "scripts/99_figure_qc.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/_audit_common.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/contradiction_memo.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/drift_reconstruction_audit.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/extract_definitions.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/generate_figures_vnext.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/reproduce_vnext.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/spotcheck_trajectories.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/substitution_rederive.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/audit/substitution_sensitivity.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/recompute_patching.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/00_run_experiment.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/00b_prompt_sweep_benchmark.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/01_extract_baseline.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/02_compute_decision_metrics.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/03_classify_trajectories.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/04_region_analysis.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/06_select_tracing_subset.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/08_attention_and_mlp_decomposition.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/09_causal_tests.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/10_causal_validation_tools.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/11_generate_paper_assets.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/12_appendix_exploratory_outcomes.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/13_baseline_rerun_decision.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/14_readiness_audit.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/_common.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/regenerate_figures.py"
+      },
+      {
+        "danger_signals": [],
+        "path": "scripts/v2/regenerate_paper_figures.py"
+      }
+    ]
+  },
+  "shape_summary": {
+    "ablation_results.parquet": {
+      "cols": 7,
+      "rows": 3600
+    },
+    "attention_contrib_by_span.parquet": {
+      "cols": 6,
+      "rows": 386400
+    },
+    "attention_mass_by_span.parquet": {
+      "cols": 6,
+      "rows": 386400
+    },
+    "decision_metrics.parquet": {
+      "cols": 16,
+      "rows": 276000
+    },
+    "negative_controls.parquet": {
+      "cols": 2,
+      "rows": 3
+    },
+    "patching_results.parquet": {
+      "cols": 8,
+      "rows": 1800
+    },
+    "prompt_types.parquet": {
+      "cols": 8,
+      "rows": 9000
+    },
+    "span_deletion_causal.parquet": {
+      "cols": 4,
+      "rows": 3
+    },
+    "span_effects.parquet": {
+      "cols": 11,
+      "rows": 4200
+    },
+    "span_labels.parquet": {
+      "cols": 12,
+      "rows": 4200
+    },
+    "tracing_scalars.parquet": {
+      "cols": 10,
+      "rows": 55200
+    }
+  }
+}

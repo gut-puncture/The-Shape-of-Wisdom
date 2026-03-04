@@ -1,0 +1,415 @@
+{
+  "code_evidence": {
+    "failing_set_scope": {
+      "line": 54,
+      "path": "scripts/v2/09_causal_tests.py",
+      "summary": "Legacy causal test includes stable_wrong + unstable_wrong in failing set."
+    },
+    "patching_single_source_selection": {
+      "line": 40,
+      "path": "src/sow/v2/causal/patching.py",
+      "summary": "Legacy substitution picks first stable-correct source per model; results are row-order sensitive and do not represent robust all-pairs transfer."
+    },
+    "v3_panel_reference": {
+      "caption_substitution_line": 466,
+      "panel_mismatch_detected": false,
+      "text_reference_line": null
+    }
+  },
+  "contradiction_candidates": [
+    {
+      "line": 66,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Across three 7--8B instruction-tuned transformers, these primitives separate prompts into four trajectory types---\\emph{stable-correct}, \\emph{stable-wrong}, \\emph{unstable-correct}, and \\emph{unstable-wrong}---producing a phase diagram that replicates across models and knowledge domains."
+    },
+    {
+      "line": 68,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Linearized counterfactual accounting via simulated component removal, activation substitution, and input-level span-deletion experiments---controlled against shuffled and sign-flipped baselines with Benjamini--Hochberg correction---confirms directionally consistent, finite effects on the decision margin."
+    },
+    {
+      "line": 92,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\item A linear decomposition of per-layer drift into attention and MLP components with $R^2 \\geq 0.70$ on held-out data and a mechanistic interpretation of routing versus injection."
+    },
+    {
+      "line": 93,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\item Counterfactual accounting experiments---simulated component removal, activation substitution, and input-level span deletion---with multiple-comparison-corrected tests and negative controls."
+    },
+    {
+      "line": 152,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "A trajectory is \\textbf{stable} if, within a tail window of the last $\\tau$ layers, $\\delta(l)$ maintains a consistent sign and $b(l) \\geq b_{\\min}$ throughout.  Combined with final-layer correctness this yields four types: \\emph{stable-correct}, \\emph{stable-wrong}, \\emph{unstable-correct}, \\emph{unstable-wrong}."
+    },
+    {
+      "line": 242,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Stable-wrong   & $\\times$   & \\checkmark & Committed to wrong ans. \\\\"
+    },
+    {
+      "line": 244,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Unstable-wrong & $\\times$   & $\\times$ & Oscillated and failed \\\\"
+    },
+    {
+      "line": 320,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{MLP contribution is context-dependent and often late-weighted.}  In stable-correct trajectories, MLP contributes a short late positive burst while remaining mixed elsewhere; in stable-wrong trajectories, both components are frequently negative and reinforce wrong commitment (\\cref{fig:decomposition}b)."
+    },
+    {
+      "line": 330,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{(a,b)}~Mean component traces for stable-correct and stable-wrong with SEM bands, plus observed drift $g$ (all in logit-margin units per layer)."
+    },
+    {
+      "line": 369,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\cref{fig:routing} presents routing in two complementary views.  The stacked-mass panels (\\cref{fig:routing}a,b) show how span-role allocation evolves with depth for stable-correct versus stable-wrong trajectories.  The contribution heatmap (\\cref{fig:routing}c) shows that decision-aligned attention on \\texttt{option\\_correct} is strongest for stable-correct trajectories, while stable-wrong trajectories shift contribution toward competitor-aligned structure."
+    },
+    {
+      "line": 377,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{(b)}~Same stacked-mass view for stable-wrong trajectories."
+    },
+    {
+      "line": 386,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "%% 7. MLP AS INJECTION"
+    },
+    {
+      "line": 395,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "For stable-wrong trajectories, both components are net negative---attention routes toward the competitor and MLP reinforces the wrong commitment.  The absence of a corrective force from either component explains why these trajectories are stable in the wrong basin."
+    },
+    {
+      "line": 404,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Sections~\\ref{sec:decomposition}--\\ref{sec:mlp} are correlational.  We conduct three families of counterfactual experiments.  The first two (simulated removal and substitution) operate on a \\emph{linearized drift-bookkeeping model} rather than full forward-pass interventions; only span deletion involves true input-level interventions with full re-inference."
+    },
+    {
+      "line": 426,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\subsection{Simulated Activation Substitution}"
+    },
+    {
+      "line": 432,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\caption{Simulated Activation Substitution}\\label{alg:substitution}"
+    },
+    {
+      "line": 446,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Under the legacy cached substitution protocol (one source stable-correct prompt per model), substituting attention scalars into failing trajectories (stable-wrong + unstable-wrong) yields positive $\\Delta\\delta$ for 36\\% of pairs (mean shift $-0.31$ logits), while MLP substitution yields positive $\\Delta\\delta$ for 85\\% of pairs (mean shift 5.75 logits; \\cref{fig:causal}c).  However, this legacy pairing is row-order sensitive because the source prompt is chosen by first-key selection.  Under an order-invariant all-pairs audit on the same cached scalars, both components are positive on average (attention: mean 1.18 logits, 53\\% positive; MLP: mean 4.74 logits, 78\\% positive).  We therefore treat ``MLP $>$ attention'' as a conditional result under specified pairing/normalization choices, not an unconditional mechanistic claim."
+    },
+    {
+      "line": 456,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\paragraph{Limitations of linearized counterfactual accounting.}  Simulated component removal and substitution operate on a drift-bookkeeping model.  They are \\emph{not} full forward-pass interventions: later layers are not allowed to react to the modified state.  These estimates are valid under a linearity assumption that has not been independently verified here.  True in-graph ablation and activation patching would provide stronger evidence but would require additional model runs."
+    },
+    {
+      "line": 466,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{(c)}~Substitution summary (remove failing component contribution at target layers, add successful component contribution): mean $\\Delta\\delta$ with 95\\% CI (top) and fraction of positive shifts (bottom)."
+    },
+    {
+      "line": 509,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{What the primitives buy.}  Rather than ``the model got it wrong,'' we can say ``the model entered the correct region at layer~12 but was pushed out by MLP injection at layer~23.''  This localizes failure, identifies the responsible component, and suggests targeted interventions."
+    },
+    {
+      "line": 511,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{Implications for training.}  We refrain from strong claims but note a hypothesis: training procedures that penalize drift disagreement between attention and MLP in late layers might reduce stable-wrong rates."
+    },
+    {
+      "line": 517,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\item \\textbf{Linearized counterfactual simulation.}  The drift-bookkeeping model (\\cref{alg:removal,alg:substitution}) assumes no downstream adaptation after component modification.  This linearity assumption has not been independently verified; true activation patching with full forward-pass re-inference would provide stronger evidence."
+    },
+    {
+      "line": 550,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "Decomposing drift into attention and MLP contributions reveals that attention is the sustained positive force across mid-layers for correct answers, while MLP provides a brief supportive burst at depth $0.7$--$0.8$ within an otherwise opposing signal.  For wrong answers, both forces reinforce the incorrect basin.  Counterfactual accounting experiments---both linearized estimates and true input-level span deletions---show robust finite effects; in audited order-invariant substitution settings, MLP shifts are typically larger than attention shifts, but the magnitude is sensitive to pairing and normalization definitions."
+    },
+    {
+      "line": 604,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "STEM domains show higher stable-wrong rates (confident factual errors).  Humanities show higher instability (ambiguous or context-dependent questions).  Social sciences are intermediate."
+    },
+    {
+      "line": 639,
+      "path": "paper/final_paper/paper_publish_v3.tex",
+      "text": "\\textbf{Counterfactual experiments.}  Simulated component removal follows \\cref{alg:removal} at layers $T = \\{20, \\ldots, 27\\}$; this is a linearized estimate, not a forward-pass intervention.  Simulated substitution follows \\cref{alg:substitution}; the cached stage-09 implementation uses failing trajectories $\\{$stable-wrong, unstable-wrong$\\}$ and a legacy first-source pairing per model.  Span deletion actually removes spans and re-runs inference.  Negative controls: label-shuffle (256 permutations) and sign-flip (256 iterations)."
+    },
+    {
+      "line": 66,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Across three 7--8B instruction-tuned transformers, these primitives separate prompts into four trajectory types---\\emph{stable-correct}, \\emph{stable-wrong}, \\emph{unstable-correct}, and \\emph{unstable-wrong}---producing a phase diagram that replicates across models and knowledge domains."
+    },
+    {
+      "line": 68,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Linearized counterfactual accounting via simulated component removal, activation substitution, and input-level span-deletion experiments---controlled against shuffled and sign-flipped baselines with Benjamini--Hochberg correction---confirms directionally consistent, finite effects on the decision margin."
+    },
+    {
+      "line": 92,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\item A linear decomposition of per-layer drift into attention and MLP components with $R^2 \\geq 0.70$ on held-out data and a mechanistic interpretation of routing versus injection."
+    },
+    {
+      "line": 93,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\item Counterfactual accounting experiments---simulated component removal, activation substitution, and input-level span deletion---with multiple-comparison-corrected tests and negative controls."
+    },
+    {
+      "line": 152,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "A trajectory is \\textbf{stable} if, within a tail window of the last $\\tau$ layers, $\\delta(l)$ maintains a consistent sign and $b(l) \\geq b_{\\min}$ throughout.  Combined with final-layer correctness this yields four types: \\emph{stable-correct}, \\emph{stable-wrong}, \\emph{unstable-correct}, \\emph{unstable-wrong}."
+    },
+    {
+      "line": 242,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Stable-wrong   & $\\times$   & \\checkmark & Committed to wrong ans. \\\\"
+    },
+    {
+      "line": 244,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Unstable-wrong & $\\times$   & $\\times$ & Oscillated and failed \\\\"
+    },
+    {
+      "line": 320,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{MLP contribution is context-dependent and often late-weighted.}  In stable-correct trajectories, MLP contributes a short late positive burst while remaining mixed elsewhere; in stable-wrong trajectories, both components are frequently negative and reinforce wrong commitment (\\cref{fig:decomposition}b)."
+    },
+    {
+      "line": 330,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{(a,b)}~Mean component traces for stable-correct and stable-wrong with SEM bands, plus observed drift $g$ (all in logit-margin units per layer)."
+    },
+    {
+      "line": 369,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\cref{fig:routing} presents routing in two complementary views.  The stacked-mass panels (\\cref{fig:routing}a,b) show how span-role allocation evolves with depth for stable-correct versus stable-wrong trajectories.  The contribution heatmap (\\cref{fig:routing}c) shows that decision-aligned attention on \\texttt{option\\_correct} is strongest for stable-correct trajectories, while stable-wrong trajectories shift contribution toward competitor-aligned structure."
+    },
+    {
+      "line": 377,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{(b)}~Same stacked-mass view for stable-wrong trajectories."
+    },
+    {
+      "line": 386,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "%% 7. MLP AS INJECTION"
+    },
+    {
+      "line": 395,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "For stable-wrong trajectories, both components are net negative---attention routes toward the competitor and MLP reinforces the wrong commitment.  The absence of a corrective force from either component explains why these trajectories are stable in the wrong basin."
+    },
+    {
+      "line": 404,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Sections~\\ref{sec:decomposition}--\\ref{sec:mlp} are correlational.  We conduct three families of counterfactual experiments.  The first two (simulated removal and substitution) operate on a \\emph{linearized drift-bookkeeping model} rather than full forward-pass interventions; only span deletion involves true input-level interventions with full re-inference."
+    },
+    {
+      "line": 426,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\subsection{Simulated Activation Substitution}"
+    },
+    {
+      "line": 432,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\caption{Simulated Activation Substitution}\\label{alg:substitution}"
+    },
+    {
+      "line": 446,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Substituting attention scalars from stable-correct into stable-wrong produces positive $\\Delta\\delta$ for 36\\% of pairs (mean shift $-0.31$ logits); MLP substitution produces positive $\\Delta\\delta$ for 85\\% of pairs with a mean shift of 5.75 logits (\\cref{fig:causal}b).  The contrast between components is substantial: MLP substitution consistently improves failing trajectories while attention substitution does not, suggesting that the decision-relevant MLP contribution is more transferable across prompts than the attention contribution."
+    },
+    {
+      "line": 456,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\paragraph{Limitations of linearized counterfactual accounting.}  Simulated component removal and substitution operate on a drift-bookkeeping model.  They are \\emph{not} full forward-pass interventions: later layers are not allowed to react to the modified state.  These estimates are valid under a linearity assumption that has not been independently verified here.  True in-graph ablation and activation patching would provide stronger evidence but would require additional model runs."
+    },
+    {
+      "line": 466,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{(c)}~Substitution summary (remove failing component contribution at target layers, add successful component contribution): mean $\\Delta\\delta$ with 95\\% CI (top) and fraction of positive shifts (bottom)."
+    },
+    {
+      "line": 509,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{What the primitives buy.}  Rather than ``the model got it wrong,'' we can say ``the model entered the correct region at layer~12 but was pushed out by MLP injection at layer~23.''  This localizes failure, identifies the responsible component, and suggests targeted interventions."
+    },
+    {
+      "line": 511,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{Implications for training.}  We refrain from strong claims but note a hypothesis: training procedures that penalize drift disagreement between attention and MLP in late layers might reduce stable-wrong rates."
+    },
+    {
+      "line": 517,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\item \\textbf{Linearized counterfactual simulation.}  The drift-bookkeeping model (\\cref{alg:removal,alg:substitution}) assumes no downstream adaptation after component modification.  This linearity assumption has not been independently verified; true activation patching with full forward-pass re-inference would provide stronger evidence."
+    },
+    {
+      "line": 550,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "Decomposing drift into attention and MLP contributions reveals that attention is the sustained positive force across mid-layers for correct answers, while MLP provides a brief supportive burst at depth $0.7$--$0.8$ within an otherwise opposing signal.  For wrong answers, both forces reinforce the incorrect basin.  Counterfactual accounting experiments---both linearized estimates and true input-level span deletions---confirm directionally consistent effects, with MLP substitution producing a 4$\\times$ larger mean shift than attention substitution."
+    },
+    {
+      "line": 604,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "STEM domains show higher stable-wrong rates (confident factual errors).  Humanities show higher instability (ambiguous or context-dependent questions).  Social sciences are intermediate."
+    },
+    {
+      "line": 639,
+      "path": "paper/final_paper/paper_publish_v2.tex",
+      "text": "\\textbf{Counterfactual experiments.}  Simulated component removal follows \\cref{alg:removal} at layers $T = \\{20, \\ldots, 27\\}$; this is a linearized estimate, not a forward-pass intervention.  Simulated substitution follows \\cref{alg:substitution}.  Span deletion actually removes spans and re-runs inference.  Negative controls: label-shuffle (256 permutations) and sign-flip (256 iterations)."
+    },
+    {
+      "line": 64,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Across three 7--8B instruction-tuned transformers, these primitives separate prompts into four trajectory types---\\emph{stable-correct}, \\emph{stable-wrong}, \\emph{unstable-correct}, and \\emph{unstable-wrong}---producing a phase diagram that replicates across models and knowledge domains."
+    },
+    {
+      "line": 66,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Linearized counterfactual accounting via simulated component removal, activation substitution, and input-level span-deletion experiments---controlled against shuffled and sign-flipped baselines with Benjamini--Hochberg correction---confirms directionally consistent, finite effects on the decision margin."
+    },
+    {
+      "line": 90,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\item A linear decomposition of per-layer drift into attention and MLP components with $R^2 \\geq 0.70$ on held-out data and a mechanistic interpretation of routing versus injection."
+    },
+    {
+      "line": 91,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\item Counterfactual accounting experiments---simulated component removal, activation substitution, and input-level span deletion---with multiple-comparison-corrected tests and negative controls."
+    },
+    {
+      "line": 150,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "A trajectory is \\textbf{stable} if, within a tail window of the last $\\tau$ layers, $\\delta(l)$ maintains a consistent sign and $b(l) \\geq b_{\\min}$ throughout.  Combined with final-layer correctness this yields four types: \\emph{stable-correct}, \\emph{stable-wrong}, \\emph{unstable-correct}, \\emph{unstable-wrong}."
+    },
+    {
+      "line": 240,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Stable-wrong   & $\\times$   & \\checkmark & Committed to wrong ans. \\\\"
+    },
+    {
+      "line": 242,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Unstable-wrong & $\\times$   & $\\times$ & Oscillated and failed \\\\"
+    },
+    {
+      "line": 318,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{MLP contribution is context-dependent.}  For stable-correct trajectories, cumulative MLP contribution is net negative (${\\sim}{-}6$ logit units), meaning MLP \\emph{opposes} the correct answer on average.  However, MLP provides a brief positive push in depth $0.7$--$0.8$ before reverting.  For stable-wrong trajectories, both components are net negative (\\cref{fig:decomposition}b), reinforcing the wrong answer throughout."
+    },
+    {
+      "line": 328,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{(a,b)}~Mean component traces for stable-correct and stable-wrong with SEM bands, plus observed drift $g$; \\textbf{(c)}~early-vs-late positive-steering dominance (attention share vs.\\ MLP share) with bootstrap 95\\% CI; \\textbf{(d)}~fraction of layers where attention and MLP contributions share sign; \\textbf{(e)}~oscillation proxy (drift sign-change rate); \\textbf{(f)}~stable-correct cumulative contributions $\\Sigma s_{\\mathrm{attn}}$ and $\\Sigma s_{\\mathrm{mlp}}$."
+    },
+    {
+      "line": 364,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\cref{fig:routing} shows the difference between correct-option and competitor-option values at each depth.  Stable-correct trajectories route disproportionate mass and positive contribution toward \\texttt{option\\_correct}, peaking around depth $0.55$.  Stable-wrong trajectories show a clean mirror: they route toward \\texttt{option\\_competitor}.  This sign reversal at mid-depth is the clearest evidence that attention routing discriminates between trajectory outcomes."
+    },
+    {
+      "line": 371,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{(a)}~Mass difference per token: stable-correct (green, peaks at $+0.055$) and stable-wrong (red, troughs at $-0.040$) show a clean mirror around zero at depth ${\\sim}0.55$.  Fill to zero, $\\alpha = 0.12$."
+    },
+    {
+      "line": 373,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Data: \\texttt{attention\\_mass\\_by\\_span.parquet} (386{,}400 rows), \\texttt{attention\\_contrib\\_by\\_span.parquet} (386{,}400 rows), \\texttt{decision\\_metrics.parquet}, \\texttt{prompt\\_types.parquet}.  Only stable-correct and stable-wrong shown (2 lines per panel).}"
+    },
+    {
+      "line": 380,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "%% 7. MLP AS INJECTION"
+    },
+    {
+      "line": 389,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "For stable-wrong trajectories, both components are net negative---attention routes toward the competitor and MLP reinforces the wrong commitment.  The absence of a corrective force from either component explains why these trajectories are stable in the wrong basin."
+    },
+    {
+      "line": 398,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Sections~\\ref{sec:decomposition}--\\ref{sec:mlp} are correlational.  We conduct three families of counterfactual experiments.  The first two (simulated removal and substitution) operate on a \\emph{linearized drift-bookkeeping model} rather than full forward-pass interventions; only span deletion involves true input-level interventions with full re-inference."
+    },
+    {
+      "line": 420,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\subsection{Simulated Activation Substitution}"
+    },
+    {
+      "line": 422,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "We substitute the component scalar from a \\emph{successful} trajectory into a \\emph{failing} trajectory at target layers, again under the linearized drift model."
+    },
+    {
+      "line": 426,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\caption{Simulated Activation Substitution}\\label{alg:substitution}"
+    },
+    {
+      "line": 440,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Substituting attention scalars from stable-correct into stable-wrong produces positive $\\Delta\\delta$ for 63\\% of pairs; MLP substitution produces positive $\\Delta\\delta$ for 82\\% of pairs with a mean shift of 5.40 logits (\\cref{fig:causal}b)."
+    },
+    {
+      "line": 450,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\paragraph{Limitations of linearized counterfactual accounting.}  Simulated component removal and substitution operate on a drift-bookkeeping model.  They are \\emph{not} full forward-pass interventions: later layers are not allowed to react to the modified state.  These estimates are valid under a linearity assumption that has not been independently verified here.  True in-graph ablation and activation patching would provide stronger evidence but would require additional model runs."
+    },
+    {
+      "line": 459,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{(b)}~Substitution summary: mean $\\Delta\\delta$ with bootstrap 95\\% CI and fraction positive; attention: $\\mu = 1.35$, 63\\% positive; MLP: $\\mu = 5.40$, 82\\% positive."
+    },
+    {
+      "line": 490,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{What the primitives buy.}  Rather than ``the model got it wrong,'' we can say ``the model entered the correct region at layer~12 but was pushed out by MLP injection at layer~23.''  This localizes failure, identifies the responsible component, and suggests targeted interventions."
+    },
+    {
+      "line": 492,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{Implications for training.}  We refrain from strong claims but note a hypothesis: training procedures that penalize drift disagreement between attention and MLP in late layers might reduce stable-wrong rates."
+    },
+    {
+      "line": 498,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\item \\textbf{Linearized counterfactual simulation.}  The drift-bookkeeping model (\\cref{alg:removal,alg:substitution}) assumes no downstream adaptation after component modification.  This linearity assumption has not been independently verified; true activation patching with full forward-pass re-inference would provide stronger evidence."
+    },
+    {
+      "line": 531,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "Decomposing drift into attention and MLP contributions reveals that attention is the sustained positive force across mid-layers for correct answers, while MLP provides a brief supportive burst at depth $0.7$--$0.8$ within an otherwise opposing signal.  For wrong answers, both forces reinforce the incorrect basin.  Counterfactual accounting experiments---both linearized estimates and true input-level span deletions---confirm directionally consistent effects, with MLP substitution producing a 4$\\times$ larger mean shift than attention substitution."
+    },
+    {
+      "line": 585,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "STEM domains show higher stable-wrong rates (confident factual errors).  Humanities show higher instability (ambiguous or context-dependent questions).  Social sciences are intermediate."
+    },
+    {
+      "line": 613,
+      "path": "paper/final_paper/paper_publish.tex",
+      "text": "\\textbf{Counterfactual experiments.}  Simulated component removal follows \\cref{alg:removal} at layers $T = \\{20, \\ldots, 27\\}$; this is a linearized estimate, not a forward-pass intervention.  Simulated substitution follows \\cref{alg:substitution}.  Span deletion actually removes spans and re-runs inference.  Negative controls: label-shuffle (256 permutations) and sign-flip (256 iterations)."
+    }
+  ],
+  "resolved_interpretation": {
+    "conceptual_mismatch": [
+      "Scalar substitution under a linearized bookkeeping model is not the same as full activation patching.",
+      "Legacy pairing used one fixed source prompt per model, making attention outcomes unstable to row order.",
+      "Some prose compares stable-wrong-only claims to code that mixes unstable-wrong targets."
+    ],
+    "corrected_claim_for_v3": "Under cached scalar-substitution accounting, MLP substitution yields larger positive margin shifts than attention in the audited pair sets, but this conclusion is conditional on the pairing protocol, layer range, and readout definition.",
+    "what_happened": "The mismatch is not evidence that two independent mechanisms disagree; it mainly comes from experimental-definition drift and a legacy pairing bug."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "by_competitor_switch_csv": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_by_competitor_switch.csv",
+  "by_layer_csv": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_by_layer.csv",
+  "by_type_csv": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_by_type.csv",
+  "detail_csv": "/Users/shaileshrana/shape-of-wisdom/results/audit/drift_reconstruction_detail.csv",
+  "figures": [
+    "/Users/shaileshrana/shape-of-wisdom/figures_vNext/drift_reconstruction_error_vs_layer.png",
+    "/Users/shaileshrana/shape-of-wisdom/figures_vNext/drift_reconstruction_error_vs_layer.pdf",
+    "/Users/shaileshrana/shape-of-wisdom/figures_vNext/drift_reconstruction_error_by_type.png",
+    "/Users/shaileshrana/shape-of-wisdom/figures_vNext/drift_reconstruction_error_by_type.pdf"
+  ],
+  "ols_coefficients_by_model": {
+    "Qwen/Qwen2.5-7B-Instruct": {
+      "coef_attn": -0.049837411309586035,
+      "coef_mlp": 0.13976389202061246,
+      "intercept": 0.07061248430385986
+    },
+    "meta-llama/Llama-3.1-8B-Instruct": {
+      "coef_attn": -0.0904497895431236,
+      "coef_mlp": -0.07531255833017748,
+      "intercept": 0.014231969144515548
+    },
+    "mistralai/Mistral-7B-Instruct-v0.3": {
+      "coef_attn": 0.08835390893046195,
+      "coef_mlp": -0.12093637532718605,
+      "intercept": 0.013985650590741317
+    }
+  },
+  "overall": {
+    "corr_ols": 0.0012086724654595366,
+    "corr_unit": 0.5941293307832349,
+    "mae_ols": 2.296029987886564,
+    "mae_unit": 4.559555921699258
+  }
+}

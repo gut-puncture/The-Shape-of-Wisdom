@@ -1,0 +1,129 @@
+{
+  "definition_consistency_diff": [
+    {
+      "mismatch_id": "readout_bucket_vs_single_token",
+      "paper_standardization_recommendation": "Treat tracing decomposition claims as single-token readout claims; keep bucket-readout claims separate and explicitly caveated.",
+      "where_a": "src/sow/v2/metrics.py",
+      "where_b": "scripts/v2/07_run_tracing.py",
+      "why_it_matters": "Decision metrics use bucketed option logits from baseline extraction, while tracing/scalars use single-token A/B/C/D logits. This can change competitor identity, delta scale, and sign for some rows."
+    },
+    {
+      "mismatch_id": "failing_set_scope_drift",
+      "paper_standardization_recommendation": "Either restrict code and report to stable_wrong-only or explicitly label the broader failing set.",
+      "where_a": "scripts/v2/09_causal_tests.py",
+      "where_b": "paper/final_paper/paper_publish_v3.tex",
+      "why_it_matters": "Code uses failing = stable_wrong + unstable_wrong for substitution, while prose often reads as stable_wrong-only."
+    },
+    {
+      "mismatch_id": "substitution_source_pairing_bug",
+      "paper_standardization_recommendation": "Use pair-set definitions that are explicit and order-invariant (all-pairs or seeded one-to-one).",
+      "where_a": "src/sow/v2/causal/patching.py",
+      "where_b": "results/parquet/patching_results.parquet",
+      "why_it_matters": "Source trajectory is selected by first key per model, so all failing prompts for a model are patched from one stable-correct source; results become row-order sensitive."
+    },
+    {
+      "mismatch_id": "causal_panel_reference_drift",
+      "paper_standardization_recommendation": "Update in-text references to panel (c) for substitution.",
+      "where_a": "paper/final_paper/paper_publish_v3.tex:446",
+      "where_b": "paper/final_paper/paper_publish_v3.tex:463-467",
+      "why_it_matters": "Text references substitution as panel (b) while caption assigns substitution to panel (c)."
+    },
+    {
+      "mismatch_id": "competitor_reselection_across_layers",
+      "paper_standardization_recommendation": "State competitor mode explicitly and mark competitor-sensitivity as blocked pending extra inference.",
+      "where_a": "src/sow/v2/metrics.py",
+      "where_b": "scripts/audit/substitution_rederive.py (blocked modes)",
+      "why_it_matters": "Cached tracing scalars embed one competitor mode; alternate competitor definitions cannot be recomputed for substitution without additional cached logits."
+    }
+  ],
+  "definitions": [
+    {
+      "code": "def _competitor_from_logits(candidate_logits: Mapping[str, Any], *, correct_key: str) -> str:\n    best = None\n    best_val = None\n    for c in CHOICES:\n        if c == correct_key:\n            continue\n        v = float(candidate_logits.get(c, float(\"-inf\")))\n        if (best is None) or (v > float(best_val)):\n            best = c\n            best_val = v\n    return str(best) if best is not None else \"A\"\n",
+      "interpretation": "k*(l) is reselected at each layer as argmax over non-correct options from per-layer candidate logits; it can change with layer.",
+      "name": "closest_competitor_k_star_l",
+      "source_line_end": 45,
+      "source_line_start": 34,
+      "source_path": "src/sow/v2/metrics.py",
+      "variable_names": [
+        "comp",
+        "competitor",
+        "correct_key",
+        "candidate_logits"
+      ]
+    },
+    {
+      "code": "        comp = _competitor_from_logits(logits, correct_key=ck)\n\n        delta = float(logits.get(ck, 0.0)) - float(logits.get(comp, 0.0))\n        p_correct = float(probs[ck])\n        p_comp = float(probs[comp])\n        prob_margin = p_correct - p_comp",
+      "interpretation": "delta(l) is correct-choice logit minus current competitor logit, computed at every layer from candidate logits.",
+      "name": "delta_l",
+      "source_line_end": 91,
+      "source_line_start": 86,
+      "source_path": "src/sow/v2/metrics.py",
+      "variable_names": [
+        "delta",
+        "ck",
+        "comp"
+      ]
+    },
+    {
+      "code": "LETTER_OPTIONS = [\"A\", \"B\", \"C\", \"D\"]\n\n# Minimal, fixed variant set (see docs/IMPLEMENTATION_SPEC.md Stage 5).\nVARIANT_TEMPLATES = [\"{L}\", \" {L}\", \"\\n{L}\", \"({L})\", \"{L}.\", \"{L}:\"]\n\n\ndef _normalize_piece_for_bucket(piece: str) -> str:\n    # Spec: Unicode NFKC, strip whitespace, uppercase, remove surrounding punctuation.",
+      "interpretation": "Bucketed option-token set includes bare, leading-space, newline, parenthesized, dot, and colon variants for A/B/C/D.",
+      "name": "option_token_set_variants",
+      "source_line_end": 21,
+      "source_line_start": 14,
+      "source_path": "src/sow/token_buckets/option_buckets.py",
+      "variable_names": [
+        "VARIANT_TEMPLATES",
+        "LETTER_OPTIONS",
+        "build_buckets_from_tokenizer"
+      ]
+    },
+    {
+      "code": "\n    late_flip_count = _late_flips(delta, tail_len=int(tail_len))\n    tail_delta = delta[max(0, delta.size - int(tail_len)) :] if delta.size else np.asarray([], dtype=np.float64)\n    min_abs_delta_tail = float(np.min(np.abs(tail_delta))) if tail_delta.size else 0.0\n    _ = drift  # drift is retained as a reported diagnostic but not a hard stability gate.\n\n    stable = (late_flip_count <= int(max_late_flip_count)) and (min_abs_delta_tail >= float(min_abs_delta_tail_floor))\n    if is_correct and stable:\n        return \"stable_correct\"\n    if (not is_correct) and stable:\n        return \"stable_wrong\"\n    if is_correct:\n        return \"unstable_correct\"\n    return \"unstable_wrong\"",
+      "interpretation": "Stability is defined on tail sign-flip count and minimum absolute delta in tail window; it is computed on delta/sign(delta), not on drift.",
+      "name": "trajectory_stability",
+      "source_line_end": 69,
+      "source_line_start": 56,
+      "source_path": "src/sow/v2/trajectory_types.py",
+      "variable_names": [
+        "tail_len",
+        "max_late_flip_count",
+        "min_abs_delta_tail_floor",
+        "late_flip_count",
+        "min_abs_delta_tail"
+      ]
+    },
+    {
+      "code": "\n                    logits_in = _logits_from_hidden(mdl, h_in)\n                    delta_in = _delta_from_logits(logits=logits_in, correct_tid=c_tid, competitor_tid=k_tid)\n                    logits_after_attn = _logits_from_hidden(mdl, h_in + attn_vec)\n                    delta_after_attn = _delta_from_logits(logits=logits_after_attn, correct_tid=c_tid, competitor_tid=k_tid)\n                    s_attn = float(delta_after_attn - delta_in)\n\n                    logits_after_mlp = _logits_from_hidden(mdl, h_in + attn_vec + mlp_vec)\n                    delta_after_mlp = _delta_from_logits(logits=logits_after_mlp, correct_tid=c_tid, competitor_tid=k_tid)\n                    s_mlp = float(delta_after_mlp - delta_after_attn)\n\n                    scalar_rows.append(",
+      "interpretation": "s_attn is margin change from adding attention update to h_in; s_mlp is incremental margin change from adding MLP update after attention.",
+      "name": "s_attn_s_mlp",
+      "source_line_end": 332,
+      "source_line_start": 321,
+      "source_path": "scripts/v2/07_run_tracing.py",
+      "variable_names": [
+        "h_in",
+        "attn_vec",
+        "mlp_vec",
+        "delta_in",
+        "delta_after_attn",
+        "delta_after_mlp",
+        "s_attn",
+        "s_mlp"
+      ]
+    },
+    {
+      "code": "\n        patched = fail_drift[:n].copy()\n        for i in range(n):\n            if int(fail_li[i]) in target:\n                # Remove failing component contribution, add success component contribution\n                patched[i] = fail_drift[i] - fail_comp[i] + succ_comp[i]\n\n        start = float(fail_delta[0])\n        trace = np.zeros((n + 1,), dtype=np.float64)\n        trace[0] = start\n        for i in range(n):\n            trace[i + 1] = trace[i] + patched[i]\n\n        rows.append(\n            {\n                \"model_id\": str(mid),\n                \"prompt_uid_fail\": str(uid),\n                \"prompt_uid_success\": str(success_key[1]),",
+      "interpretation": "At substituted layers drift is fail_drift - fail_component + success_component; patched delta trajectory is reconstructed by cumulative sum from failing start delta.",
+      "name": "substitution_recurrence",
+      "source_line_end": 71,
+      "source_line_start": 54,
+      "source_path": "src/sow/v2/causal/patching.py",
+      "variable_names": [
+        "fail_drift",
+        "fail_comp",
+        "succ_comp",
+        "patched",
+        "trace"
+      ]
+    }
+  ]
+}

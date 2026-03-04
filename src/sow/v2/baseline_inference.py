@@ -13,6 +13,7 @@ import numpy as np
 from sow.io_jsonl import iter_jsonl
 from sow.judging.deterministic_parser import parse_choice
 from sow.token_buckets.option_buckets import build_buckets_from_tokenizer
+from sow.v2.inference_firewall import assert_inference_allowed
 from sow.v2.model_nuances import apply_tokenizer_nuance, assert_transformers_version_floor
 
 
@@ -369,6 +370,7 @@ def run_baseline_for_model(
     deterministic_seed: int = 12345,
     thermal_check_fn: Callable[[], Mapping[str, Any]] | None = None,
 ) -> Dict[str, Any]:
+    assert_inference_allowed("src/sow/v2/baseline_inference.py::run_baseline_for_model")
     import torch
     import transformers
     from transformers import AutoModelForCausalLM, AutoTokenizer

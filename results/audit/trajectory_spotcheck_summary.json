@@ -1,0 +1,222 @@
+{
+  "competitor_match_rate_bucket_vs_tracing": 0.5827814569536424,
+  "decomposition_accounting_check": {
+    "max_abs_drift_minus_sattn_smlp": 12.28125,
+    "mean_abs_drift_minus_sattn_smlp": 1.5620719210201541,
+    "p95_abs_drift_minus_sattn_smlp": 4.181204223632813
+  },
+  "drift_identity_check": {
+    "max_abs_delta_step_minus_drift": 0.0,
+    "mean_abs_delta_step_minus_drift": 0.0,
+    "p95_abs_delta_step_minus_drift": 0.0
+  },
+  "out_csv": "/Users/shaileshrana/shape-of-wisdom/results/audit/trajectory_spotcheck_layers.csv",
+  "sampled_by_category": {
+    "stable_correct": 7,
+    "stable_wrong": 7,
+    "unstable_wrong": 6
+  },
+  "sampled_examples": [
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.91815185546875,
+      "min_abs_delta_tail": 0.97119140625,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10128",
+      "sign_flip_count": 2,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.7174072265625,
+      "min_abs_delta_tail": 0.6591796875,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10859",
+      "sign_flip_count": 2,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.571868896484375,
+      "min_abs_delta_tail": 0.9580078125,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::1235",
+      "sign_flip_count": 2,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 1.99603271484375,
+      "min_abs_delta_tail": 1.07568359375,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::12460",
+      "sign_flip_count": 2,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.2608642578125,
+      "min_abs_delta_tail": 1.0810546875,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10136",
+      "sign_flip_count": 5,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.2344970703125,
+      "min_abs_delta_tail": 0.947265625,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10191",
+      "sign_flip_count": 5,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": true,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.9184074401855469,
+      "min_abs_delta_tail": 0.380035400390625,
+      "model_id": "mistralai/Mistral-7B-Instruct-v0.3",
+      "prompt_uid": "main::plain_exam::mmlu::test::1203",
+      "sign_flip_count": 3,
+      "trajectory_type": "stable_correct"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.4172210693359375,
+      "min_abs_delta_tail": 0.8985595703125,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10355",
+      "sign_flip_count": 0,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 2.1735382080078125,
+      "min_abs_delta_tail": 0.6136474609375,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10389",
+      "sign_flip_count": 0,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 2.09820556640625,
+      "min_abs_delta_tail": 0.4345703125,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10851",
+      "sign_flip_count": 0,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.1436767578125,
+      "min_abs_delta_tail": 0.3974609375,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10374",
+      "sign_flip_count": 8,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.3905029296875,
+      "min_abs_delta_tail": 0.6884765625,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10737",
+      "sign_flip_count": 5,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.3701171875,
+      "min_abs_delta_tail": 0.80078125,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::1076",
+      "sign_flip_count": 6,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.8370388746261597,
+      "min_abs_delta_tail": 0.33856201171875,
+      "model_id": "mistralai/Mistral-7B-Instruct-v0.3",
+      "prompt_uid": "main::plain_exam::mmlu::test::1666",
+      "sign_flip_count": 5,
+      "trajectory_type": "stable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 1,
+      "mean_abs_drift_last8": 1.7398910522460938,
+      "min_abs_delta_tail": 0.18701171875,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10149",
+      "sign_flip_count": 3,
+      "trajectory_type": "unstable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 2,
+      "mean_abs_drift_last8": 0.8506546020507812,
+      "min_abs_delta_tail": 0.32421875,
+      "model_id": "Qwen/Qwen2.5-7B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10484",
+      "sign_flip_count": 4,
+      "trajectory_type": "unstable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 3,
+      "mean_abs_drift_last8": 0.1976318359375,
+      "min_abs_delta_tail": 0.009765625,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10074",
+      "sign_flip_count": 12,
+      "trajectory_type": "unstable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 3,
+      "mean_abs_drift_last8": 0.18359375,
+      "min_abs_delta_tail": 0.00390625,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::10099",
+      "sign_flip_count": 10,
+      "trajectory_type": "unstable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 2,
+      "mean_abs_drift_last8": 0.3336181640625,
+      "min_abs_delta_tail": 0.17578125,
+      "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+      "prompt_uid": "main::plain_exam::mmlu::test::1099",
+      "sign_flip_count": 6,
+      "trajectory_type": "unstable_wrong"
+    },
+    {
+      "is_correct": false,
+      "late_flip_count": 0,
+      "mean_abs_drift_last8": 0.02780914306640625,
+      "min_abs_delta_tail": 0.09527587890625,
+      "model_id": "mistralai/Mistral-7B-Instruct-v0.3",
+      "prompt_uid": "main::plain_exam::mmlu::test::2173",
+      "sign_flip_count": 2,
+      "trajectory_type": "unstable_wrong"
+    }
+  ],
+  "sampled_prompt_count": 20
+}

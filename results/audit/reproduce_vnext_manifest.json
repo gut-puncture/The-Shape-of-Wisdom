@@ -1,0 +1,113 @@
+{
+  "git_commit": "2ba52533bbd57b639df0684ccb7984fa95c9001f",
+  "inference_firewall_env": "0",
+  "paper_status": {
+    "attempted": false,
+    "built": false,
+    "reason": "skipped"
+  },
+  "pass": true,
+  "steps": [
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/extract_definitions.py",
+        "--out-json",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/definitions_extracted.json"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/check_artifacts_integrity.py",
+        "--parquet-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/parquet",
+        "--reports-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/reports",
+        "--out-json",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/artifact_integrity.json"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/spotcheck_trajectories.py",
+        "--parquet-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/parquet",
+        "--out-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit",
+        "--n-prompts",
+        "20",
+        "--seed",
+        "12345"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/substitution_rederive.py",
+        "--parquet-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/parquet",
+        "--spans-jsonl",
+        "/Users/shaileshrana/shape-of-wisdom/results/spans.jsonl",
+        "--out-csv",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_pairs_vnext.csv",
+        "--out-json",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_rederive_diagnostics.json",
+        "--seed",
+        "12345"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/substitution_sensitivity.py",
+        "--pairs-csv",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_pairs_vnext.csv",
+        "--out-csv",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/substitution_sensitivity_summary.csv"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/drift_reconstruction_audit.py",
+        "--parquet-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/parquet",
+        "--out-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit",
+        "--figures-dir",
+        "/Users/shaileshrana/shape-of-wisdom/figures_vNext"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/contradiction_memo.py",
+        "--out-json",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit/contradiction_memo.json"
+      ],
+      "returncode": 0
+    },
+    {
+      "cmd": [
+        "/opt/homebrew/bin/python3",
+        "scripts/audit/generate_figures_vnext.py",
+        "--parquet-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/parquet",
+        "--audit-dir",
+        "/Users/shaileshrana/shape-of-wisdom/results/audit",
+        "--output-dir",
+        "/Users/shaileshrana/shape-of-wisdom/figures_vNext",
+        "--strict"
+      ],
+      "returncode": 0
+    }
+  ]
+}
