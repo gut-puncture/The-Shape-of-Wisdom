@@ -1,0 +1,13 @@
+scope,x_metric,y_metric,n,spearman_rho,missing_y_count
+pooled,boundary_occupancy_prob_010,last_flip_depth,5569,-0.4820138241864005,3431
+pooled,boundary_occupancy_prob_010,flip_count,9000,0.5546263477635553,0
+pooled,boundary_occupancy_prob_010,pooled_empirical_commitment_depth_005,4133,-0.029237256354189632,4867
+Qwen/Qwen2.5-7B-Instruct,boundary_occupancy_prob_010,last_flip_depth,2421,-0.37901288390024895,579
+Qwen/Qwen2.5-7B-Instruct,boundary_occupancy_prob_010,flip_count,3000,0.4427452725326944,0
+Qwen/Qwen2.5-7B-Instruct,boundary_occupancy_prob_010,pooled_empirical_commitment_depth_005,1543,-0.23754646863227039,1457
+meta-llama/Llama-3.1-8B-Instruct,boundary_occupancy_prob_010,last_flip_depth,1582,-0.11946523750347908,1418
+meta-llama/Llama-3.1-8B-Instruct,boundary_occupancy_prob_010,flip_count,3000,0.8017809355473858,0
+meta-llama/Llama-3.1-8B-Instruct,boundary_occupancy_prob_010,pooled_empirical_commitment_depth_005,1163,0.6405837245486329,1837
+mistralai/Mistral-7B-Instruct-v0.3,boundary_occupancy_prob_010,last_flip_depth,1566,,1434
+mistralai/Mistral-7B-Instruct-v0.3,boundary_occupancy_prob_010,flip_count,3000,0.22019360253556153,0
+mistralai/Mistral-7B-Instruct-v0.3,boundary_occupancy_prob_010,pooled_empirical_commitment_depth_005,1427,0.12313548031794251,1573

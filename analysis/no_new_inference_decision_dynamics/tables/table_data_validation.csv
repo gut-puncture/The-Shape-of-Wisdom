@@ -1,0 +1,31 @@
+scope,metric,actual,expected,pass,details
+global,canonical_rows,276000.0,276000.0,1,
+global,manifest_rows,3000.0,3000.0,1,
+global,manifest_prompt_uid_duplicates,0.0,0.0,1,
+global,canonical_duplicate_rows,0.0,0.0,1,
+global,missing_values_total,0.0,0.0,1,question may be empty string but not NA
+Qwen/Qwen2.5-7B-Instruct,prompt_count,3000.0,3000.0,1,
+Qwen/Qwen2.5-7B-Instruct,row_count,84000.0,84000.0,1,
+Qwen/Qwen2.5-7B-Instruct,min_layer_index,0.0,0.0,1,
+Qwen/Qwen2.5-7B-Instruct,max_layer_index,27.0,27.0,1,
+meta-llama/Llama-3.1-8B-Instruct,prompt_count,3000.0,3000.0,1,
+meta-llama/Llama-3.1-8B-Instruct,row_count,96000.0,96000.0,1,
+meta-llama/Llama-3.1-8B-Instruct,min_layer_index,0.0,0.0,1,
+meta-llama/Llama-3.1-8B-Instruct,max_layer_index,31.0,31.0,1,
+mistralai/Mistral-7B-Instruct-v0.3,prompt_count,3000.0,3000.0,1,
+mistralai/Mistral-7B-Instruct-v0.3,row_count,96000.0,96000.0,1,
+mistralai/Mistral-7B-Instruct-v0.3,min_layer_index,0.0,0.0,1,
+mistralai/Mistral-7B-Instruct-v0.3,max_layer_index,31.0,31.0,1,
+global,complete_layer_coverage,1.0,1.0,1,
+global,probability_sum_max_abs_error,4.440892098500626e-16,0.0,1,
+global,decision_metrics_correct_key_mismatch,0.0,0.0,1,
+global,decision_metrics_p_correct_max_abs_error,4.440892098500626e-16,0.0,1,
+global,final_predicted_option_defined,1.0,1.0,1,
+global,top_tied_rows,117.0,0.0,1,"reported for sensitivity, not a failure"
+global,competitor_tied_rows,96.0,0.0,1,"reported for sensitivity, not a failure"
+global,final_argmax_tied_trajectories,18.0,0.0,1,"reported for sensitivity, not a failure"
+global,state_reconstruction_max_abs_error,1.0658141036401503e-14,0.0,1,
+global,state_reconstruction_mean_abs_error,1.0843158192700291e-16,0.0,1,
+global,p_correct_sigmoid_delta_soft_max_abs_error,5.551115123125783e-16,0.0,1,
+global,q_below_theta_nan_threshold_count,0.0,0.0,1,
+global,q_below_angular_threshold_count,0.0,0.0,1,

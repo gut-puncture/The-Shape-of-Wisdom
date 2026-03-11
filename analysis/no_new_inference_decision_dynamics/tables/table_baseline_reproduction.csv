@@ -1,0 +1,5 @@
+observation,scope,value,reproduced,details
+soft_margin_smoother_than_hard_margin_at_switch_layers,pooled,0.002886365282008363,True,positive means hard jumps exceed soft jumps at switch layers
+switch_rate_mid_or_earlier_peak_and_late_decline,pooled,0.39093333333333335,True,peak switch rate minus late-depth switch rate
+old_regime_unstable_last_flips_are_late,pooled,1.0,True,median old last-flip depth in old unstable group
+old_threshold_commitment_is_late,pooled,0.8888888888888888,True,median old-threshold commitment depth
