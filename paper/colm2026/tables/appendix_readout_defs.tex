@@ -1,0 +1,9 @@
+\begin{tabularx}{\linewidth}{@{}lXl@{}}
+\toprule
+Readout & Continuation surface & Normalization \\
+\midrule
+semantic\_exact & Exact option text after \texttt{"Final answer:"}, e.g. \texttt{"photosynthesis"} & Mean log-probability \\
+templated\_semantic & Literal continuation \texttt{"The answer is \{option\_text\}"} & Mean log-probability \\
+letter\_label & Bare answer letter after \texttt{"Final answer:"}, e.g. \texttt{"A"} & Mean log-probability \\
+\bottomrule
+\end{tabularx}

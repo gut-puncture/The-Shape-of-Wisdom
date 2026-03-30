@@ -1,0 +1,12 @@
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\textbf{Aspect} & \textbf{Configuration}\\
+\midrule
+Models & Nine instruction-tuned checkpoints from Qwen 2.5 Instruct (1.5B, 3B, 7B), Gemma 2 IT (2B, 9B, 27B), and Llama Instruct (3.2 1B, 3.2 3B, 3.1 8B). \\
+Dataset slice & ARC-Challenge (195), CommonsenseQA (794), and MMLU Abstract Algebra (11). \\
+Prompting & Model-specific chat or raw prompt templates. Every prompt ends with the literal suffix \texttt{"Final answer:"}. \\
+Readouts & Primary: the exact option text after \texttt{"Final answer:"}, for example \texttt{"photosynthesis"}. Controls: the literal continuation \texttt{"The answer is \{option\_text\}"} and the bare answer letter, such as \texttt{"A"}. \\
+Permutations & Identity ordering and reverse ordering, kept paired on the same example subset. \\
+Primary rule & For each model-dataset cell, report the median commitment lag $\Delta_{\mathrm{margin}} = d_{\mathrm{margin}} - d_{\mathrm{id}}$ with a grouped-bootstrap 95\% confidence interval; the cell is positive iff the lower confidence bound is greater than zero. \\
+\bottomrule
+\end{tabularx}

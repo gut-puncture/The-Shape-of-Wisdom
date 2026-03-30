@@ -1,0 +1,7 @@
+\section{Conclusion}
+
+The paper's claim is simple and deliberately scoped. In the setting we study, instruction-tuned models often know which answers are still possible before they have fully settled on the one they will finally say. We show that pattern by ending each prompt with \texttt{"Final answer: "} and tracking how the scores of exact answer continuations change across model depth.
+
+The evidence is consistent across levels of analysis. The flagship pooled curves show a large gap between plausibility and commitment. Every evaluable ARC-Challenge and CommonsenseQA model-dataset cell is positive under the preregistered primary rule. The prompt-level examples show the same separation in concrete trajectories. The answer-format controls matter because they show that this result is not automatic: changing the continuation string can change both coverage and winners.
+
+The result does not yet explain why the gap appears, and it should not be overgeneralized beyond this panel and benchmark slice. But it does support a useful empirical distinction for future work. The moment when a model finally says an answer can come much later than the moment when that answer first becomes one of the answers the model already treats as plausible.

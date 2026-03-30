@@ -1,0 +1,39 @@
+\section{Setup and measurement}
+
+Table~\ref{tab:design-summary} summarizes the experiment design. The model panel contains nine instruction-tuned checkpoints from three families: Qwen 2.5 Instruct~\citep{qwen25card}, Gemma 2 IT~\citep{gemma2card}, and Llama Instruct~\citep{llama3herd}. The dataset slice contains \ArcPromptCount{} ARC-Challenge prompts~\citep{clark2018arc}, \CsqaPromptCount{} CommonsenseQA prompts~\citep{talmor2019commonsenseqa}, and the full \MmluPromptCount{}-question MMLU abstract-algebra validation slice~\citep{hendrycks2021mmlu}. The MMLU count is small because this benchmark slice itself is small in our setup; we did not drop a larger set of abstract-algebra questions.
+
+For every model, we render a normal multiple-choice prompt and end it with the literal suffix \texttt{"Final answer: "}. After that suffix, we score three possible continuations:
+\begin{itemize}[leftmargin=1.2em, itemsep=0.2em, topsep=0.35em]
+\item the exact option text itself, such as \texttt{"photosynthesis"};
+\item the literal template \texttt{"The answer is \{option\_text\}"};
+\item the bare answer letter, such as \texttt{"A"}.
+\end{itemize}
+The exact option-text path is the preregistered primary analysis. The other two are controls. They keep the same prompt and the same answer choices, but they change what exact continuation string we score after \texttt{"Final answer: "}.
+
+\begin{table*}[t]
+\centering
+\small
+\input{tables/table1_design_summary}
+\caption{\textbf{Reader-facing summary of the experiment design.} The main question stays fixed throughout the paper: scoring the exact option text is primary, the two alternative continuation strings are controls, and identity versus reverse answer order is kept paired on the same example subset.}
+\label{tab:design-summary}
+\end{table*}
+
+We score these continuations under teacher forcing, one layer at a time. In plain terms, we do not let the model free-generate a long answer. We stop at \texttt{"Final answer: "} and ask how much probability the network assigns to each allowed continuation at each layer. Let $p_\ell(o)$ denote the normalized probability of option $o$ at layer $\ell$. We sort options by $p_\ell(o)$ and define a plausible answer set $C_\ell$ as the smallest prefix whose cumulative probability reaches $\tau = 0.8$. If the cutoff lands inside a numerical tie, we mark that layer as ambiguous instead of forcing an arbitrary choice. In plain language, $C_\ell$ is the small set of answers that the model still treats as seriously possible at layer $\ell$.
+
+Our primary anchor is the \emph{eventual answer}, meaning the option that wins at the final layer under the primary readout. Denote it by $o^\star$. We then track three depth events:
+\begin{align}
+d_{\mathrm{id}} &= \min \{\ell : o^\star \in C_\ell\}, \\
+d_{\mathrm{top1}} &= \min \{\ell : o^\star \text{ is the unique top-1 option at every later layer}\}, \\
+d_{\mathrm{margin}} &= \min \{\ell : p_t(o^\star) - p_t(o_{(2)}) \ge \delta \text{ for all } t \ge \ell\},
+\end{align}
+where $o_{(2)}$ is the runner-up option and $\delta = 0.15$. In words, $d_{\mathrm{id}}$ is when the eventual answer first enters the plausible set, $d_{\mathrm{top1}}$ is when it becomes the unique top prediction and stays there, and $d_{\mathrm{margin}}$ is when it opens a stable margin over the runner-up and never loses it.
+
+The paper's main depth-gap statistic is
+\begin{align}
+\Delta_{\mathrm{margin}} = d_{\mathrm{margin}} - d_{\mathrm{id}}.
+\end{align}
+This quantity asks a simple question: once the eventual answer is already in the plausible set, how many layers does the model still take before it clearly commits? A case is \emph{evaluable} for the primary statistic when both $d_{\mathrm{id}}$ and $d_{\mathrm{margin}}$ are defined.
+
+The preregistered primary rule is applied separately to each model-dataset cell on the primary path (\texttt{semantic\_exact}, identity ordering). For each cell we report the median of $\Delta_{\mathrm{margin}}$ over valid examples and estimate a grouped-bootstrap 95\% confidence interval by resampling example IDs. A cell is positive if the observed median is greater than zero and the lower confidence bound is also greater than zero. We also report two additional summaries. The first is a robustness check based on the fraction of valid examples with positive lag. The second repeats the analysis while anchoring on the gold answer instead of the model's final winner. These summaries help interpret the result, but they do not determine the paper's main decision rule.
+
+This setup intentionally differs from probe-based approaches such as the tuned lens~\citep{belrose2023tuned}. We do not train a separate probe to guess the future answer from hidden states. Instead, we keep the task fixed and score the same answer strings the model is being asked to continue with.

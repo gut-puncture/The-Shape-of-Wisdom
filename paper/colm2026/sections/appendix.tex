@@ -1,0 +1,59 @@
+\section{Supplementary material}
+
+\subsection{Reproducibility statement}
+
+This manuscript is generated from a single merged run, \texttt{\MergedRunId}, with run-scoped manifests, QC summaries, bootstrap outputs, and figure/table provenance checked into the paper workspace. All numeric claims in the paper are generated from those artifacts rather than entered by hand. The merged run contains \PreparedExampleCount{} prepared prompts, \ScoreRowCount{} scored units, \MetricRowCount{} metric rows, and \TokenAuditCount{} token audits.
+
+\subsection*{Ethics statement}
+
+This study analyzes public benchmark questions using open-weight language models and does not involve human subjects, personal data, or deployment to end users. The main risk is analytical overclaiming: layerwise statistics can be mistaken for a complete mechanistic explanation when they are only an operational measurement. We mitigate that risk by keeping the claim narrow, preregistering the primary rule, preserving anomaly logs, and explicitly reporting the underpowered status of the MMLU slice.
+
+\subsection*{AI-use disclosure}
+
+AI-use disclosure. The authors used AI-assisted tools during the project lifecycle: ChatGPT for brainstorming and experimental design iteration, Codex for implementation assistance, and Claude Opus for drafting and formatting portions of the manuscript and LaTeX source. All scientific decisions, experiments, analyses, code review, result verification, and final manuscript editing were performed and approved by the human authors, who take full responsibility for the paper’s contents.
+
+\subsection{Model registry}
+
+\begin{center}
+\small
+\input{tables/appendix_model_registry}
+\captionof{table}{\textbf{Model registry used in the paper.} Short repository names and 12-character revision prefixes are shown for readability; the full pinned revision hashes are preserved in the released provenance manifest.}
+\label{tab:model-registry}
+\end{center}
+
+\subsection{Full primary positivity table}
+
+\begin{center}
+\scriptsize
+\input{tables/appendix_full_positivity}
+\captionof{table}{\textbf{Full cell-level primary-rule results.} The primary decision is evaluated separately for each model-dataset cell on the semantic-exact identity path.}
+\label{tab:full-positivity}
+\end{center}
+
+\subsection{Selection and QC details}
+
+\begin{center}
+\includegraphics[width=\linewidth]{appendix_selection_profile.pdf}
+\captionof{figure}{\textbf{The paper slice spans a wide range of selected prompt lengths.} The figure shows the selected-example question-length profile for each dataset together with the chosen option-count markers. MMLU is exhausted because the abstract-algebra validation slice contains only \MmluPromptCount{} prompts.}
+\label{fig:selection}
+\end{center}
+
+\begin{center}
+\includegraphics[width=\columnwidth]{appendix_qc_anomalies.pdf}
+\captionof{figure}{\textbf{QC-visible anomalies are logged rather than hidden.} These counts come directly from the merged run's QC summary. They motivate caution, but they do not arise from silent exclusion or failed pairing.}
+\label{fig:qc}
+\end{center}
+
+\begin{center}
+\small
+\input{tables/appendix_qc_summary}
+\captionof{table}{\textbf{QC summary for the merged run.} The run completes with zero failure rows and zero unpaired rows while still surfacing tokenization and option-surface anomalies.}
+\label{tab:qc-summary}
+\end{center}
+
+\begin{center}
+\small
+\input{tables/appendix_readout_defs}
+\captionof{table}{\textbf{Readout definitions used in the paper.} The controls intentionally differ in continuation surface while keeping the rest of the setup fixed.}
+\label{tab:readout-defs}
+\end{center}

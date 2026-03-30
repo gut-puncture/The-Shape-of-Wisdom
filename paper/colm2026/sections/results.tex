@@ -1,0 +1,26 @@
+\section{Main result: early plausibility, late commitment}
+
+Figure~\ref{fig:flagship} is the central result of the paper. The two cumulative curves are far apart. By 20\% of normalized depth, the eventual answer is already plausible for \FlagshipTwentyPlausiblePct{} of evaluable cases, but it is already committed for only \FlagshipTwentyCommittedPct{}. The gap stays large through the middle of the network. At 50\% of normalized depth, \FlagshipFiftyPlausiblePct{} of evaluable cases have already admitted the eventual answer into the plausible set, while only \FlagshipFiftyCommittedPct{} have already reached stable commitment. In raw layer units, the pooled grouped-bootstrap median commitment lag is \PooledLagMedian{} layers with a 95\% confidence interval of [\PooledLagCILow{}, \PooledLagCIHigh{}].
+
+The dataset panels show that this is not coming from just one benchmark. ARC-Challenge and CommonsenseQA both show the same broad shape: plausibility rises early, while commitment stays much lower until later in depth. The MMLU abstract-algebra panel points in the same direction in the cases we can evaluate, but it is much noisier because the whole slice contains only \MmluPromptCount{} questions. So ARC-Challenge and CommonsenseQA carry most of the evidence, while MMLU is better read as a small supporting slice than as a decisive test on its own.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figure2_primary_forest_plot.pdf}
+\caption{\textbf{Every evaluable ARC-Challenge and CommonsenseQA cell is positive under the preregistered primary rule.} Each point is the cell-level median commitment lag $\Delta_{\mathrm{margin}}$ in raw layer units for the primary analysis path, and each horizontal interval is a grouped-bootstrap 95\% confidence interval. All evaluated ARC-Challenge and CommonsenseQA cells are positive. The MMLU abstract-algebra slice contributes several \emph{insufficient n} cells because the slice itself contains only 11 questions and the preregistration requires at least ten valid examples per model-dataset cell.}
+\label{fig:forest}
+\end{figure*}
+
+Figure~\ref{fig:forest} and Table~\ref{tab:primary-summary} translate the pooled picture into the preregistered cell-level decision rule. All \ArcCsqaPositiveCells{} evaluable ARC-Challenge and CommonsenseQA cells are positive, and there are no evaluated negatives. Across all three datasets, \OverallPrimaryPositiveCells{} cells are positive and \OverallPrimaryInsufficientCells{} are insufficient. Within MMLU specifically, \MmluPositiveCells{} cells are positive and \MmluInsufficientCells{} are insufficient. That is what we would expect from a very small benchmark slice under a minimum-valid-example rule.
+
+\begin{table}[t]
+\centering
+\small
+\input{tables/table2_primary_summary}
+\caption{\textbf{Primary-rule summary by dataset.} ARC-Challenge and CommonsenseQA are positive in every evaluable model-dataset cell. The only non-positive outcomes are \emph{insufficient n} cells from the small MMLU abstract algebra slice.}
+\label{tab:primary-summary}
+\end{table}
+
+The family-level summaries tell the same story. Qwen contributes eight positive primary cells, Gemma contributes seven, and Llama contributes six. In every family, the missing positives are insufficient MMLU cells rather than evaluated negatives. So the result is broad across the chosen instruct-model panel, even though the exact lag size still varies with model depth and dataset difficulty.
+
+\FloatBarrier

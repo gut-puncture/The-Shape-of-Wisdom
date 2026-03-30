@@ -1,0 +1,69 @@
+{
+  "merged_run_id": "paper_merged_9x1000_20260330T122258Z",
+  "source_runs": [
+    "paper_final_6x1000_20260330T071007Z",
+    "paper_remaining_3x1000_20260330T103703Z"
+  ],
+  "source_models": [
+    "gemma2_27b_it",
+    "gemma2_2b_it",
+    "gemma2_9b_it",
+    "llama3p1_8b_instruct",
+    "llama3p2_1b_instruct",
+    "llama3p2_3b_instruct",
+    "qwen2p5_1p5b_instruct",
+    "qwen2p5_3b_instruct",
+    "qwen2p5_7b_instruct"
+  ],
+  "config_diff_policy": {
+    "allowed_diff_keys": [
+      "runtime.yaml"
+    ],
+    "diff_keys": [
+      "runtime.yaml"
+    ],
+    "note": "runtime differs because second panel was added after first run; datasets/readouts/permutations and prepared selection are identical"
+  },
+  "selection_manifest_sha256": "494a11a18eff4d58428c77035379cdd9556a2427822047daeabab44fb05d9e17",
+  "input_hashes": {
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/run_manifest.json": "8e9a2bf0308f1264b48c8e92827a132649d5f5bc0d85d5ebfc76bde6b6027d24",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/metrics/primary_metrics.jsonl": "0f75b2e403abd942ac1fafe3fa6b70324693a5eba8b8dda616fed4bab4386b31",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/metrics/score_manifest.jsonl": "e71d9068dd7548e9ed0e8fdab369363cb2061c12ad97f42d2991f4b9a540802d",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/stats/bootstrap_summary.json": "4c2ebe83070ab7c1d0cf44d90c51a5f5507ff0da1d3c5a5f7b6301a0cb96dfaf",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/stats/model_dataset_positivity.json": "f71db129123f290f52fcefca1521d31087c44c448cbb91a6b0d86e2af4bbb7f9",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/stats/family_positivity_summary.json": "05108d1f16992a74caa3d4a289a2c0b5383876021c833e9293d90696f18b0807",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/qc/qc_summary.json": "214d0804332b6e2e564a1074a95df21691e3b567bf7e98ab76bd9be923467177",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/prepared_data/canonical_examples.jsonl": "6017c78e99c65a4ded898567128cb34c6b040ee23c1be7417f04357dc2f8e27b",
+    "outputs/runs/paper_merged_9x1000_20260330T122258Z/manifests/prepared_selection_manifest.json": "7d99cf0891611da9431d198ed84f0150eb6949a25585b83a339fcf67233f0b1b",
+    "configs/metrics.yaml": "ec488e40edaab1fff74206d97305f91744bc4126df4493ee0b41965a9f886b55",
+    "configs/models.yaml": "7bd5e9033e6f5ca2878cbe51e704b26aff2d604aabc1e2aa971d175a60161c6a",
+    "configs/readouts.yaml": "dde20094a684f008eb86cb0575961122f4e9f86441ee404a7a46700d86b19c2d",
+    "configs/prompts.yaml": "b45106ea023588a5fecaa4eec968080111865342d0b1657cf8f11a556456b42c",
+    "configs/controls.yaml": "a270322f9d0a407c129c3dd3b0eb8299f6f0433893c39ca4ba0cda3752525a7c"
+  },
+  "generated_hashes": {
+    "paper/colm2026/figures/appendix_qc_anomalies.pdf": "89e2923b481809b6dad1db8158a4c8f666ab05dfea67e2a81bd21966c4196c03",
+    "paper/colm2026/figures/appendix_selection_profile.pdf": "4ef5ee0f57db4cce8a1c5f3585f76144c238049427c76c9233c766d2cd7eef7d",
+    "paper/colm2026/figures/figure1_flagship_plausibility_commitment.pdf": "38f99791e5946a65195cdbca7d7a545da6dae4ddcb5eae3da426f65b409897f4",
+    "paper/colm2026/figures/figure2_primary_forest_plot.pdf": "69bf69ca014fad5aa880ee61577320dcd0f78cae89f70843ba6075afae44ceae",
+    "paper/colm2026/figures/figure3_control_readout_comparison.pdf": "9f696ce38019bfe8adebe624de5e8a071fa701ca46669e013a073352c87113dd",
+    "paper/colm2026/figures/figure4_prompt_level_exemplars.pdf": "2c5ed236d6cd83954d8236a8edfcd2cd37acdbde6782fb27d15f4d18e0e698bd",
+    "paper/colm2026/generated/paper_numbers.tex": "3bfa4196ff0f3eb977157394a15659eb8fd4072831417e39e2881dbd404974dd",
+    "paper/colm2026/tables/appendix_full_positivity.tex": "1e2e54cef12bcec9d1e92fc8a6a64f7d37c3004107fe04d79acdac42f8134dc8",
+    "paper/colm2026/tables/appendix_model_registry.tex": "beea070c0b0c0ce944aa3e4abaaa598f4752a890050f92a9254e73a1a72a131c",
+    "paper/colm2026/tables/appendix_qc_summary.tex": "29cf37005c7366aba5cdf05dbf7ee6552ec9b6cc61af0e6bbe27aac9299c23a9",
+    "paper/colm2026/tables/appendix_readout_defs.tex": "0964476c07a15c6796bf8ec445b8881664c0a95643b6c8c5d3f584efd03157b4",
+    "paper/colm2026/tables/table1_design_summary.tex": "561e144d404895424d5ad698145419193ff6a37cd55b1475a1e86e1cff89115a",
+    "paper/colm2026/tables/table2_primary_summary.tex": "8f8e0eb79e2be9be32ead93949297252132584bead503f247fffdfff8d197c74"
+  },
+  "summary": {
+    "prepared_examples": 1000,
+    "score_rows": 54000,
+    "metric_rows": 54000,
+    "token_audits": 258876,
+    "primary_positive_cells": 21,
+    "primary_evaluable_cells": 21,
+    "flagship_20pct_plausible": 0.7214080262977675,
+    "flagship_20pct_committed": 0.04273387207231886
+  }
+}

@@ -1,0 +1,62 @@
+\documentclass{article}
+\usepackage[submission]{colm2026_conference}
+
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{placeins}
+\usepackage{xcolor}
+\usepackage{lineno}
+
+\input{math_commands}
+\input{generated/paper_numbers}
+
+\graphicspath{{figures/}}
+
+\definecolor{darkblue}{rgb}{0, 0, 0.5}
+\hypersetup{colorlinks=true, citecolor=darkblue, linkcolor=darkblue, urlcolor=darkblue}
+
+\title{When Models Commit: Candidate Formation and Winner Isolation Across Model Depth}
+\author{Anonymous Authors}
+
+\begin{document}
+
+\ifcolmsubmission
+\linenumbers
+\fi
+
+\maketitle
+
+\begin{abstract}
+Language models produce one final answer, but the forward pass may involve two stages before that answer appears: the model may first narrow the set of answers that still look possible, and only later commit to one winner. We study that gap in multiple-choice question answering.
+
+For each prompt, we end the rendered question with the literal suffix \texttt{"Final answer: "} and score exact continuations layer by layer. On the primary path, the continuation is the option text itself. This lets us track when the eventual answer first enters a small plausible-answer set, when it becomes the stable top prediction, and when it opens a persistent margin over the runner-up. We run the analysis on nine instruction-tuned open-weight models from the Qwen, Gemma, and Llama families on a 1{,}000-example slice of ARC-Challenge, CommonsenseQA, and the full 11-question MMLU abstract-algebra validation slice.
+
+The main pattern is clear. In the pooled primary analysis, by 20\% of normalized depth the eventual answer is already in the plausible set for \FlagshipTwentyPlausiblePct{} of evaluable cases, but stable commitment has happened in only \FlagshipTwentyCommittedPct{}. All \ArcCsqaPositiveCells{} evaluable ARC-Challenge and CommonsenseQA model-dataset cells are positive under the preregistered primary rule. The \MmluPositiveCells{} evaluable MMLU cells are also positive, but that benchmark slice is mostly underpowered because it contains only \MmluPromptCount{} questions.
+
+We also score two answer-format controls after the same prompt suffix: the literal continuation \texttt{"The answer is \{option\}"} and the answer letter alone. These controls often change both which cases are evaluable and which answer wins at the final layer, so they are useful checks on answer-format effects rather than replacements for exact option-text scoring. In the setting we study, models usually treat the eventual answer as a serious possibility well before they fully commit to it.
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/setup}
+\input{sections/results}
+\input{sections/controls}
+\input{sections/limitations}
+\input{sections/conclusion}
+
+\bibliographystyle{colm2026_conference}
+\bibliography{references}
+
+\onecolumn
+\appendix
+\input{sections/appendix}
+
+\end{document}

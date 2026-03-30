@@ -1,0 +1,18 @@
+\section{Interpretation and limits}
+
+Figure~\ref{fig:exemplars} shows what the aggregate result looks like in individual cases. Each panel plots the winner-minus-runner contrast for one semantic-exact identity example. The details differ by family and prompt, but the same broad pattern appears again and again: the eventual answer becomes plausible early, while stable commitment arrives much later and can be preceded by hesitation or reversals.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figure4_prompt_level_exemplars.pdf}
+\caption{\textbf{Prompt-level trajectories show the same pattern as the pooled figures.} Each panel plots the winner-minus-runner contrast across normalized depth for one semantic-exact identity example. The circular marker shows when the eventual answer first enters the plausible set, the triangular marker shows when it becomes stable top-1, and the square marker shows when it becomes margin-stably committed. The exact shapes vary, but the same left-to-right separation between plausibility and commitment appears at the single-case level.}
+\label{fig:exemplars}
+\end{figure*}
+
+These measurements still need to be interpreted carefully. We are not claiming that the model literally stores a human-like list of hypotheses, and we are not claiming that these curves identify a full causal circuit. Our claim is narrower. Under this prompting and scoring setup, the eventual answer often enters the plausible-answer set before it becomes stably isolated from the runner-up.
+
+The empirical scope is also narrow in three practical ways. First, the paper uses a 1{,}000-example slice rather than the full benchmark splits. Second, the panel contains only instruction-tuned open-weight models, so the claim should not be generalized to base models or closed systems. Third, MMLU abstract algebra contributes only \MmluPromptCount{} questions because that entire validation slice is tiny in this setup. That is why most of its model-dataset cells are underpowered under the preregistered minimum-valid-example rule.
+
+Those limits matter, but they do not erase the signal. The early-plausibility/late-commitment pattern appears in the pooled depth curves, in every evaluable ARC-Challenge and CommonsenseQA cell, and in the prompt-level trajectories. The controls matter here too. They show that small changes in answer format can change coverage and final winners, which is exactly why the paper keeps exact option-text scoring as the main path.
+
+\FloatBarrier
