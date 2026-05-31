@@ -1,0 +1,198 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[letterpaper,margin=0.72in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue,urlcolor=blue]{hyperref}
+\usepackage{balance}
+\usepackage{stfloats}
+
+\graphicspath{{figures/}}
+\input{generated/paper_numbers}
+
+\setlength{\columnsep}{0.24in}
+\setlength{\textfloatsep}{7pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\captionsetup{font=small,labelfont=bf}
+\raggedbottom
+\emergencystretch=1em
+
+\title{\vspace{-1.0em}\textbf{The Shape of Wisdom: Decision Trajectories in Language Models}}
+\author{Shailesh Rana\\Independent Researcher}
+\date{}
+
+\begin{document}
+
+\twocolumn[
+\begin{@twocolumnfalse}
+\maketitle
+\vspace{-1.4em}
+\begin{center}
+\begin{minipage}{0.82\textwidth}
+\begin{abstract}
+Language models do not simply choose an answer at the output layer. In a 9,000-trajectory MMLU study across Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct, and Mistral-7B-Instruct-v0.3, the score of the answer moves across depth in structured ways. We describe each trajectory with three quantities: the current answer margin, the next-layer change in that margin, and the distance from a decision flip. The main empirical picture is that correctness and stability are different: the largest group is unstable-correct, not stable-correct. A traced subset then asks what moves the margin. In stable-correct cases, the average attention scalar points in the correct direction, while the average MLP scalar does not; span deletion shows that removing answer-supporting text hurts the margin and removing distractor-like text helps it. The result is not a full circuit explanation. It is a reproducible way to see which answers are settled, which remain fragile, and which measured sources move them.
+\end{abstract}
+\end{minipage}
+\end{center}
+\vspace{0.7em}
+\end{@twocolumnfalse}
+]
+
+\section{Answers are trajectories}
+
+A multiple-choice model returns one final answer, but the final token hides a process. At earlier layers, the same model can prefer another option, hover near a boundary, or move toward the correct answer and then away again. This paper studies that process directly.
+
+The central claim is simple: in the setting we study, an answer is better understood as a trajectory than as a single endpoint. We track the score of the correct option against its strongest competitor at every layer. This gives a depthwise path. Some paths settle early and stay correct. Some settle early and stay wrong. Others keep moving near the boundary until late in the network.
+
+This is useful because it separates three questions that endpoint accuracy merges together. First, where is the model now? Second, which way is the answer margin moving? Third, how close is the model to changing its preferred answer? We call these state, motion, and boundary distance. They are not hidden-state circuits. They are readout-space quantities, but they make the decision process legible.
+
+After that, we ask what explains the movement. We use a smaller, balanced subset of \TracingPromptsPerModel{} prompts per model, with \TracePromptsPerTypePerModel{} prompts from each trajectory type. For those prompts, stored traces record two numbers at each layer: how much the attention blocks move the margin, and how much the MLP blocks move it. We also use a simple input intervention: remove a marked piece of the prompt and measure whether the correct answer margin goes up or down. This is related to lens-style readout and intervention work~\citep{belrose2023tunedlens,meng2022rome,wang2023ioi,geva2022transformerffn}, but the claim here is narrower. We are not discovering a complete circuit. We are asking which measured forces move different kinds of answer trajectories.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figure1_trajectory_primitives.pdf}
+\caption{\textbf{Answer formation is a path through depth, not a final-layer event.} Panel A shows one representative prompt: the correct-vs-competitor margin crosses and recrosses the decision boundary before the final layer. Panels B--D aggregate the same objects over all trajectories. State is the current margin, motion is the next-layer margin change, and boundary distance is the absolute margin. These three views make stable and unstable trajectories readable without invoking a hidden-state circuit.}
+\label{fig:trajectory-primitives}
+\end{figure*}
+
+\section{Experiment and observables}
+
+We analyze one experiment: \ModelCount{} instruction-tuned 7--8B open-weight models answering the same \PromptCount{} four-choice MMLU prompts~\citep{hendrycks2021mmlu}. The models are Qwen2.5-7B-Instruct~\citep{qwen25}, Llama-3.1-8B-Instruct~\citep{llama3}, and Mistral-7B-Instruct-v0.3~\citep{mistral7b}. Across models, this gives \ModelPromptRows{} model-prompt trajectories and \LayerwiseRows{} layerwise decision records. Layer 0 is the output of the first transformer block, not the raw embedding.
+
+At each layer, we read out scores for the answer options A, B, C, and D at the answer position. The main margin is the score of the correct option minus the score of the strongest incorrect option at that layer. A positive margin means the correct option leads the closest competitor. A negative margin means an incorrect option leads. The drift is the change in margin from one layer to the next. The boundary distance is the absolute value of the margin, so small values mean the trajectory is close to a decision flip.
+
+The option scores come from answer-letter scores. Each prompt asks for one of A, B, C, or D. Tokenizers do not always represent the displayed letter in exactly the same way, so we group token IDs that decode to the same option letter. The score for option A, for example, is the score assigned to the model's A-token group at the answer position. This is what the table and figures use for the full trajectory panel.
+
+Table~\ref{tab:model-summary} also introduces the four trajectory-count columns. SC means stable-correct: the final answer is correct and the tail of the trajectory is stable. SW means stable-wrong. UC means unstable-correct, and UW means unstable-wrong. The ``Final acc.'' column is ordinary final-layer multiple-choice accuracy under this same answer-letter readout.
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{\setlength{\tabcolsep}{3.5pt}\input{tables/table1_model_summary}}
+\caption{\textbf{Design and coverage.} SC, SW, UC, and UW are stable-correct, stable-wrong, unstable-correct, and unstable-wrong. Final acc. is final-layer multiple-choice accuracy. Drift $R^2$ is the held-out one-step attention and MLP accounting score.}
+\label{tab:model-summary}
+\end{table}
+
+The traced subset uses a slightly simpler one-token score for the same answer letters. This is a limitation, so we keep the claims separate: the full panel establishes the trajectory regimes, and the traced subset explains margin motion inside its own scoring rule.
+
+\section{State, motion, and boundary}
+
+The first result is descriptive but important. The three quantities separate trajectory behavior in a way that a final answer cannot. State says whether the correct option currently leads. Motion says whether the next layer pushes that margin up or down. Boundary distance says how easily a small movement could change the preferred answer.
+
+This coordinate system is deliberately modest. It does not claim a physical phase transition or a discovered basin in hidden-state space. Its value is practical: it tells us whether a final answer was reached by early commitment, late movement, or persistent uncertainty. That distinction is what the rest of the paper uses.
+
+\section{Trajectory regimes}
+
+We classify each model-prompt row into four operational trajectory types. Stable-correct trajectories end correct and are stable in the tail of the network. Stable-wrong trajectories end wrong and are also stable. Unstable-correct and unstable-wrong trajectories end correct or wrong, but keep enough late movement that they fail the stability rule.
+
+These labels are conventions, not natural kinds. Their role is to make heterogeneity visible. The main surprise is how common unstable success is. In the full panel, unstable-correct is the largest group: \UnstableCorrectCount{} trajectories, or \UnstableCorrectShare{} of all model-prompt rows. Stable-correct rows account for \StableCorrectCount{} trajectories (\StableCorrectShare{}). Stable-wrong rows account for \StableWrongCount{} (\StableWrongShare{}), and unstable-wrong rows account for \UnstableWrongCount{} (\UnstableWrongShare{}).
+
+This changes what endpoint accuracy means. A correct final answer is not always a settled answer. Many correct answers remain near a changing boundary until late in depth. A wrong final answer is also not one thing: it may be a stable wrong commitment, or it may be an unstable trajectory that never recovers. The rest of the paper asks what measured sources of motion distinguish these cases.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figure2_regime_summary.pdf}
+\caption{\textbf{Trajectory regimes expose heterogeneity behind endpoint accuracy.} Stable and unstable outcomes appear in all three models, and unstable-correct is the most common category overall. The labels are operational tail-window classifications, not a claim of discontinuous phases.}
+\label{fig:regimes}
+\end{figure*}
+
+\begin{table}[t]
+\centering
+\small
+\input{tables/table2_regime_summary}
+\caption{\textbf{Trajectory counts over all model-prompt rows.} The table gives exact counts for the same operational labels shown in Figure~\ref{fig:regimes}.}
+\label{tab:regimes}
+\end{table}
+
+\section{Mechanistic accounting of motion}
+
+The next question is what moves the margin. For \TracingPromptsPerModel{} traced prompts per model, the stored traces contain one attention number and one MLP number at each layer. These are not individual heads or neurons. They are scalar summaries of how much the attention blocks and MLP blocks move the answer margin at that layer. Positive means the component pushes the correct answer farther ahead of its competitor. Negative means it pushes the correct answer closer to, or below, the competitor.
+
+The first finding is that these summaries explain a real part of the motion. On held-out prompts, a linear combination of attention and MLP scalars reconstructs layer-to-layer margin drift with $R^2=\QwenHeldoutRtwo{}$ for Qwen2.5-7B, $R^2=\LlamaHeldoutRtwo{}$ for Llama-3.1-8B, and $R^2=\MistralHeldoutRtwo{}$ for Mistral-7B-v0.3. This means the scalars are not just decorative diagnostics. They track the next-step movement of the answer margin.
+
+The second finding is more specific. In the balanced traced subset, stable-correct trajectories have a positive average attention scalar of \StableCorrectAttentionMean{}, while their average MLP scalar is \StableCorrectMlpMean{}. Stable-wrong trajectories have negative average attention and MLP scalars (\StableWrongAttentionMean{} and \StableWrongMlpMean{}). Figure~\ref{fig:mechanistic}B shows the same pattern across depth. The careful interpretation is that the traced attention scalar is the clearest positive source of stable-correct margin growth in this traced panel. It does not mean attention alone explains correctness, and it does not identify a head-level circuit.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figure3_mechanistic_accounting.pdf}
+\caption{\textbf{Attention and MLP scalars give useful one-step accounting of margin drift.} Panel A shows held-out drift reconstruction for the three traced models. Panel B shows that stable-correct trajectories have the clearest positive attention contribution, while stable-wrong trajectories do not. Panel C shows that the scalar accounting tracks drift but leaves residual error, so the result should be read as mechanistic accounting rather than full circuit discovery.}
+\label{fig:mechanistic}
+\end{figure*}
+
+\section{Span interventions and controls}
+
+A prompt span is a contiguous piece of the question text. Span deletion means removing that piece, rerunning the model on the shorter prompt, and measuring how the correct answer margin changes. This is the clearest intervention in the paper because the input really changes.
+
+We report the effect as original margin minus margin after deletion. A positive effect means the removed text had been helping the correct answer: once it is deleted, the margin falls. A negative effect means the removed text had been hurting the correct answer: once it is deleted, the margin rises. With this sign convention, evidence-labeled spans have mean effect \EvidenceSpanEffect{} logit-margin units, distractor-labeled spans have mean effect \DistractorSpanEffect{}, and neutral spans are near zero at \NeutralSpanEffect{}. The evidence--distractor separation is \EvidenceDistractorGap{} margin units on average.
+
+The controls matter because the labels are operational. If the effect were only an artifact of assigning names to spans, shuffled labels or sign-flipped controls would look similar to the observed result. They do not. The shuffled control drops to \ShuffledControlEffect{}, and the sign-flipped control is \SignFlippedControlEffect{}. The result is not that we have discovered all semantic evidence in the prompt. The narrower result is that some marked spans causally move the same margin that defines the trajectory regimes.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.82\textwidth]{figure4_span_interventions.pdf}
+\caption{\textbf{Span deletion separates operational evidence from distractors.} The plotted effect is original margin minus margin after deletion. Positive bars mean the deleted text was helping the correct answer; negative bars mean deleting the text helped the correct answer. Controls reduce or reverse the effect.}
+\label{fig:span}
+\end{figure*}
+
+\begin{table}[t]
+\centering
+\small
+\input{tables/table3_span_summary}
+\caption{\textbf{Span deletion summary.} Effects are original margin minus margin after deleting the marked prompt span.}
+\label{tab:span}
+\end{table}
+
+\section{Counterfactual accounting is conditional}
+
+The component probes also include simulated removal and substitution analyses. Removal is the simpler operation: on a chosen set of late layers, we subtract either the attention scalar or the MLP scalar from the target trajectory's drift, then replay the margin forward from the original starting point. This asks what the final margin would look like if that recorded component contribution were absent from the bookkeeping.
+
+Substitution is stronger. We take a failing target trajectory, pair it with a stable-correct source trajectory from the same model, and replace one component at a time. For attention substitution, the replay removes the target's attention scalar on layers 20--27 and inserts the source trajectory's attention scalar on those same layers. MLP substitution does the same for the MLP scalar. The final number is the change in the target's replayed final margin after this replacement.
+
+This produces a striking effect. In the all-pairs setting, where every eligible same-model source-target pair is used, attention shifts the final margin by \AllPairsAttentionShift{} on average and MLP shifts it by \AllPairsMlpShift{}. MLP is positive more often than attention: \AllPairsMlpPositive{} versus \AllPairsAttentionPositive{}. In the legacy first-source protocol, which pairs each target with the first stable-correct source for that model, the contrast is sharper: attention shifts the margin by \LegacyAttentionShift{}, while MLP shifts it by \LegacyMlpShift{}.
+
+This seems to pull against Figure~\ref{fig:mechanistic}B, but the two results answer different questions. Figure~\ref{fig:mechanistic}B is local: at each layer, what component is pushing stable-correct trajectories in the right direction? There, attention is the clearest positive average contributor. Figure~\ref{fig:counterfactuals} is a replay experiment: if we transplant a late component sequence from a stable-correct trajectory into a failing one, what happens to the final margin? There, MLP has the larger simulated effect. The combined message is that attention is more visibly aligned with stable-correct motion layer by layer, while MLP carries more of the transferable late-margin shift under this replay protocol.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figure5_counterfactual_limits.pdf}
+\caption{\textbf{Counterfactual accounting is useful but protocol-sensitive.} Substitution replaces a failing trajectory's late attention or MLP scalar sequence with the corresponding sequence from a stable-correct source trajectory. MLP substitution has the larger final-margin effect, especially under the legacy first-source pairing, but effect sizes depend on the pairing rule. Recurrence errors also grow late in depth, limiting claims based on long-horizon linearized bookkeeping.}
+\label{fig:counterfactuals}
+\end{figure*}
+
+\begin{table}[t]
+\centering
+\small
+\input{tables/table4_substitution_summary}
+\caption{\textbf{Substitution sensitivity summary.} The all-pairs setting is order-invariant; the legacy first-source setting is exactly reproducible but row-order sensitive.}
+\label{tab:substitution}
+\end{table}
+
+\section{Discussion and limits}
+
+The paper's conclusion is not just that four trajectory types exist. The useful conclusion is that final accuracy mixes together at least two different properties: whether the answer is correct, and whether the model has actually settled. In this experiment, unstable-correct trajectories are the largest group. Many correct answers are therefore not stable by our trajectory criterion. They are correct endpoints reached through continuing movement.
+
+The mechanistic analyses make that taxonomy more useful. The traced attention and MLP scalars show that margin motion can be partly accounted for layer by layer. Stable-correct trajectories have the clearest positive average attention contribution in the traced panel. Span deletion shows that changing the prompt can move the same margin in interpretable directions: removing answer-supporting text lowers it, while removing distractor-like text raises it. Counterfactual substitution then suggests that MLP contributions can have larger simulated final-margin effects, but this part is more protocol-sensitive.
+
+The takeaway is simple: the best behavior is not just getting the answer right, but getting it right and then staying settled. In these traces, that means making the correct option pull ahead earlier and keeping it ahead. The useful clues are concrete: attention gives the clearest small layer-by-layer push toward stable-correct answers, MLP replacement gives the largest simulated late boost, and deleting evidence or distractor text moves the same answer advantage in predictable directions.
+
+The empirical scope is narrow by design. All claims are about four-choice MMLU prompts, three 7--8B instruction-tuned models, and cached answer-position readouts. The paper does not claim a full hidden-state circuit, a universal model law, or a phase transition. The result may generalize, but this paper does not assume that it does.
+
+\section*{Code and artifacts}
+
+Code and derived artifacts are intended for release at \href{https://github.com/gut-puncture/shape-of-wisdom}{github.com/gut-puncture/shape-of-wisdom}. The paper release is generated from stored artifacts only; no new model inference is required to rebuild the figures, tables, and manuscript.
+
+\balance
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

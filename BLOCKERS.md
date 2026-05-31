@@ -4,7 +4,9 @@
 
 1. Snapshot exception: root log file `logs/launchd_autopilot.out.log` changed during snapshot
    verification. Work is proceeding under a documented exception recorded in
-   `/Users/shaileshrana/shape-of-wisdom_legacy_20260327T121445/v2/BLOCKER_REPORT.md`.
+   `/Users/shaileshrana/shape-of-wisdom_legacy_20260327T121445/v2/BLOCKER_REPORT.md`. The
+   arXiv release at `release/shape_of_wisdom_arxiv/` is hash-manifested as a clean derivative, but
+   this does not retire the root snapshot exception.
 2. The paid `paper_pilot` run still needs the exact spot hourly rate in USD so
    `run_gpu_preflight.py --hourly-rate-usd ...` can emit a real cost forecast instead of a zeroed
    placeholder.
@@ -93,3 +95,32 @@
     compiles locally via `tectonic` to `paper/colm2026/main.pdf`, renders page-image QA artifacts
     under `paper/colm2026/page_pngs/`, keeps the main text within the nine-page COLM limit before
     references, and includes the requested AI-use disclosure in the supplementary material.
+17. The raw exact-option cache blocker for the persistence rewrite is resolved. All `9000`
+    required `semantic_exact + identity` cache bundles referenced by
+    `outputs/runs/paper_merged_9x1000_20260330T122258Z/metrics/score_manifest.jsonl` were restored
+    locally from the attached disk with zero new inference.
+18. The corrected persistence-based v3 rewrite now exists at
+    `v3_persistent_contender_margin_fix/`. It derives `d2`, `d1`, `d25`, `d50`, `d75`, the
+    declared lag metrics, and late-write summaries directly from the restored raw bundles, and the
+    rewritten paper compiles to `v3_persistent_contender_margin_fix/paper/build/main.pdf`.
+19. The v3 manuscript has now been surgically recentered on the persistence-based objects only:
+    `d2`, `d1`, `d50`, `Delta_21`, `Delta_250`, `write_share_after_d2`,
+    `write_share_after_d1`, and `write_share_last20`. The stale first-hit paper center and control-
+    centered wording were removed, and `CHANGELOG.md` plus `MANUSCRIPT_SANITY_CHECK.md` were added
+    under `v3_persistent_contender_margin_fix/`.
+20. The anonymous COLM 2026 upload artifact is now prepared at
+    `submission/colm2026_openreview_anon/` and zipped at
+    `submission/colm2026_openreview_anon.zip`. It rebuilds from filtered derived data only,
+    excludes raw caches and absolute local paths, and aligns to the persistence-based paper for the
+    two paper datasets only (`ARC-Challenge` and `CommonsenseQA`).
+21. The MMLU-only mechanistic paper release is now built at
+    `release/shape_of_wisdom_mmlu_mech_paper/`. It is a clean derivative of the March legacy
+    MMLU artifacts, uses no new inference, compiles locally, passes release-contract tests, has a
+    clean forbidden-scope grep over paper-facing files, and includes an independently compiling
+    `arxiv_source/` bundle. A reader-facing revision now defines table abbreviations and readout
+    terms in the manuscript, removes paper-body audit language, enlarges the cramped figures, and
+    makes the conclusion connect the trajectory regimes to the mechanistic evidence. The final
+    arXiv pass also rewrites counterfactual accounting to define removal/substitution before the
+    result, explain the attention-vs-MLP contrast, and package the PDF/source zip/checksums under
+    `release/shape_of_wisdom_mmlu_mech_paper/dist/`. This does not retire the active root snapshot
+    exception.

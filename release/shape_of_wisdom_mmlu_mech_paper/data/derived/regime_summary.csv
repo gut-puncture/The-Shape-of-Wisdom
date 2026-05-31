@@ -1,0 +1,5 @@
+trajectory_type,rows,share,label
+unstable_correct,3790,0.4211111111111111,unstable correct
+unstable_wrong,2402,0.2668888888888889,unstable wrong
+stable_correct,1711,0.19011111111111112,stable correct
+stable_wrong,1097,0.1218888888888889,stable wrong

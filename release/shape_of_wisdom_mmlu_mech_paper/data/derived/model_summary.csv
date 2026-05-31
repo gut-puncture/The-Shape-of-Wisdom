@@ -1,0 +1,4 @@
+model_id,model,layers,prompts,accuracy,stable_correct,unstable_correct,stable_wrong,unstable_wrong,traced_prompts,heldout_r2
+Qwen/Qwen2.5-7B-Instruct,Qwen2.5-7B,28,3000,0.67,392,1618,476,514,600,0.8983026173789344
+meta-llama/Llama-3.1-8B-Instruct,Llama-3.1-8B,32,3000,0.616,986,862,417,735,600,0.7577002177194804
+mistralai/Mistral-7B-Instruct-v0.3,Mistral-7B-v0.3,32,3000,0.5476666666666666,333,1310,204,1153,600,0.9075474614920785
