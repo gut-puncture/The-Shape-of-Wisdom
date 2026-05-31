@@ -1,0 +1,324 @@
+{
+  "files": [
+    {
+      "path": "data/audit/08_attention_and_mlp_decomposition.report.json",
+      "bytes": 2437
+    },
+    {
+      "path": "data/audit/10_causal_validation_tools.report.json",
+      "bytes": 4916
+    },
+    {
+      "path": "data/audit/artifact_integrity.json",
+      "bytes": 13596
+    },
+    {
+      "path": "data/audit/drift_reconstruction_audit.json",
+      "bytes": 1548
+    },
+    {
+      "path": "data/audit/drift_reconstruction_by_layer.csv",
+      "bytes": 2405
+    },
+    {
+      "path": "data/audit/drift_reconstruction_by_type.csv",
+      "bytes": 439
+    },
+    {
+      "path": "data/audit/drift_reconstruction_detail.csv",
+      "bytes": 11204566
+    },
+    {
+      "path": "data/audit/substitution_rederive_diagnostics.json",
+      "bytes": 4416
+    },
+    {
+      "path": "data/audit/substitution_sensitivity_summary.csv",
+      "bytes": 6306
+    },
+    {
+      "path": "data/audit/trajectory_spotcheck_summary.json",
+      "bytes": 7436
+    },
+    {
+      "path": "data/cached/ablation_results.parquet",
+      "bytes": 72088
+    },
+    {
+      "path": "data/cached/attention_contrib_by_span.parquet",
+      "bytes": 2469479
+    },
+    {
+      "path": "data/cached/attention_mass_by_span.parquet",
+      "bytes": 741901
+    },
+    {
+      "path": "data/cached/decision_metrics.parquet",
+      "bytes": 10499858
+    },
+    {
+      "path": "data/cached/negative_controls.parquet",
+      "bytes": 1874
+    },
+    {
+      "path": "data/cached/patching_results.parquet",
+      "bytes": 37767
+    },
+    {
+      "path": "data/cached/prompt_types.parquet",
+      "bytes": 131837
+    },
+    {
+      "path": "data/cached/span_deletion_causal.parquet",
+      "bytes": 3084
+    },
+    {
+      "path": "data/cached/span_effects.parquet",
+      "bytes": 59099
+    },
+    {
+      "path": "data/cached/span_labels.parquet",
+      "bytes": 60744
+    },
+    {
+      "path": "data/cached/span_paraphrase_stability.parquet",
+      "bytes": 6284
+    },
+    {
+      "path": "data/cached/tracing_scalars.parquet",
+      "bytes": 779388
+    },
+    {
+      "path": "data/derived/model_summary.csv",
+      "bytes": 432
+    },
+    {
+      "path": "data/derived/negative_controls.csv",
+      "bytes": 119
+    },
+    {
+      "path": "data/derived/regime_summary.csv",
+      "bytes": 250
+    },
+    {
+      "path": "data/derived/span_deletion_summary.csv",
+      "bytes": 183
+    },
+    {
+      "path": "data/derived/substitution_summary.csv",
+      "bytes": 649
+    },
+    {
+      "path": "figures/figure1_trajectory_primitives.pdf",
+      "bytes": 35038
+    },
+    {
+      "path": "figures/figure1_trajectory_primitives.png",
+      "bytes": 289199
+    },
+    {
+      "path": "figures/figure2_regime_summary.pdf",
+      "bytes": 27995
+    },
+    {
+      "path": "figures/figure2_regime_summary.png",
+      "bytes": 115465
+    },
+    {
+      "path": "figures/figure3_mechanistic_accounting.pdf",
+      "bytes": 105952
+    },
+    {
+      "path": "figures/figure3_mechanistic_accounting.png",
+      "bytes": 215588
+    },
+    {
+      "path": "figures/figure4_span_interventions.pdf",
+      "bytes": 22176
+    },
+    {
+      "path": "figures/figure4_span_interventions.png",
+      "bytes": 79414
+    },
+    {
+      "path": "figures/figure5_counterfactual_limits.pdf",
+      "bytes": 26951
+    },
+    {
+      "path": "figures/figure5_counterfactual_limits.png",
+      "bytes": 132076
+    },
+    {
+      "path": "tables/table1_model_summary.tex",
+      "bytes": 317
+    },
+    {
+      "path": "tables/table2_regime_summary.tex",
+      "bytes": 235
+    },
+    {
+      "path": "tables/table3_span_summary.tex",
+      "bytes": 216
+    },
+    {
+      "path": "tables/table4_substitution_summary.tex",
+      "bytes": 311
+    },
+    {
+      "path": "generated/paper_numbers.tex",
+      "bytes": 1543
+    },
+    {
+      "path": "paper/build/main.bbl",
+      "bytes": 2974
+    },
+    {
+      "path": "paper/build/main.pdf",
+      "bytes": 231516
+    },
+    {
+      "path": "paper/figures/figure1_trajectory_primitives.pdf",
+      "bytes": 35038
+    },
+    {
+      "path": "paper/figures/figure2_regime_summary.pdf",
+      "bytes": 27995
+    },
+    {
+      "path": "paper/figures/figure3_mechanistic_accounting.pdf",
+      "bytes": 105952
+    },
+    {
+      "path": "paper/figures/figure4_span_interventions.pdf",
+      "bytes": 22176
+    },
+    {
+      "path": "paper/figures/figure5_counterfactual_limits.pdf",
+      "bytes": 26951
+    },
+    {
+      "path": "paper/generated/paper_numbers.tex",
+      "bytes": 1543
+    },
+    {
+      "path": "paper/main.tex",
+      "bytes": 19942
+    },
+    {
+      "path": "paper/references.bib",
+      "bytes": 2367
+    },
+    {
+      "path": "paper/tables/table1_model_summary.tex",
+      "bytes": 317
+    },
+    {
+      "path": "paper/tables/table2_regime_summary.tex",
+      "bytes": 235
+    },
+    {
+      "path": "paper/tables/table3_span_summary.tex",
+      "bytes": 216
+    },
+    {
+      "path": "paper/tables/table4_substitution_summary.tex",
+      "bytes": 311
+    },
+    {
+      "path": "docs/claim_evidence_matrix.md",
+      "bytes": 1274
+    },
+    {
+      "path": "qa/citation_audit.md",
+      "bytes": 1070
+    },
+    {
+      "path": "qa/contact_sheet.png",
+      "bytes": 559188
+    },
+    {
+      "path": "qa/manual_visual_qa.md",
+      "bytes": 416
+    },
+    {
+      "path": "qa/page_pngs/page-1.png",
+      "bytes": 474018
+    },
+    {
+      "path": "qa/page_pngs/page-2.png",
+      "bytes": 391150
+    },
+    {
+      "path": "qa/page_pngs/page-3.png",
+      "bytes": 410072
+    },
+    {
+      "path": "qa/page_pngs/page-4.png",
+      "bytes": 395553
+    },
+    {
+      "path": "qa/page_pngs/page-5.png",
+      "bytes": 503414
+    },
+    {
+      "path": "qa/page_pngs/page-6.png",
+      "bytes": 58357
+    },
+    {
+      "path": "qa/render_report.md",
+      "bytes": 183
+    },
+    {
+      "path": "arxiv_source/figures/figure1_trajectory_primitives.pdf",
+      "bytes": 35038
+    },
+    {
+      "path": "arxiv_source/figures/figure2_regime_summary.pdf",
+      "bytes": 27995
+    },
+    {
+      "path": "arxiv_source/figures/figure3_mechanistic_accounting.pdf",
+      "bytes": 105952
+    },
+    {
+      "path": "arxiv_source/figures/figure4_span_interventions.pdf",
+      "bytes": 22176
+    },
+    {
+      "path": "arxiv_source/figures/figure5_counterfactual_limits.pdf",
+      "bytes": 26951
+    },
+    {
+      "path": "arxiv_source/generated/paper_numbers.tex",
+      "bytes": 1543
+    },
+    {
+      "path": "arxiv_source/main.bbl",
+      "bytes": 2974
+    },
+    {
+      "path": "arxiv_source/main.tex",
+      "bytes": 19942
+    },
+    {
+      "path": "arxiv_source/references.bib",
+      "bytes": 2367
+    },
+    {
+      "path": "arxiv_source/tables/table1_model_summary.tex",
+      "bytes": 317
+    },
+    {
+      "path": "arxiv_source/tables/table2_regime_summary.tex",
+      "bytes": 235
+    },
+    {
+      "path": "arxiv_source/tables/table3_span_summary.tex",
+      "bytes": 216
+    },
+    {
+      "path": "arxiv_source/tables/table4_substitution_summary.tex",
+      "bytes": 311
+    }
+  ]
+}

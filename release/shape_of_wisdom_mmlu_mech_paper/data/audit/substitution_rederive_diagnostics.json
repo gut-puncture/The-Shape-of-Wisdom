@@ -1,0 +1,161 @@
+{
+  "all_pairs_base_mean_shift": {
+    "attention": 1.1830127313401964,
+    "mlp": 4.741921994951036
+  },
+  "all_pairs_counts": {
+    "attention": 135000,
+    "mlp": 135000
+  },
+  "all_pairs_order_invariant": true,
+  "all_pairs_order_max_abs_mean_diff": 0.0,
+  "all_pairs_order_perturbation": [
+    {
+      "mean_shift_by_component": {
+        "attention": 1.1830127313401964,
+        "mlp": 4.741921994951036
+      },
+      "pair_count_by_component": {
+        "attention": 135000,
+        "mlp": 135000
+      },
+      "seed": 71
+    }
+  ],
+  "evaluated_settings": [
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "raw",
+      "pairing_mode": "all_pairs_within_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "raw",
+      "pairing_mode": "legacy_first_per_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "raw",
+      "pairing_mode": "one_to_one_seeded"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "raw",
+      "pairing_mode": "domain_matched_seeded"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "raw",
+      "pairing_mode": "domain_length_matched_seeded"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "early",
+      "normalization_mode": "raw",
+      "pairing_mode": "all_pairs_within_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "mid",
+      "normalization_mode": "raw",
+      "pairing_mode": "all_pairs_within_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "late",
+      "normalization_mode": "raw",
+      "pairing_mode": "all_pairs_within_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "zscore_per_model_layer",
+      "pairing_mode": "all_pairs_within_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_plus_unstable_wrong",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "std_per_model_layer",
+      "pairing_mode": "all_pairs_within_model"
+    },
+    {
+      "failing_set_mode": "stable_wrong_only",
+      "layer_range_mode": "paper-default",
+      "normalization_mode": "raw",
+      "pairing_mode": "all_pairs_within_model"
+    }
+  ],
+  "failing_set_modes": [
+    "stable_wrong_only",
+    "stable_wrong_plus_unstable_wrong"
+  ],
+  "layer_range_modes": [
+    "early",
+    "mid",
+    "late",
+    "paper-default"
+  ],
+  "legacy_base_mean_shift": {
+    "attention": -0.3099011018541124,
+    "mlp": 5.74789843665229
+  },
+  "legacy_row_order_max_abs_mean_diff": 3.2584635416666665,
+  "legacy_row_order_perturbation": [
+    {
+      "frac_positive_by_component": {
+        "attention": 0.6344444444444445,
+        "mlp": 0.75
+      },
+      "mean_shift_by_component": {
+        "attention": 2.5108996793958878,
+        "mlp": 3.669814126756456
+      },
+      "seed": 11
+    },
+    {
+      "frac_positive_by_component": {
+        "attention": 0.4722222222222222,
+        "mlp": 0.6922222222222222
+      },
+      "mean_shift_by_component": {
+        "attention": 0.9139758512708875,
+        "mlp": 3.814833658006456
+      },
+      "seed": 29
+    },
+    {
+      "frac_positive_by_component": {
+        "attention": 0.6022222222222222,
+        "mlp": 0.6144444444444445
+      },
+      "mean_shift_by_component": {
+        "attention": 2.9485624398125543,
+        "mlp": 2.6963847647772896
+      },
+      "seed": 47
+    }
+  ],
+  "legacy_row_order_sensitive": true,
+  "normalization_modes": [
+    "raw",
+    "zscore_per_model_layer",
+    "std_per_model_layer"
+  ],
+  "pairing_modes": [
+    "legacy_first_per_model",
+    "all_pairs_within_model",
+    "one_to_one_seeded",
+    "domain_matched_seeded",
+    "domain_length_matched_seeded"
+  ],
+  "red_flags": {
+    "final_delta_sign_match_pass": true,
+    "final_delta_sign_match_rate_on_targets": 1.0,
+    "final_delta_sign_match_threshold": 0.95
+  }
+}

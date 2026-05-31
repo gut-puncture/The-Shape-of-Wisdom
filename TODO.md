@@ -111,3 +111,91 @@
   - rendered page QA artifacts are stored under `paper/colm2026/page_pngs/`
   - current draft keeps the main text within the COLM 2026 nine-page limit before references and
     includes the requested AI-use disclosure in the supplementary material
+- [x] Phase 10: execute the zero-new-inference v3 persistence rewrite from restored raw exact-option
+  cache bundles and rebuild the paper around `d2`, `d1`, `d50`, and late-write metrics
+  - restored all `9000` required `semantic_exact + identity` raw cache bundles from the attached
+    disk with no new inference
+  - created the isolated workspace `v3_persistent_contender_margin_fix/`
+  - derived prompt-level persistence metrics, bootstrap summaries, figures, tables, and reports
+    from the recovered cache only
+  - compiled the corrected v3 paper to
+    `v3_persistent_contender_margin_fix/paper/build/main.pdf`
+  - rendered page QA artifacts are stored under
+    `v3_persistent_contender_margin_fix/paper/build/page_pngs/`
+  - surgically recentered the manuscript on `d2`, `d1`, `d50`, `Delta_21`, `Delta_250`, and
+    late-write metrics only; removed the old first-hit paper center, deleted the stale controls /
+    operationalization section files, and emitted `CHANGELOG.md` plus
+    `MANUSCRIPT_SANITY_CHECK.md`
+- [x] Phase 11: prepare the anonymous COLM 2026 supplementary upload artifact as a clean derivative
+  of the v3 paper workspace
+  - created `submission/colm2026_openreview_anon/` as the only upload-source folder
+  - filtered the included derived data to the two paper datasets only:
+    `195 ARC + 794 CommonsenseQA = 989` prompt IDs and `8901` model-prompt rows
+  - removed raw caches, absolute local paths, MMLU rows, and stale old-metric phrasing from the
+    submission package
+  - added submission-only rebuild scripts:
+    `submission/colm2026_openreview_anon/scripts/export_submission_artifact.py` and
+    `submission/colm2026_openreview_anon/scripts/build_submission_pdf.sh`
+  - rebuilt the anonymous submission PDF at
+    `submission/colm2026_openreview_anon/paper/build/main.pdf`
+  - packaged the upload zip at
+    `submission/colm2026_openreview_anon.zip` (`2.6M`)
+- [x] Phase 12: create a clean arXiv-facing release artifact from the persistence-based exact-option
+  analysis
+  - created `release/shape_of_wisdom_arxiv/` as a self-contained release folder with sanitized
+    derived data, compact rebuild code, tests, paper source, rendered PDF, QA artifacts, and an
+    `arxiv_source/` upload folder
+  - added an optional raw-cache verifier for readers who have the original cache bundles and want
+    to recompute included persistence rows from `cache_key` values
+  - rewrote the manuscript into an arXiv-style paper centered on persistent contender
+    status, persistent winner status, persistent decisive margin, `Delta_21`, `Delta_250`, and
+    late-write shares
+  - excluded stale first-hit, `Delta_margin`, answer-format invariance, hidden-state mechanism,
+    and legacy causal/tracing claims from the paper narrative
+  - verified `python3 scripts/verify_derived.py`, `python3 -m pytest -q`,
+    `python3 scripts/rebuild_all.py --offline`, rendered-page QA, and a separate build from
+    `arxiv_source/`
+- [x] Phase 13: convert the arXiv release manuscript to two-column format and refresh visual QA
+  - converted `release/shape_of_wisdom_arxiv/paper/main.tex` and section floats to a two-column
+    layout with full-width floats only where the figure or table benefits from the width
+  - refreshed generated figure colors to a higher-contrast arXiv-style palette with brighter reds
+    and moved plot legends outside data regions
+  - replaced model-card-only bibliography entries with real Qwen2.5, Gemma 2, and Llama 3 paper
+    references and added `qa/citation_audit.md`
+  - added a release contract test that rejects in-axes legend defaults such as lower-right,
+    upper-right, and best placement
+  - verified `python3 scripts/verify_derived.py`, `python3 -m pytest -q`,
+    `python3 scripts/rebuild_all.py --offline`, and rendered-page visual QA
+- [x] Phase 14: densify the two-column paper layout and remove stranded float whitespace
+  - removed main-text section float barriers that were preventing later prose from filling open
+    columns
+  - consolidated the staged CDF and model-lag plots into a single full-width result figure
+  - merged the regime share chart and exact-count table into one local figure/table block
+  - added concise interpretation paragraphs grounded in existing generated numbers and cached
+    artifacts only
+  - kept the full QC table in release artifacts while replacing the manuscript version with a
+    compact appendix paragraph so it does not create a mostly empty final page
+- [x] Phase 15: build the MMLU-only mechanistic paper release from the March legacy artifacts
+  - created `release/shape_of_wisdom_mmlu_mech_paper/` as a self-contained paper workspace with
+    cached data copies, derived tables, generated figures, LaTeX source, QA docs, tests, and an
+    `arxiv_source/` bundle
+  - restricted the paper to the original three 7--8B MMLU models and their cached mechanistic
+    artifacts; no new model inference was run
+  - rewrote the manuscript around one experiment: decision trajectories described by margin,
+    drift, boundary distance, operational regimes, attention/MLP drift accounting, span deletion,
+    and conditional counterfactual accounting
+  - compiled the dense two-column PDF at
+    `release/shape_of_wisdom_mmlu_mech_paper/paper/build/main.pdf`
+  - verified `python3 scripts/build_all.py`, `python3 -m pytest -q`, forbidden-scope grep over
+    paper-facing files, rendered-page visual QA, and a standalone compile from `arxiv_source/`
+  - revised the manuscript after reader-facing QA to define SC/SW/UC/UW and final accuracy before
+    Table 1, explain answer-letter readout and prompt-span deletion in plain language, remove
+    paper-body audit language, enlarge Figures 2 and 4, and make the conclusion connect trajectory
+    regimes to attention/MLP motion and span-deletion evidence
+  - completed the final arXiv-facing prose pass on counterfactual accounting: removal and
+    substitution are now defined before interpretation, the `-0.31` attention vs `5.75` MLP
+    legacy-first contrast is called out, and the text explains how this replay result fits with
+    Figure 3's layer-local attention result
+  - created the final distribution files under
+    `release/shape_of_wisdom_mmlu_mech_paper/dist/`, including the PDF preview, arXiv source zip,
+    and SHA-256 checksums; the source zip independently compiles to a 6-page PDF
