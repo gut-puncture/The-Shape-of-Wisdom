@@ -896,7 +896,7 @@ The empirical scope is narrow by design. All claims are about four-choice MMLU p
 
 \section*{Code and artifacts}
 
-Code and derived artifacts are intended for release at \href{https://github.com/gut-puncture/shape-of-wisdom}{github.com/gut-puncture/shape-of-wisdom}. The paper release is generated from stored artifacts only; no new model inference is required to rebuild the figures, tables, and manuscript.
+Code and derived artifacts are available at \href{https://github.com/gut-puncture/The-Shape-of-Wisdom}{github.com/gut-puncture/The-Shape-of-Wisdom}. The paper release is generated from stored artifacts only; no new model inference is required to rebuild the figures, tables, and manuscript.
 
 \balance
 \bibliographystyle{plainnat}
@@ -1072,7 +1072,7 @@ Language models do not simply choose an answer at the output layer. In a 9,000-t
 
 - Primary subject class: cs.CL (Computation and Language)
 - Cross-lists: cs.LG (Machine Learning), cs.AI (Artificial Intelligence)
-- Comments: 6 pages, 5 figures. Code and derived artifacts: https://github.com/gut-puncture/shape-of-wisdom
+- Comments: 6 pages, 5 figures. Code and derived artifacts: https://github.com/gut-puncture/The-Shape-of-Wisdom
 - License: CC BY 4.0
 - Journal reference: leave blank
 - DOI: leave blank

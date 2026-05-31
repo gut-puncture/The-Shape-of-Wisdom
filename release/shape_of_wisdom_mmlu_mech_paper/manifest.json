@@ -174,7 +174,7 @@
     },
     {
       "path": "paper/build/main.pdf",
-      "bytes": 231516
+      "bytes": 231589
     },
     {
       "path": "paper/figures/figure1_trajectory_primitives.pdf",
@@ -202,7 +202,7 @@
     },
     {
       "path": "paper/main.tex",
-      "bytes": 19942
+      "bytes": 19939
     },
     {
       "path": "paper/references.bib",
@@ -234,7 +234,7 @@
     },
     {
       "path": "qa/contact_sheet.png",
-      "bytes": 559188
+      "bytes": 559021
     },
     {
       "path": "qa/manual_visual_qa.md",
@@ -258,7 +258,7 @@
     },
     {
       "path": "qa/page_pngs/page-5.png",
-      "bytes": 503414
+      "bytes": 503310
     },
     {
       "path": "qa/page_pngs/page-6.png",
@@ -298,7 +298,7 @@
     },
     {
       "path": "arxiv_source/main.tex",
-      "bytes": 19942
+      "bytes": 19939
     },
     {
       "path": "arxiv_source/references.bib",

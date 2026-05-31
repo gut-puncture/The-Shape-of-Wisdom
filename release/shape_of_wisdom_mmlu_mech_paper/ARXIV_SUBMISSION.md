@@ -16,7 +16,7 @@ Language models do not simply choose an answer at the output layer. In a 9,000-t
 
 - Primary subject class: cs.CL (Computation and Language)
 - Cross-lists: cs.LG (Machine Learning), cs.AI (Artificial Intelligence)
-- Comments: 6 pages, 5 figures. Code and derived artifacts: https://github.com/gut-puncture/shape-of-wisdom
+- Comments: 6 pages, 5 figures. Code and derived artifacts: https://github.com/gut-puncture/The-Shape-of-Wisdom
 - License: CC BY 4.0
 - Journal reference: leave blank
 - DOI: leave blank
