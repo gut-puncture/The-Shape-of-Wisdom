@@ -1,0 +1,23 @@
+\section{Cached option-score trajectories}
+
+The broad panel uses cached layerwise scores for \ModelCount{} instruction-tuned open-weight checkpoints from the Qwen 2.5 Instruct, Gemma 2 IT, and Llama Instruct families \citep{qwen25report,gemma2report,llama3herd}. The benchmark slice contains \ArcPromptCount{} ARC-Challenge prompts \citep{clark2018arc} and \CsqaPromptCount{} CommonsenseQA prompts \citep{talmor2019commonsenseqa}. For each model, prompt, layer, and answer option, the cache stores the score assigned to the exact option text as the continuation after \texttt{Final answer:}. No auxiliary classifier is trained.
+
+\begin{table*}[t]
+\centering
+\small
+\input{tables/table1_design_summary}
+\caption{\textbf{Design summary.} The paper has a broad exact-option trajectory panel and a separate instrumented panel for mechanistic accounting.}
+\label{tab:design}
+\end{table*}
+
+Let $w^\star$ be the final-layer winner, defined as the highest-scoring option at the final layer with deterministic tie handling. At layer $\ell$, let $\mathrm{rank}_\ell(w^\star)$ be the rank of this final winner among all answer options, where rank 1 is best. Let $g_\ell$ be the score gap between $w^\star$ and the strongest competing option at layer $\ell$, and let $g_L$ be the final-layer gap. When $g_L > 0$, define the normalized gap $m_\ell = g_\ell / g_L$.
+
+We use three persistent depths:
+\begin{align}
+d_2 &= \min \{\ell : \mathrm{rank}_t(w^\star) \le 2 \text{ for all } t \ge \ell\}, \\
+d_1 &= \min \{\ell : \mathrm{rank}_t(w^\star) = 1 \text{ for all } t \ge \ell\}, \\
+d_{50} &= \min \{\ell : m_t \ge 0.50 \text{ for all } t \ge \ell\}.
+\end{align}
+Thus $d_2$ is persistent contender status, $d_1$ is persistent winner status, and $d_{50}$ is persistent decisive margin. The lags $\Delta_{21}=d_1-d_2$ and $\Delta_{250}=d_{50}-d_2$ measure how much depth separates candidate formation from winner isolation.
+
+The mechanistic panel uses cached layerwise MMLU traces \citep{hendrycks2021mmlu} for three 7--8B instruction-tuned models. It contains margin drift, attention and MLP scalar contributions, prompt-span attention summaries, span-deletion effects, and cached counterfactual accounting. We use it only after the broad readout phenomenon is established.

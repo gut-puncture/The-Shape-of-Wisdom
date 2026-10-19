@@ -2,11 +2,20 @@
 
 \subsection{Reproducibility statement}
 
-This manuscript is generated from a single merged run, \texttt{\MergedRunId}, with run-scoped manifests, QC summaries, bootstrap outputs, and figure/table provenance checked into the paper workspace. All numeric claims in the paper are generated from those artifacts rather than entered by hand. The merged run contains \PreparedExampleCount{} prepared prompts, \ScoreRowCount{} scored units, \MetricRowCount{} metric rows, and \TokenAuditCount{} token audits.
+This manuscript is generated from a single merged run, \texttt{\MergedRunId}, with
+run-scoped manifests, QC summaries, and figure/table provenance checked into the paper
+workspace. The reported analysis uses the ARC-Challenge and CommonsenseQA portion of
+that run. All numeric claims in the paper are generated from those artifacts rather than
+entered by hand.
 
 \subsection*{Ethics statement}
 
-This study analyzes public benchmark questions using open-weight language models and does not involve human subjects, personal data, or deployment to end users. The main risk is analytical overclaiming: layerwise statistics can be mistaken for a complete mechanistic explanation when they are only an operational measurement. We mitigate that risk by keeping the claim narrow, preregistering the primary rule, preserving anomaly logs, and explicitly reporting the underpowered status of the MMLU slice.
+This study analyzes public benchmark questions using open-weight language models and does
+not involve human subjects, personal data, or deployment to end users. The main risk is
+analytical overclaiming: layerwise statistics can be mistaken for a complete mechanistic
+explanation when they are only an operational measurement. We mitigate that risk by
+keeping the claim narrow, preregistering the primary rule, preserving anomaly logs, and
+distinguishing the primary exact-option analysis from the control readouts.
 
 \subsection*{AI-use disclosure}
 
@@ -34,7 +43,7 @@ AI-use disclosure. The authors used AI-assisted tools during the project lifecyc
 
 \begin{center}
 \includegraphics[width=\linewidth]{appendix_selection_profile.pdf}
-\captionof{figure}{\textbf{The paper slice spans a wide range of selected prompt lengths.} The figure shows the selected-example question-length profile for each dataset together with the chosen option-count markers. MMLU is exhausted because the abstract-algebra validation slice contains only \MmluPromptCount{} prompts.}
+\captionof{figure}{\textbf{The paper slice spans a wide range of selected prompt lengths.} The figure shows the selected-example question-length profile for each reported dataset together with the chosen option-count markers.}
 \label{fig:selection}
 \end{center}
 

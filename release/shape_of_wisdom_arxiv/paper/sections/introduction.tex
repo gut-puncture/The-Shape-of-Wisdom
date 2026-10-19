@@ -1,0 +1,9 @@
+\section{Introduction}
+
+A multiple-choice benchmark usually records only the final answer. That endpoint hides a richer computation: at each layer, the model assigns scores to the answer options, changes the current leader, narrows or widens the runner-up gap, and sometimes reverses course late in depth. This paper studies that process directly.
+
+Our question is deliberately simple: how does a model's answer form across depth before the final option is selected? We answer it with cached option-score trajectories rather than new generation. The broad panel follows exact-option continuation scores in \ModelCount{} instruction-tuned open-weight models on ARC-Challenge and CommonsenseQA. The instrumented panel uses a separate 3,000-prompt MMLU cache for attention/MLP drift accounting, span deletion, and cached counterfactual analyses.
+
+The paper has two parts. First, we describe the readout-space phenomenon at scale. The final winner usually becomes a persistent contender before it becomes the persistent winner, and both events precede a persistent decisive margin. Second, we ask what kind of cached mechanistic accounting is possible on an instrumented subset. Attention and MLP contributions explain per-layer margin drift with held-out fits, and span deletion gives controlled evidence that evidence spans and distractor spans move the margin in opposite directions.
+
+We keep the claims narrow. The paper is not a claim about free-form generation, hidden-state circuits, or all language models. It is a rigorous map of answer formation in cached multiple-choice readouts, with mechanistic evidence where the cache supports it.

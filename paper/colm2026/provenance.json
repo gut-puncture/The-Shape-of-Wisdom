@@ -42,28 +42,28 @@
     "configs/controls.yaml": "a270322f9d0a407c129c3dd3b0eb8299f6f0433893c39ca4ba0cda3752525a7c"
   },
   "generated_hashes": {
-    "paper/colm2026/figures/appendix_qc_anomalies.pdf": "89e2923b481809b6dad1db8158a4c8f666ab05dfea67e2a81bd21966c4196c03",
-    "paper/colm2026/figures/appendix_selection_profile.pdf": "4ef5ee0f57db4cce8a1c5f3585f76144c238049427c76c9233c766d2cd7eef7d",
-    "paper/colm2026/figures/figure1_flagship_plausibility_commitment.pdf": "38f99791e5946a65195cdbca7d7a545da6dae4ddcb5eae3da426f65b409897f4",
-    "paper/colm2026/figures/figure2_primary_forest_plot.pdf": "69bf69ca014fad5aa880ee61577320dcd0f78cae89f70843ba6075afae44ceae",
-    "paper/colm2026/figures/figure3_control_readout_comparison.pdf": "9f696ce38019bfe8adebe624de5e8a071fa701ca46669e013a073352c87113dd",
-    "paper/colm2026/figures/figure4_prompt_level_exemplars.pdf": "2c5ed236d6cd83954d8236a8edfcd2cd37acdbde6782fb27d15f4d18e0e698bd",
-    "paper/colm2026/generated/paper_numbers.tex": "3bfa4196ff0f3eb977157394a15659eb8fd4072831417e39e2881dbd404974dd",
-    "paper/colm2026/tables/appendix_full_positivity.tex": "1e2e54cef12bcec9d1e92fc8a6a64f7d37c3004107fe04d79acdac42f8134dc8",
+    "paper/colm2026/figures/appendix_qc_anomalies.pdf": "63285e7e41774bf59d3f728c35c803627903308e760a9dfb8a417e42dc5b38f1",
+    "paper/colm2026/figures/appendix_selection_profile.pdf": "d048482dcd5e4c1b129191dea826f912a6ab51fa7fbb7630c306e5297fb0a4a4",
+    "paper/colm2026/figures/figure1_flagship_plausibility_commitment.pdf": "e8defd219ea5ce3c7f0e7d47f321dc751f56db7cd851cc40d1d0f652301c017a",
+    "paper/colm2026/figures/figure2_primary_forest_plot.pdf": "0967d9d5983f85a2ac31dd1b66494b9c7c0e8f300ec9de8a228cceda2560dcd3",
+    "paper/colm2026/figures/figure3_control_readout_comparison.pdf": "f4c48691612a8f51b0b39b07739fa21ee7fb483f026711bf37d356fc35e445df",
+    "paper/colm2026/figures/figure4_prompt_level_exemplars.pdf": "6fb94ef309e02d17992a90eb2c9f7df592773851b688b2da4eda8b3718c167df",
+    "paper/colm2026/generated/paper_numbers.tex": "58f85f701660f2233bd8c34c8349f9b5d2a4915b2625668f414d1b5272aa5aa4",
+    "paper/colm2026/tables/appendix_full_positivity.tex": "8354db10e1ab9cd703d1858892278af953ad2a3865eb0a9460a9d4267318fcfd",
     "paper/colm2026/tables/appendix_model_registry.tex": "beea070c0b0c0ce944aa3e4abaaa598f4752a890050f92a9254e73a1a72a131c",
     "paper/colm2026/tables/appendix_qc_summary.tex": "29cf37005c7366aba5cdf05dbf7ee6552ec9b6cc61af0e6bbe27aac9299c23a9",
-    "paper/colm2026/tables/appendix_readout_defs.tex": "0964476c07a15c6796bf8ec445b8881664c0a95643b6c8c5d3f584efd03157b4",
-    "paper/colm2026/tables/table1_design_summary.tex": "561e144d404895424d5ad698145419193ff6a37cd55b1475a1e86e1cff89115a",
-    "paper/colm2026/tables/table2_primary_summary.tex": "8f8e0eb79e2be9be32ead93949297252132584bead503f247fffdfff8d197c74"
+    "paper/colm2026/tables/appendix_readout_defs.tex": "b9da3cca145c33343f0dfc64e4657d03800b1f5416584c93a226f7b600f76ee4",
+    "paper/colm2026/tables/table1_design_summary.tex": "488b1e2c2c3dcf2b4eb6911b14ea14af5955b5a1acbdc5b5da862050c523ec41",
+    "paper/colm2026/tables/table2_primary_summary.tex": "c04d97e6ad3441ebf3a78d5a1a145179610c4b4c6f973bef7dbc8f462bc26058"
   },
   "summary": {
     "prepared_examples": 1000,
     "score_rows": 54000,
     "metric_rows": 54000,
     "token_audits": 258876,
-    "primary_positive_cells": 21,
-    "primary_evaluable_cells": 21,
-    "flagship_20pct_plausible": 0.7214080262977675,
-    "flagship_20pct_committed": 0.04273387207231886
+    "primary_positive_cells": 18,
+    "primary_evaluable_cells": 18,
+    "flagship_20pct_plausible": 0.720104943385805,
+    "flagship_20pct_committed": 0.04252968793151063
   }
 }

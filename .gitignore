@@ -69,3 +69,20 @@ artifacts/backups/
 downloads/
 results/audit/substitution_pairs_vnext.csv
 data/experiment_inputs/robustness_prompts_v2.jsonl
+
+# Local-only (added 2026-10-19)
+.claude/
+.codex/
+outputs/
+manifests/remote_snapshot_*/
+submission/
+*.aux
+*.bbl
+*.blg
+*.out
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+page_pngs/
+v3_persistent_contender_margin_fix/outputs/derived_data/*.jsonl
+release/shape_of_wisdom_arxiv/data/derived/*.jsonl

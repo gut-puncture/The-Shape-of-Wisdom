@@ -1,0 +1,109 @@
+runtime:
+  inference_env_var: SCWI_ALLOW_INFERENCE
+  full_sweep_env_var: SCWI_ALLOW_FULL_SWEEP
+  full_sweep_cli_flag: --confirm-full-sweep
+  default_panel: paper
+  default_device: cpu
+  default_dtype_for_scores: float32
+  smoke:
+    enabled_by_default: true
+    models:
+      - qwen2p5_0p5b_instruct
+      - smollm2_360m_instruct
+    datasets:
+      - mmlu_abstract_algebra
+      - ai2_arc_challenge
+    readouts:
+      - semantic_exact
+      - templated_semantic
+      - letter_label
+    max_examples_per_dataset: 1
+    permutations: [identity, reverse]
+  paper:
+    enabled_by_default: false
+    models:
+      - qwen2p5_1p5b_instruct
+      - qwen2p5_3b_instruct
+      - qwen2p5_7b_instruct
+      - gemma2_2b_it
+      - gemma2_9b_it
+      - gemma2_27b_it
+      - llama3p2_1b_instruct
+      - llama3p2_3b_instruct
+      - llama3p1_8b_instruct
+    datasets:
+      - mmlu_abstract_algebra
+      - ai2_arc_challenge
+      - commonsenseqa_validation
+    readouts:
+      - semantic_exact
+      - templated_semantic
+      - letter_label
+    max_examples_per_dataset: 0
+    permutations: [identity, reverse]
+  paper_pilot:
+    enabled_by_default: false
+    models:
+      - qwen2p5_1p5b_instruct
+      - qwen2p5_3b_instruct
+      - qwen2p5_7b_instruct
+      - gemma2_2b_it
+      - gemma2_9b_it
+      - gemma2_27b_it
+      - llama3p2_1b_instruct
+      - llama3p2_3b_instruct
+      - llama3p1_8b_instruct
+    datasets:
+      - mmlu_abstract_algebra
+      - ai2_arc_challenge
+      - commonsenseqa_validation
+    readouts:
+      - semantic_exact
+      - templated_semantic
+      - letter_label
+    max_examples_per_dataset: 5
+    selection_strategy: representative_pilot_v1
+    permutations: [identity, reverse]
+  paper_final_6x1000:
+    enabled_by_default: false
+    models:
+      - qwen2p5_1p5b_instruct
+      - qwen2p5_7b_instruct
+      - gemma2_2b_it
+      - gemma2_27b_it
+      - llama3p2_1b_instruct
+      - llama3p1_8b_instruct
+    datasets:
+      - mmlu_abstract_algebra
+      - ai2_arc_challenge
+      - commonsenseqa_validation
+    readouts:
+      - semantic_exact
+      - templated_semantic
+      - letter_label
+    dataset_example_limits:
+      mmlu_abstract_algebra: 11
+      ai2_arc_challenge: 195
+      commonsenseqa_validation: 794
+    selection_strategy: representative_panel_v1
+    permutations: [identity, reverse]
+  paper_remaining_3x1000:
+    enabled_by_default: false
+    models:
+      - qwen2p5_3b_instruct
+      - gemma2_9b_it
+      - llama3p2_3b_instruct
+    datasets:
+      - mmlu_abstract_algebra
+      - ai2_arc_challenge
+      - commonsenseqa_validation
+    readouts:
+      - semantic_exact
+      - templated_semantic
+      - letter_label
+    dataset_example_limits:
+      mmlu_abstract_algebra: 11
+      ai2_arc_challenge: 195
+      commonsenseqa_validation: 794
+    selection_strategy: representative_panel_v1
+    permutations: [identity, reverse]

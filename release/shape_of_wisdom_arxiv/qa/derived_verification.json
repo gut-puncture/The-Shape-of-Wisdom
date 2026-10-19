@@ -1,0 +1,32 @@
+{
+  "datasets": [
+    "ai2_arc_challenge",
+    "commonsenseqa_validation"
+  ],
+  "failures": [],
+  "mechanistic_analyses": [
+    "ablation_summary",
+    "attention_contrib_by_span",
+    "attention_mass_by_span",
+    "component_depth_bin",
+    "drift_decomposition",
+    "legacy_trajectory_type_count",
+    "negative_control",
+    "span_deletion_summary",
+    "span_effect_by_model",
+    "substitution_sensitivity"
+  ],
+  "mechanistic_rows": 420,
+  "models": [
+    "gemma2_27b_it",
+    "gemma2_2b_it",
+    "gemma2_9b_it",
+    "llama3p1_8b_instruct",
+    "llama3p2_1b_instruct",
+    "llama3p2_3b_instruct",
+    "qwen2p5_1p5b_instruct",
+    "qwen2p5_3b_instruct",
+    "qwen2p5_7b_instruct"
+  ],
+  "rows": 8901
+}

@@ -1,210 +1,171 @@
-# Shape of Wisdom
+# Semantic Candidate-Set vs Winner Isolation
 
-**State, Motion, Boundary: A Mechanistic Account of Convergence and Failure in Transformer Multiple-Choice Decisions**
+This repository root contains the rigor-first codebase for testing whether semantic candidate-set
+formation stabilizes earlier in depth than winner isolation.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+## Snapshot Status
 
----
+- Root-level `v2/` was created as a mirror of the pre-existing repo.
+- Snapshot verification is **not fully clean** because `logs/launchd_autopilot.out.log` changed
+  during two verification passes.
+- Work in this directory is proceeding only because that exception is documented in
+  [archived blocker report](/Users/shaileshrana/shape-of-wisdom_legacy_20260327T121445/v2/BLOCKER_REPORT.md).
+- On March 27, 2026, the latest experiment code was promoted to repository root.
+- Legacy repo contents, including the historical `v2/` tree, were archived to
+  `/Users/shaileshrana/shape-of-wisdom_legacy_20260327T121445/`.
 
-## Overview
+## Current Phase
 
-We introduce three quantities — **state** (logit-margin δ), **motion** (per-layer drift g), and **boundary** (|δ|) — that fully describe the layer-by-layer trajectory of a transformer's answer on multiple-choice benchmarks. These primitives separate prompts into four trajectory types (*stable-correct*, *stable-wrong*, *unstable-correct*, *unstable-wrong*), producing a phase diagram that replicates across three 7–8B-parameter instruction-tuned transformers (Qwen 2.5-7B, Llama 3.1-8B, Mistral 7B-v0.3) and multiple knowledge domains.
+- Phase 1: scaffold, docs, configs, and contract tests
+- Phase 2: core dataset/prompt/scoring/metrics/QC modules and runners
+- Phase 3: smoke path executed end to end on March 26, 2026
+- Phase 4a/4b: preregistered positivity criteria, panel split, family-readiness reporting, and
+  full-sweep preflight gates implemented on March 27, 2026
+- Phase 5: latest-code promotion to repository root and legacy archive completed on March 27, 2026
+- Phase 6: run-scoped reliability refactor completed on March 27, 2026
+- Phase 7: fail-closed optimization stages A-D completed on March 29, 2026
+  - contextual continuation tokenization is now the single scorer/audit source of truth
+  - grouped exact scoring shares prompt work across readouts and shared prefixes
+  - `run_gpu_preflight.py` now performs prompt compatibility checks, exactness canaries, and
+    batch-size calibration before the long path
+  - a deterministic `paper_pilot` panel is now available for end-to-end paper-pipeline calibration
+    on 5 prompts per dataset before any paid long run
+- Executed in this phase window:
+  - `python3 -m pytest -q` (`57 passed`)
+  - `SCWI_ALLOW_INFERENCE=1 python3 run_smoke_test.py --run-id smoke_opt_20260329T150000Z --device cpu --scorer-engine optimized_exact`
+- Not yet executed in this phase window:
+  - `run_full_sweep.py` (blocked by paper-panel readiness gates)
 
-We decompose motion into **attention-driven routing** and **MLP-driven injection**, and validate causal claims via component ablation, activation patching, and span-deletion experiments with multiple-comparison correction.
+Smoke outputs now present:
 
-**Paper**: See [`paper/final_paper/paper_publish.pdf`](paper/final_paper/paper_publish.pdf) for the full manuscript.
+- `outputs/runs/smoke_opt_20260329T150000Z/qc/gpu_preflight.json`: prompt compatibility, model-load equivalence, and calibration report for the optimized scorer path
+- `outputs/runs/smoke_opt_20260329T150000Z/smoke_test/smoke_manifest.json`: `24` computed units with grouped exact scoring and zero failed units
+- `outputs/runs/smoke_opt_20260329T150000Z/metrics/primary_metrics.jsonl`: `24` run-scoped metric rows from the optimized scorer path
+- `outputs/runs/smoke_opt_20260329T150000Z/qc/token_audits.jsonl`: `96` contextual token audit rows
+- `outputs/runs/smoke_opt_20260329T150000Z/qc/qc_summary.json`: `0` failures and fully paired readout coverage after grouped scoring
+- `outputs/runs/smoke_refactor_20260327T130500Z/smoke_test/smoke_manifest.json`: `24` computed units
+- `outputs/runs/smoke_refactor_20260327T131200Z/smoke_test/smoke_manifest.json`: `24` cache-hit units
+- `outputs/runs/smoke_refactor_20260327T130500Z/metrics/primary_metrics.jsonl`: `24` run-scoped metric rows
+- `outputs/runs/smoke_refactor_20260327T130500Z/qc/token_audits.jsonl`: `96` run-scoped token audit rows
+- `outputs/runs/smoke_refactor_20260327T130500Z/qc/qc_summary.json`: `0` failures and fully paired readout coverage
+- `outputs/runs/smoke_refactor_20260327T130500Z/stats/model_dataset_positivity.json`: preregistered model×dataset positivity summaries
+- `manifests/latest_run.json` and `manifests/latest_run_smoke.json`: latest run pointers for downstream stages
 
----
-
-## Repository Structure
-
-```
-shape-of-wisdom/
-├── configs/
-│   ├── experiment_v2.yaml          # Full experiment configuration (models, thresholds, validators)
-│   └── coarse_domain_mapping.json  # MMLU domain → coarse category mapping
-├── prompt_packs/
-│   └── ccc_baseline_v1_3000.jsonl  # 3,000 MMLU four-choice prompts (SHA-256 locked)
-├── src/sow/                        # Python package
-│   ├── v2/                         # Core analysis modules
-│   │   ├── baseline_inference.py   # Batched inference with layerwise logit extraction
-│   │   ├── metrics.py              # δ, g, b computation
-│   │   ├── trajectory_types.py     # Four-type trajectory classification
-│   │   ├── span_parser.py          # Regex-based prompt span parsing
-│   │   ├── span_counterfactuals.py # Span deletion / counterfactual effects
-│   │   ├── tracing/                # Attention & MLP component extraction
-│   │   └── causal/                 # Ablation, patching, negative controls
-│   ├── thermal/                    # Thermal management for long GPU runs
-│   ├── io_jsonl.py                 # JSONL I/O utilities
-│   └── hashing.py                  # SHA-256 manifest verification
-├── scripts/v2/                     # 15-stage numbered pipeline
-│   ├── run_full_local_v2.sh        # Orchestrator: runs all stages sequentially
-│   ├── 00_run_experiment.py        # Stage 0: experiment snapshot & validation
-│   ├── 00a_generate_baseline_outputs.py  # Batched inference (GPU required)
-│   ├── 01_extract_baseline.py      # Extract baseline logits from raw outputs
-│   ├── 02_compute_decision_metrics.py    # Compute δ, g, b for all prompts
-│   ├── 03_classify_trajectories.py       # Classify into 4 trajectory types
-│   ├── 04_region_analysis.py       # Entry/exit/re-entry event analysis
-│   ├── 05_span_counterfactuals.py  # Span deletion experiments (GPU required)
-│   ├── 06_select_tracing_subset.py # Select 600 prompts/model for tracing
-│   ├── 07_run_tracing.py           # Extract attention/MLP components (GPU required)
-│   ├── 08_attention_and_mlp_decomposition.py  # Linear drift decomposition
-│   ├── 09_causal_tests.py          # Ablation & patching experiments
-│   ├── 10_causal_validation_tools.py     # Negative controls & statistical tests
-│   ├── 11_generate_paper_assets.py       # Generate figures & tables
-│   └── 14_readiness_audit.py       # Final quality gate
-├── results/                        # Pre-computed analysis outputs
-│   ├── parquet/                    # All analysis data (see below)
-│   ├── figures/                    # Generated figures from the paper
-│   └── reports/                    # Stage-level validation reports (JSON)
-├── tests/                          # Test suite (pytest)
-├── paper/
-│   └── final_paper/                # Publish-ready PDF + LaTeX source
-├── requirements.txt
-└── LICENSE
-```
-
----
-
-## Pre-Computed Results
-
-The `results/` directory contains all analysis outputs from our primary GPU run, so you can inspect and build on our findings without re-running inference.
-
-### Analysis Parquets (`results/parquet/`)
-
-| File | Size | Description |
-|------|------|-------------|
-| `decision_metrics.parquet` | 10 MB | Per-prompt × per-layer δ, g, b values |
-| `basin_gap.parquet` | 7.2 MB | Region entry/exit/re-entry events |
-| `attention_contrib_by_span.parquet` | 2.4 MB | Decision-aligned attention contributions per span |
-| `tracing_scalars.parquet` | 764 KB | s_attn, s_mlp scalar projections per layer |
-| `attention_mass_by_span.parquet` | 728 KB | Attention mass distribution across spans |
-| `prompt_types.parquet` | 132 KB | Trajectory type classification per prompt × model |
-| `ablation_results.parquet` | 72 KB | Component ablation delta shifts |
-| `span_labels.parquet` | 60 KB | Evidence / distractor / neutral labels |
-| `span_effects.parquet` | 60 KB | Per-span counterfactual effects on δ |
-| `patching_results.parquet` | 36 KB | Activation patching results |
-| `span_paraphrase_stability.parquet` | 8 KB | Paraphrase stability validation |
-| `span_deletion_causal.parquet` | 4 KB | Span deletion causal test results |
-| `negative_controls.parquet` | 2 KB | Shuffled & sign-flipped baselines |
-
-> **Note**: Raw layerwise logits (`layerwise.parquet`, ~244 MB) are excluded for size. Re-running stages 00–01 on a GPU regenerates this file.
-
-### Figures (`results/figures/`)
-
-13 publication-quality figures including phase diagrams, trajectory bundles, drift decomposition, causal validation panels, and attention routing heatmaps.
-
----
-
-## Reproducing the Experiment
-
-### Requirements
-
-- **Python 3.10+**
-- **GPU**: NVIDIA GPU with ≥24 GB VRAM (tested on RTX 6000 Ada) for inference stages
-- **CPU-only**: Stages 01–04, 06, 08–11, 14 run on CPU using the pre-computed outputs
-
-### Setup
+## Commands
 
 ```bash
-git clone https://github.com/<your-org>/shape-of-wisdom.git
-cd shape-of-wisdom
-pip install -r requirements.txt
+cd /Users/shaileshrana/shape-of-wisdom
+python3 -m pytest -q
+SCWI_ALLOW_INFERENCE=1 python3 run_smoke_test.py --run-id smoke_YYYYMMDDTHHMMSSZ --device cpu --dtype float32 --scorer-engine optimized_exact
 ```
 
-### Running the Full Pipeline (GPU)
-
-The entire experiment runs through a single orchestrator script with fail-closed stage gating:
+Stages can also be run independently against an explicit run:
 
 ```bash
-bash scripts/v2/run_full_local_v2.sh --run-id my_run
+cd /Users/shaileshrana/shape-of-wisdom
+python3 run_prepare.py --smoke --run-id smoke_YYYYMMDDTHHMMSSZ
+python3 run_gpu_preflight.py --smoke --run-id smoke_YYYYMMDDTHHMMSSZ --device cpu --dtype float32 --scorer-engine optimized_exact
+SCWI_ALLOW_INFERENCE=1 python3 run_controls.py --run-id smoke_YYYYMMDDTHHMMSSZ --device cpu --dtype float32 --scorer-engine optimized_exact
+python3 run_metrics.py --run-id smoke_YYYYMMDDTHHMMSSZ
+python3 run_qc.py --run-id smoke_YYYYMMDDTHHMMSSZ
+python3 run_stats.py --run-id smoke_YYYYMMDDTHHMMSSZ
+python3 run_resume_failed.py --run-id smoke_YYYYMMDDTHHMMSSZ
 ```
 
-Each stage produces a JSON validation report; the pipeline halts if any gate fails. Stages that require GPU inference:
-- `00a_generate_baseline_outputs.py` — batched layerwise logit extraction (~3K prompts × 3 models)
-- `05_span_counterfactuals.py` — span deletion re-inference
-- `07_run_tracing.py` — attention & MLP component capture
-
-### Running Analysis Only (CPU)
-
-If you want to reproduce the analysis from our pre-computed data, copy `results/parquet/` into a run directory and run stages 02+ individually:
+Paper-panel readiness reporting is a separate explicit step:
 
 ```bash
-RUN_ID=from_precomputed
-mkdir -p runs/${RUN_ID}/v2
-
-# Copy pre-computed parquets
-cp results/parquet/*.parquet runs/${RUN_ID}/v2/
-
-# Run any analysis stage, e.g.:
-python scripts/v2/03_classify_trajectories.py --run-id ${RUN_ID} --config configs/experiment_v2.yaml --resume
-python scripts/v2/08_attention_and_mlp_decomposition.py --run-id ${RUN_ID} --config configs/experiment_v2.yaml --resume
-python scripts/v2/11_generate_paper_assets.py --run-id ${RUN_ID} --config configs/experiment_v2.yaml --resume
+cd /Users/shaileshrana/shape-of-wisdom
+python3 run_family_readiness.py --panel paper --model-name qwen2p5_1p5b_instruct --device cpu
+python3 run_family_readiness.py --panel paper --model-name gemma2_2b_it --device cpu
+python3 run_family_readiness.py --panel paper --model-name llama3p2_1b_instruct --device cpu --timeout-seconds 60
 ```
 
----
+Representative readiness artifacts already present:
 
-## Models
+- `outputs/qc/family_readiness_qwen2p5_1p5b_instruct.json`
+- `outputs/qc/family_readiness_gemma2_2b_it.json`
+- `outputs/qc/family_readiness_llama3p2_1b_instruct.json`
 
-All models are loaded at pinned HuggingFace revisions with deterministic decoding (temperature=0, seed=12345):
-
-| Model | HuggingFace ID | Revision |
-|-------|----------------|----------|
-| Qwen 2.5-7B-Instruct | `Qwen/Qwen2.5-7B-Instruct` | `a09a354...` |
-| Llama 3.1-8B-Instruct | `meta-llama/Llama-3.1-8B-Instruct` | `0e9e39f...` |
-| Mistral 7B-Instruct-v0.3 | `mistralai/Mistral-7B-Instruct-v0.3` | `c170c70...` |
-
-Full revision hashes are in [`configs/experiment_v2.yaml`](configs/experiment_v2.yaml).
-
----
-
-## Data
-
-**Prompt manifest**: `prompt_packs/ccc_baseline_v1_3000.jsonl` contains 3,000 four-choice questions from [MMLU](https://github.com/hendrycks/test) (MIT License), balanced across difficulty levels and knowledge domains. The manifest is SHA-256 locked (`bfe255...`).
-
-**Domain mapping**: `configs/coarse_domain_mapping.json` maps MMLU fine-grained subjects to coarse categories (STEM, humanities, social sciences, other).
-
----
-
-## Key Configuration
-
-All experiment parameters — model revisions, classification thresholds, validator gates, sampling sizes — are defined in [`configs/experiment_v2.yaml`](configs/experiment_v2.yaml). Key values:
-
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Tail window | 8 layers | Layers inspected for stability classification |
-| Min boundary | \|δ\| ≥ 0.3 | Minimum margin for tail stability |
-| R² gate | ≥ 0.70 | Drift decomposition quality threshold |
-| BH α | 0.05 | Benjamini–Hochberg correction level |
-| Tracing subset | 600 / model | Prompts selected for component tracing |
-| Seed | 12345 | Deterministic seed for all random operations |
-
----
-
-## Tests
+Full sweep remains opt-in and blocked by default:
 
 ```bash
-python -m pytest tests/ -x -q
+cd /Users/shaileshrana/shape-of-wisdom
+SCWI_ALLOW_FULL_SWEEP=1 python3 run_full_sweep.py --confirm-full-sweep --run-id paper_YYYYMMDDTHHMMSSZ --device cuda:0 --dtype float32 --scorer-engine optimized_exact
 ```
 
-The test suite covers span parsing, trajectory classification, thermal management, metric computation, and stage-level validators.
+Budget-safe paper pilot path:
 
----
-
-## Citation
-
-```bibtex
-@inproceedings{shapewisdom2026,
-  title={State, Motion, Boundary: A Mechanistic Account of Convergence and Failure in Transformer Multiple-Choice Decisions},
-  author={Anonymous},
-  booktitle={International Conference on Machine Learning (ICML)},
-  year={2026}
-}
+```bash
+cd /Users/shaileshrana/shape-of-wisdom
+python3 run_prepare.py --panel paper_pilot --run-id paper_pilot_YYYYMMDDTHHMMSSZ
+python3 run_gpu_preflight.py --panel paper_pilot --run-id paper_pilot_YYYYMMDDTHHMMSSZ --device cuda:0 --dtype bfloat16 --scorer-engine optimized_exact --hourly-rate-usd <rate>
+SCWI_ALLOW_INFERENCE=1 python3 run_controls.py --panel paper_pilot --run-id paper_pilot_YYYYMMDDTHHMMSSZ --device cuda:0 --dtype bfloat16 --scorer-engine optimized_exact --max-batch-size 0
+python3 run_resume_failed.py --run-id paper_pilot_YYYYMMDDTHHMMSSZ
+python3 run_metrics.py --run-id paper_pilot_YYYYMMDDTHHMMSSZ
+python3 run_qc.py --run-id paper_pilot_YYYYMMDDTHHMMSSZ
+python3 run_stats.py --run-id paper_pilot_YYYYMMDDTHHMMSSZ
 ```
 
----
+## Output Paths
 
-## License
+- `outputs/runs/<run_id>/prepared_data/`
+- `outputs/caches/`
+- `outputs/runs/<run_id>/metrics/`
+- `outputs/runs/<run_id>/stats/`
+- `outputs/runs/<run_id>/qc/`
+- `outputs/runs/<run_id>/logs/`
+- `manifests/latest_run.json`
+- `manifests/latest_run_<panel>.json`
 
-This project is released under the [MIT License](LICENSE).
+## Config Files
+
+- `configs/models.yaml`
+- `configs/datasets.yaml`
+- `configs/prompts.yaml`
+- `configs/readouts.yaml`
+- `configs/metrics.yaml`
+- `configs/controls.yaml`
+- `configs/runtime.yaml`
+
+## Panel Split
+
+- Smoke/dev panel:
+  - Models: `qwen2p5_0p5b_instruct`, `smollm2_360m_instruct`
+  - Datasets: `mmlu_abstract_algebra`, `ai2_arc_challenge`
+  - Readouts: semantic exact, templated semantic, letter label
+  - Permutations: identity, reverse
+- Paper-facing panel:
+  - Families: `Qwen2.5-Instruct`, `Gemma 2 IT`, `Llama Instruct`
+  - Models are revision-pinned in `configs/models.yaml`
+  - Datasets: `mmlu_abstract_algebra`, `ai2_arc_challenge`, `commonsenseqa_validation`
+  - Readouts: semantic exact, templated semantic, letter label
+  - Permutations: identity, reverse
+
+## Preregistered Positivity Rule
+
+- Primary rule:
+  - Scope: `model × dataset`
+  - Filter: `semantic_exact` + `identity` permutation
+  - Statistic: median `delta_margin`
+  - Decision: grouped-bootstrap 95% CI lower bound must be `> 0`
+  - Minimum valid examples: `10`
+- Secondary robustness summary:
+  - Scope: same subset as the primary rule
+  - Statistic: proportion of prompts with `delta_margin > 0`
+  - Decision: observed proportion `> 0.6` and grouped-bootstrap 95% CI lower bound `> 0.5`
+  - Report-only, not the main gate
+
+## Known Blockers
+
+- Snapshot exception for the live-mutating root log file
+- `Gemma` and `Llama` require manual Hugging Face access approval before readiness can pass
+- Paper-panel Qwen sizes remain `family_ready: false` until readiness validation is run on the
+  target hardware
+- Full sweep is blocked until every paper-panel model resolves as enabled and `family_ready: true`
+- Run-scoped analysis intentionally ignores legacy top-level `outputs/*` artifacts; only `outputs/runs/<run_id>/...`
+  and the corresponding run manifest are authoritative
+- Exact KV-cache reuse is still intentionally disabled pending target-GPU calibration; the current
+  optimized path stops at stages A-D because those already preserve exactness and passed smoke
+- Default CLI dtype is now `float32`; any reduced-precision GPU run must be requested explicitly
+  and should only be used after target-hardware calibration and review

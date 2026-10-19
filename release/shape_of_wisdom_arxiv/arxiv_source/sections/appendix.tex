@@ -1,0 +1,25 @@
+\section{Reproducibility and release QA}
+
+The release rebuilds from included derived data and does not require model weights, GPU access, Hugging Face access, or new inference. The rebuild entry point is \texttt{scripts/rebuild\_all.py}. It regenerates paper-facing tables, figures, LaTeX macros, the PDF, rendered page PNGs, and hash manifests. The optional raw-cache verification path is described in \texttt{REPRODUCE.md}.
+
+\subsection{Dataset counts}
+
+\begin{center}
+\small
+\input{tables/appendix_dataset_counts}
+\captionof{table}{\textbf{Dataset counts included in the release.} The broad trajectory panel uses ARC-Challenge and CommonsenseQA.}
+\label{tab:dataset-counts}
+\end{center}
+
+\subsection{Threshold sensitivity}
+
+\begin{center}
+\small
+\input{tables/appendix_threshold_summary}
+\captionof{table}{\textbf{Pooled threshold and lag summary.} Values are normalized-depth medians with 95\% bootstrap intervals.}
+\label{tab:threshold-summary}
+\end{center}
+
+\subsection{QC summary}
+
+The generated QC table is included in the release artifacts. It records \FinalLayerTieCount{} final-layer top ties and \NormalizedGapExcludedCount{} rows excluded from normalized-gap metrics; missing option scores, missing options by layer, final-winner mismatches, and nonmonotonic layer-index rows are all zero.

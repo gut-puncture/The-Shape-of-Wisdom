@@ -1,12 +1,10 @@
-# Agent Rules
+# Experiment Agent Instructions
 
-## Visual Proof
-- When a human asks for video proof of a feature or bug fix, never provide a terminal/text-screen-only recording.
-- Video proof must show the actual application user flow and UI state transitions relevant to the change.
-- For before/after proof, capture both states in the UI and include observable evidence that the fix works.
-
-## Paper Figure QA (Mandatory)
-- For any paper/LaTeX/figure task, always visually inspect the final compiled paper PDF pages, not just standalone figure files.
-- Always render and review every page containing figures/tables after each figure/layout change.
-- Do not deliver until there are zero visible clipping issues, zero overlaps, readable labels, and sane panel proportions in the final paper.
-- If any issue is found, iterate fixes and re-check the rendered paper pages again until clean.
+- Work only inside `/Users/shaileshrana/shape-of-wisdom/`.
+- Treat `/Users/shaileshrana/shape-of-wisdom_legacy_20260327T121445/v2/BLOCKER_REPORT.md` as active context.
+- Do not silence dataset, model, prompt, or tokenization anomalies. Log them.
+- Do not run `run_full_sweep.py` unless the runtime guard and config blocker are both cleared.
+- Update `TODO.md` and `BLOCKERS.md` whenever a phase state or blocker changes.
+- Preserve exact option surfaces in the main semantic path.
+- Keep controls paired with the semantic readout on the same valid example subset whenever
+  comparisons are reported.

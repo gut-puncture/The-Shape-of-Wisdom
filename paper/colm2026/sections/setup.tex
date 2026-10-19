@@ -1,14 +1,21 @@
 \section{Setup and measurement}
 
-Table~\ref{tab:design-summary} summarizes the experiment design. The model panel contains nine instruction-tuned checkpoints from three families: Qwen 2.5 Instruct~\citep{qwen25card}, Gemma 2 IT~\citep{gemma2card}, and Llama Instruct~\citep{llama3herd}. The dataset slice contains \ArcPromptCount{} ARC-Challenge prompts~\citep{clark2018arc}, \CsqaPromptCount{} CommonsenseQA prompts~\citep{talmor2019commonsenseqa}, and the full \MmluPromptCount{}-question MMLU abstract-algebra validation slice~\citep{hendrycks2021mmlu}. The MMLU count is small because this benchmark slice itself is small in our setup; we did not drop a larger set of abstract-algebra questions.
+Table~\ref{tab:design-summary} summarizes the experiment design. The model panel contains
+nine instruction-tuned checkpoints from three families: Qwen 2.5 Instruct~\citep{qwen25card},
+Gemma 2 IT~\citep{gemma2card}, and Llama Instruct~\citep{llama3herd}. The reported
+benchmark slice contains \ArcPromptCount{} ARC-Challenge prompts~\citep{clark2018arc}
+and \CsqaPromptCount{} CommonsenseQA prompts~\citep{talmor2019commonsenseqa}.
 
-For every model, we render a normal multiple-choice prompt and end it with the literal suffix \texttt{"Final answer: "}. After that suffix, we score three possible continuations:
+For every model, we render a normal multiple-choice prompt and end it with the literal
+suffix ``\texttt{Final answer:}''. After that suffix, we score three possible continuations:
 \begin{itemize}[leftmargin=1.2em, itemsep=0.2em, topsep=0.35em]
-\item the exact option text itself, such as \texttt{"photosynthesis"};
-\item the literal template \texttt{"The answer is \{option\_text\}"};
-\item the bare answer letter, such as \texttt{"A"}.
+\item the exact option text itself, such as ``\texttt{photosynthesis}'';
+\item the literal template ``\texttt{The answer is \{option\_text\}}'';
+\item the bare answer letter, such as ``\texttt{A}''.
 \end{itemize}
-The exact option-text path is the preregistered primary analysis. The other two are controls. They keep the same prompt and the same answer choices, but they change what exact continuation string we score after \texttt{"Final answer: "}.
+The exact option-text path is the preregistered primary analysis. The other two are controls.
+They keep the same prompt and the same answer choices, but they change which exact
+continuation string we score after ``\texttt{Final answer:}''.
 
 \begin{table*}[t]
 \centering
@@ -18,7 +25,14 @@ The exact option-text path is the preregistered primary analysis. The other two 
 \label{tab:design-summary}
 \end{table*}
 
-We score these continuations under teacher forcing, one layer at a time. In plain terms, we do not let the model free-generate a long answer. We stop at \texttt{"Final answer: "} and ask how much probability the network assigns to each allowed continuation at each layer. Let $p_\ell(o)$ denote the normalized probability of option $o$ at layer $\ell$. We sort options by $p_\ell(o)$ and define a plausible answer set $C_\ell$ as the smallest prefix whose cumulative probability reaches $\tau = 0.8$. If the cutoff lands inside a numerical tie, we mark that layer as ambiguous instead of forcing an arbitrary choice. In plain language, $C_\ell$ is the small set of answers that the model still treats as seriously possible at layer $\ell$.
+We score these continuations under teacher forcing, one layer at a time. In practical terms,
+we do not let the model free-generate a long answer. We stop at ``\texttt{Final answer:}''
+and ask how much probability the network assigns to each allowed continuation at each
+layer. Let $p_\ell(o)$ denote the normalized probability of option $o$ at layer $\ell$. We
+sort options by $p_\ell(o)$ and define a plausible answer set $C_\ell$ as the smallest prefix
+whose cumulative probability reaches $\tau = 0.8$. If the cutoff lands inside a numerical tie,
+we mark that layer as ambiguous instead of forcing an arbitrary choice. In words, $C_\ell$
+is the small set of answers that the model still treats as seriously possible at layer $\ell$.
 
 Our primary anchor is the \emph{eventual answer}, meaning the option that wins at the final layer under the primary readout. Denote it by $o^\star$. We then track three depth events:
 \begin{align}

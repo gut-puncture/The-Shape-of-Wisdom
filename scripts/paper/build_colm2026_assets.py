@@ -5,7 +5,6 @@ import hashlib
 import json
 import math
 import re
-import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -36,10 +35,14 @@ PRIMARY_PERMUTATION = "identity"
 PRIMARY_ANCHOR = "final_winner_anchor"
 SEED = 20260330
 
-DATASET_ORDER = [
+ALL_DATASET_ORDER = [
     "ai2_arc_challenge",
     "commonsenseqa_validation",
     "mmlu_abstract_algebra",
+]
+PAPER_DATASET_ORDER = [
+    "ai2_arc_challenge",
+    "commonsenseqa_validation",
 ]
 DATASET_DISPLAY = {
     "ai2_arc_challenge": "ARC-Challenge",
@@ -237,13 +240,21 @@ def load_context() -> PaperContext:
     bootstrap_summary = load_json(RUN_DIR / "stats" / "bootstrap_summary.json")
     qc_summary = load_json(RUN_DIR / "qc" / "qc_summary.json")
     selection_manifest = load_json(RUN_DIR / "manifests" / "prepared_selection_manifest.json")
+    canonical_examples = {
+        example_id: row
+        for example_id, row in canonical_examples.items()
+        if row["dataset_name"] in PAPER_DATASET_ORDER
+    }
+    metrics_df = metrics_df[metrics_df["dataset_name"].isin(PAPER_DATASET_ORDER)].copy()
+    score_df = score_df[score_df["dataset_name"].isin(PAPER_DATASET_ORDER)].copy()
+    positivity_df = positivity_df[positivity_df["dataset_name"].isin(PAPER_DATASET_ORDER)].copy()
     primary_df = positivity_df[
         (positivity_df["criterion_label"] == "primary_rule")
         & (positivity_df["anchor"] == PRIMARY_ANCHOR)
         & (positivity_df["readout_id"] == PRIMARY_READOUT)
         & (positivity_df["permutation_id"] == PRIMARY_PERMUTATION)
     ].copy()
-    primary_df["dataset_name"] = pd.Categorical(primary_df["dataset_name"], DATASET_ORDER, ordered=True)
+    primary_df["dataset_name"] = pd.Categorical(primary_df["dataset_name"], PAPER_DATASET_ORDER, ordered=True)
     primary_df["model_name"] = pd.Categorical(primary_df["model_name"], MODEL_ORDER, ordered=True)
     primary_df = primary_df.sort_values(["dataset_name", "model_name"]).reset_index(drop=True)
     return PaperContext(
@@ -302,7 +313,7 @@ def normalize_metrics(rows: list[dict[str, Any]]) -> pd.DataFrame:
             }
         )
     df = pd.DataFrame(out)
-    df["dataset_name"] = pd.Categorical(df["dataset_name"], DATASET_ORDER, ordered=True)
+    df["dataset_name"] = pd.Categorical(df["dataset_name"], ALL_DATASET_ORDER, ordered=True)
     df["model_name"] = pd.Categorical(df["model_name"], MODEL_ORDER, ordered=True)
     df["model_family"] = pd.Categorical(df["model_family"], FAMILY_ORDER, ordered=True)
     return df.sort_values(["dataset_name", "model_name", "example_id", "readout_id", "permutation_id"]).reset_index(drop=True)
@@ -320,16 +331,6 @@ def compute_cdf(values: np.ndarray, grid: np.ndarray) -> np.ndarray:
     return np.array([(values <= threshold).mean() for threshold in grid])
 
 
-def short_question(text: str, *, width: int = 44, max_lines: int = 2) -> str:
-    compact = " ".join(text.split())
-    lines = textwrap.wrap(compact, width=width)
-    if len(lines) <= max_lines:
-        return "\n".join(lines)
-    trimmed = lines[:max_lines]
-    trimmed[-1] = trimmed[-1].rstrip(". ") + "..."
-    return "\n".join(trimmed)
-
-
 def select_exemplars(context: PaperContext) -> list[pd.Series]:
     df = semantic_identity_valid(context.metrics_df)
     df = df[df["final_contrast"].fillna(-1.0) > 0.20].copy()
@@ -341,8 +342,8 @@ def select_exemplars(context: PaperContext) -> list[pd.Series]:
     preferences = [
         ("qwen2.5_instruct", "ai2_arc_challenge"),
         ("gemma2_it", "commonsenseqa_validation"),
-        ("llama_instruct", "commonsenseqa_validation"),
-        ("qwen2.5_instruct", "mmlu_abstract_algebra"),
+        ("llama_instruct", "ai2_arc_challenge"),
+        ("qwen2.5_instruct", "commonsenseqa_validation"),
     ]
     chosen: list[pd.Series] = []
     used: set[tuple[str, str, str]] = set()
@@ -388,11 +389,11 @@ def build_flagship_figure(context: PaperContext) -> dict[str, Any]:
             }
         )
 
-    fig = plt.figure(figsize=(7.05, 6.7))
-    gs = GridSpec(3, 3, figure=fig, height_ratios=[2.35, 0.9, 1.45], hspace=0.32, wspace=0.2)
+    fig = plt.figure(figsize=(7.05, 6.25))
+    gs = GridSpec(3, 2, figure=fig, height_ratios=[2.35, 0.9, 1.45], hspace=0.34, wspace=0.24)
     ax_pooled = fig.add_subplot(gs[0, :])
     ax_strip = fig.add_subplot(gs[1, :], sharex=ax_pooled)
-    facet_axes = [fig.add_subplot(gs[2, idx], sharex=ax_pooled, sharey=ax_pooled) for idx in range(3)]
+    facet_axes = [fig.add_subplot(gs[2, idx], sharex=ax_pooled, sharey=ax_pooled) for idx in range(2)]
 
     ax_pooled.fill_between(grid, pooled_committed, pooled_plausible, color=COLORS["sand"], alpha=0.45, zorder=1)
     ax_pooled.plot(grid, pooled_plausible, color=COLORS["plausible"], lw=2.9, zorder=3)
@@ -485,7 +486,7 @@ def build_flagship_figure(context: PaperContext) -> dict[str, Any]:
         va="bottom",
     )
 
-    for axis, dataset in zip(facet_axes, DATASET_ORDER):
+    for axis, dataset in zip(facet_axes, PAPER_DATASET_ORDER):
         subset = df[df["dataset_name"] == dataset]
         plausible = compute_cdf(subset["norm_d_id"].to_numpy(), grid)
         committed = compute_cdf(subset["norm_d_margin"].to_numpy(), grid)
@@ -517,7 +518,7 @@ def build_flagship_figure(context: PaperContext) -> dict[str, Any]:
 
 def build_forest_figure(context: PaperContext) -> dict[str, Any]:
     df = context.primary_df.copy()
-    fig, axes = plt.subplots(1, 3, figsize=(7.05, 5.2), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(7.05, 5.0), sharey=True)
     ci_hi_values = []
     for item in df["bootstrap"]:
         if isinstance(item, dict):
@@ -527,7 +528,7 @@ def build_forest_figure(context: PaperContext) -> dict[str, Any]:
     y_positions = np.arange(len(MODEL_ORDER))[::-1]
     model_to_y = {model: y for model, y in zip(MODEL_ORDER, y_positions)}
 
-    for axis, dataset in zip(axes, DATASET_ORDER):
+    for axis, dataset in zip(axes, PAPER_DATASET_ORDER):
         subset = df[df["dataset_name"] == dataset].copy()
         axis.axvline(0.0, color=COLORS["grid"], lw=1.0, zorder=0)
         for family_idx in range(1, len(FAMILY_ORDER)):
@@ -660,7 +661,7 @@ def build_controls_figure(context: PaperContext) -> dict[str, Any]:
     axes[0].grid(True, axis="y")
     axes[0].yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axes[0].set_ylabel("Valid-rate for $\\Delta_{\\mathrm{margin}}$")
-    axes[0].set_title("A. Control readouts change coverage", fontsize=9.5)
+    axes[0].set_title("A. Controls change which cases stay measurable", fontsize=9.5)
     axes[0].text(
         0.01,
         0.02,
@@ -691,7 +692,7 @@ def build_controls_figure(context: PaperContext) -> dict[str, Any]:
     axes[1].grid(True, axis="y")
     axes[1].yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axes[1].set_ylabel("Final-winner agreement")
-    axes[1].set_title("B. Controls are not interchangeable", fontsize=9.5)
+    axes[1].set_title("B. Controls can change the final winner", fontsize=9.5)
     axes[1].text(
         0.0,
         0.03,
@@ -767,22 +768,6 @@ def build_exemplars_figure(context: PaperContext) -> dict[str, Any]:
             f"{pretty_model(str(row['model_name']))} on {pretty_dataset(dataset_name)}",
             fontsize=8.9,
         )
-        axis.text(
-            0.02,
-            0.98,
-            short_question(example["question_canonical"]),
-            transform=axis.transAxes,
-            fontsize=7.2,
-            color=COLORS["muted_text"],
-            ha="left",
-            va="top",
-            bbox={
-                "boxstyle": "round,pad=0.22",
-                "facecolor": "white",
-                "edgecolor": "none",
-                "alpha": 0.86,
-            },
-        )
         axis.set_xlim(0.0, 1.0)
         axis.set_ylim(-1.05, 1.05)
         axis.xaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
@@ -815,10 +800,11 @@ def build_exemplars_figure(context: PaperContext) -> dict[str, Any]:
 
 def build_selection_figure(context: PaperContext) -> dict[str, Any]:
     selections = pd.DataFrame(context.selection_manifest["selections"])
-    selections["dataset"] = pd.Categorical(selections["dataset"], DATASET_ORDER, ordered=True)
-    fig, axes = plt.subplots(1, 3, figsize=(7.05, 2.4), gridspec_kw={"wspace": 0.28})
+    selections = selections[selections["dataset"].isin(PAPER_DATASET_ORDER)].copy()
+    selections["dataset"] = pd.Categorical(selections["dataset"], PAPER_DATASET_ORDER, ordered=True)
+    fig, axes = plt.subplots(1, 2, figsize=(7.05, 2.4), gridspec_kw={"wspace": 0.28})
     option_markers = {3: "s", 4: "o", 5: "^"}
-    for axis, dataset in zip(axes, DATASET_ORDER):
+    for axis, dataset in zip(axes, PAPER_DATASET_ORDER):
         subset = selections[selections["dataset"] == dataset].copy()
         subset = subset.sort_values("question_length").reset_index(drop=True)
         x = np.arange(len(subset))
@@ -901,21 +887,20 @@ def build_design_table(context: PaperContext) -> str:
         ),
         (
             "Dataset slice",
-            f"{pretty_dataset('ai2_arc_challenge')} ({dataset_counts.get('ai2_arc_challenge', 0)}), "
-            f"{pretty_dataset('commonsenseqa_validation')} ({dataset_counts.get('commonsenseqa_validation', 0)}), "
-            f"and {pretty_dataset('mmlu_abstract_algebra')} ({dataset_counts.get('mmlu_abstract_algebra', 0)}).",
+            f"{pretty_dataset('ai2_arc_challenge')} ({dataset_counts.get('ai2_arc_challenge', 0)}) "
+            f"and {pretty_dataset('commonsenseqa_validation')} ({dataset_counts.get('commonsenseqa_validation', 0)}).",
         ),
         (
             "Prompting",
             "Model-specific chat or raw prompt templates. Every prompt ends with the literal suffix "
-            "\\texttt{\"Final answer:\"}.",
+            "``\\texttt{Final answer:}''.",
         ),
         (
             "Readouts",
-            "Primary: the exact option text after \\texttt{\"Final answer:\"}, for example "
-            "\\texttt{\"photosynthesis\"}. Controls: the literal continuation "
-            "\\texttt{\"The answer is \\{option\\_text\\}\"} and the bare answer letter, such as "
-            "\\texttt{\"A\"}.",
+            "Primary: the exact option text after ``\\texttt{Final answer:}'', for example "
+            "``\\texttt{photosynthesis}''. Controls: the literal continuation "
+            "``\\texttt{The answer is \\{option\\_text\\}}'' and the bare answer letter, such as "
+            "``\\texttt{A}''.",
         ),
         (
             "Permutations",
@@ -945,7 +930,7 @@ def build_design_table(context: PaperContext) -> str:
 def build_primary_summary_table(context: PaperContext) -> str:
     primary = context.primary_df.copy()
     summary_rows = []
-    for dataset in DATASET_ORDER:
+    for dataset in PAPER_DATASET_ORDER:
         subset = primary[primary["dataset_name"] == dataset]
         summary_rows.append(
             (
@@ -957,7 +942,7 @@ def build_primary_summary_table(context: PaperContext) -> str:
         )
     summary_rows.append(
         (
-            "All datasets",
+            "All reported datasets",
             int((primary["positive"] == True).sum()),
             int((primary["status"] == "evaluated").sum()),
             int((primary["status"] == "insufficient_n").sum()),
@@ -1063,9 +1048,9 @@ def build_qc_table(context: PaperContext) -> str:
 
 def build_readout_table(context: PaperContext) -> str:
     readout_rows = [
-        ("semantic_exact", "Exact option text after \\texttt{\"Final answer:\"}, e.g. \\texttt{\"photosynthesis\"}", "Mean log-probability"),
-        ("templated_semantic", "Literal continuation \\texttt{\"The answer is \\{option\\_text\\}\"}", "Mean log-probability"),
-        ("letter_label", "Bare answer letter after \\texttt{\"Final answer:\"}, e.g. \\texttt{\"A\"}", "Mean log-probability"),
+        ("semantic_exact", "Exact option text after ``\\texttt{Final answer:}'', e.g. ``\\texttt{photosynthesis}''", "Mean log-probability"),
+        ("templated_semantic", "Literal continuation ``\\texttt{The answer is \\{option\\_text\\}}''", "Mean log-probability"),
+        ("letter_label", "Bare answer letter after ``\\texttt{Final answer:}'', e.g. ``\\texttt{A}''", "Mean log-probability"),
     ]
     body = "\n".join(f"{latex_escape(name)} & {surface} & {latex_escape(norm)} \\\\" for name, surface, norm in readout_rows)
     return (
@@ -1083,6 +1068,53 @@ def macro(name: str, value: str) -> str:
     return f"\\newcommand{{\\{name}}}{{{value}}}"
 
 
+def compute_grouped_bootstrap_summary(df: pd.DataFrame, *, iterations: int = 200) -> dict[str, float]:
+    grouped = [group["delta_margin"].dropna().to_numpy() for _, group in df.groupby("example_id")]
+    grouped = [values for values in grouped if len(values) > 0]
+    pooled = np.concatenate(grouped)
+    rng = np.random.default_rng(SEED)
+    estimates = []
+    for _ in range(iterations):
+        sample = rng.integers(0, len(grouped), size=len(grouped))
+        sampled = np.concatenate([grouped[idx] for idx in sample])
+        estimates.append(float(np.median(sampled)))
+    return {
+        "estimate_median": float(np.median(pooled)),
+        "estimate_mean": float(np.mean(pooled)),
+        "ci_lo": float(np.quantile(estimates, 0.025)),
+        "ci_hi": float(np.quantile(estimates, 0.975)),
+        "iterations": iterations,
+    }
+
+
+def compute_paired_readout_lag_stats(metrics_df: pd.DataFrame) -> dict[str, dict[str, float]]:
+    subset = metrics_df[
+        (metrics_df["permutation_id"] == PRIMARY_PERMUTATION)
+        & (metrics_df["dataset_name"].isin(PAPER_DATASET_ORDER))
+    ].copy()
+    grouped: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for row in subset.to_dict("records"):
+        key = (str(row["model_name"]), str(row["dataset_name"]), str(row["example_id"]))
+        grouped.setdefault(key, {})[str(row["readout_id"])] = row
+    paired = [
+        rows
+        for rows in grouped.values()
+        if all(
+            readout in rows and rows[readout]["delta_margin"] is not None
+            for readout in ["semantic_exact", "templated_semantic", "letter_label"]
+        )
+    ]
+    out: dict[str, dict[str, float]] = {}
+    for readout in ["semantic_exact", "templated_semantic", "letter_label"]:
+        values = np.array([float(rows[readout]["delta_margin"]) for rows in paired], dtype=float)
+        out[readout] = {
+            "median": float(np.median(values)),
+            "positive_frac": float(np.mean(values > 0)),
+            "n": float(len(values)),
+        }
+    return out
+
+
 def write_paper_numbers(context: PaperContext, figure_stats: dict[str, Any]) -> None:
     primary = context.primary_df.copy()
     secondary = context.positivity_df[
@@ -1097,11 +1129,9 @@ def write_paper_numbers(context: PaperContext, figure_stats: dict[str, Any]) -> 
         & (context.positivity_df["readout_id"] == PRIMARY_READOUT)
         & (context.positivity_df["permutation_id"] == PRIMARY_PERMUTATION)
     ].copy()
-    arc_csqa = primary[primary["dataset_name"].isin(["ai2_arc_challenge", "commonsenseqa_validation"])]
-    gold_arc_csqa = gold[gold["dataset_name"].isin(["ai2_arc_challenge", "commonsenseqa_validation"])]
-    mmlu = primary[primary["dataset_name"] == "mmlu_abstract_algebra"]
-    gold_mmlu = gold[gold["dataset_name"] == "mmlu_abstract_algebra"]
     semantic_df = semantic_identity_valid(context.metrics_df)
+    pooled_bootstrap = compute_grouped_bootstrap_summary(semantic_df)
+    paired_lag_stats = compute_paired_readout_lag_stats(context.metrics_df)
     selection_counts = (
         pd.DataFrame(context.canonical_examples.values())
         .groupby("dataset_name")
@@ -1110,43 +1140,44 @@ def write_paper_numbers(context: PaperContext, figure_stats: dict[str, Any]) -> 
     )
     macros = [
         macro("MergedRunId", latex_escape(context.run_manifest["merged_run_id"])),
-        macro("PreparedExampleCount", str(context.run_manifest["counts"]["prepared_examples"])),
-        macro("ScoreRowCount", f"{context.run_manifest['counts']['score_rows']:,}"),
-        macro("MetricRowCount", f"{context.run_manifest['counts']['metric_rows']:,}"),
-        macro("TokenAuditCount", f"{context.run_manifest['counts']['token_audits']:,}"),
+        macro("PreparedExampleCount", str(len(context.canonical_examples))),
+        macro("ScoreRowCount", f"{len(context.score_df):,}"),
+        macro("MetricRowCount", f"{len(context.metrics_df):,}"),
         macro("SemanticIdentityValidCases", f"{len(semantic_df):,}"),
-        macro("PooledLagMedian", fmt_float(context.bootstrap_summary["estimate_median"], digits=1)),
-        macro("PooledLagCILow", fmt_float(context.bootstrap_summary["ci_lo"], digits=1)),
-        macro("PooledLagCIHigh", fmt_float(context.bootstrap_summary["ci_hi"], digits=1)),
+        macro("PooledLagMedian", fmt_float(pooled_bootstrap["estimate_median"], digits=1)),
+        macro("PooledLagCILow", fmt_float(pooled_bootstrap["ci_lo"], digits=1)),
+        macro("PooledLagCIHigh", fmt_float(pooled_bootstrap["ci_hi"], digits=1)),
         macro("FlagshipTwentyPlausiblePct", fmt_pct(figure_stats["flagship"]["pooled_at_20_plausible"])),
         macro("FlagshipTwentyCommittedPct", fmt_pct(figure_stats["flagship"]["pooled_at_20_committed"])),
         macro("FlagshipFiftyPlausiblePct", fmt_pct(figure_stats["flagship"]["pooled_at_50_plausible"])),
         macro("FlagshipFiftyCommittedPct", fmt_pct(figure_stats["flagship"]["pooled_at_50_committed"])),
         macro("FlagshipEightyPlausiblePct", fmt_pct(figure_stats["flagship"]["pooled_at_80_plausible"])),
         macro("FlagshipEightyCommittedPct", fmt_pct(figure_stats["flagship"]["pooled_at_80_committed"])),
+        macro("PaperPromptCount", str(len(context.canonical_examples))),
         macro("ArcPromptCount", str(selection_counts.get("ai2_arc_challenge", 0))),
         macro("CsqaPromptCount", str(selection_counts.get("commonsenseqa_validation", 0))),
-        macro("MmluPromptCount", str(selection_counts.get("mmlu_abstract_algebra", 0))),
         macro("OverallPrimaryPositiveCells", str(int((primary["positive"] == True).sum()))),
         macro("OverallPrimaryEvaluableCells", str(int((primary["status"] == "evaluated").sum()))),
         macro("OverallPrimaryInsufficientCells", str(int((primary["status"] == "insufficient_n").sum()))),
         macro("OverallSecondaryPositiveCells", str(int((secondary["positive"] == True).sum()))),
         macro("OverallSecondaryEvaluableCells", str(int((secondary["status"] == "evaluated").sum()))),
         macro("OverallSecondaryInsufficientCells", str(int((secondary["status"] == "insufficient_n").sum()))),
-        macro("ArcCsqaPositiveCells", str(int((arc_csqa["positive"] == True).sum()))),
-        macro("ArcCsqaEvaluableCells", str(int((arc_csqa["status"] == "evaluated").sum()))),
-        macro("MmluPositiveCells", str(int((mmlu["positive"] == True).sum()))),
-        macro("MmluEvaluableCells", str(int((mmlu["status"] == "evaluated").sum()))),
-        macro("MmluInsufficientCells", str(int((mmlu["status"] == "insufficient_n").sum()))),
-        macro("GoldArcCsqaPositiveCells", str(int((gold_arc_csqa["positive"] == True).sum()))),
-        macro("GoldArcCsqaEvaluableCells", str(int((gold_arc_csqa["status"] == "evaluated").sum()))),
-        macro("GoldMmluInsufficientCells", str(int((gold_mmlu["status"] == "insufficient_n").sum()))),
+        macro("ArcCsqaPositiveCells", str(int((primary["positive"] == True).sum()))),
+        macro("ArcCsqaEvaluableCells", str(int((primary["status"] == "evaluated").sum()))),
+        macro("GoldArcCsqaPositiveCells", str(int((gold["positive"] == True).sum()))),
+        macro("GoldArcCsqaEvaluableCells", str(int((gold["status"] == "evaluated").sum()))),
         macro("SemanticIdentityValidRate", fmt_pct(figure_stats["controls"]["valid_rates"]["semantic_exact__identity"], digits=0)),
         macro("TemplatedIdentityValidRate", fmt_pct(figure_stats["controls"]["valid_rates"]["templated_semantic__identity"], digits=0)),
         macro("LetterIdentityValidRate", fmt_pct(figure_stats["controls"]["valid_rates"]["letter_label__identity"], digits=0)),
         macro("TemplatedAgreementIdentity", fmt_pct(figure_stats["controls"]["agreement_rates"]["templated_semantic__identity"], digits=0)),
         macro("LetterAgreementIdentity", fmt_pct(figure_stats["controls"]["agreement_rates"]["letter_label__identity"], digits=0)),
         macro("AllSameReadoutRate", fmt_pct(figure_stats["controls"]["all_same_rate"], digits=0)),
+        macro("SemanticPairedLagMedian", fmt_float(paired_lag_stats["semantic_exact"]["median"], digits=0)),
+        macro("TemplatedPairedLagMedian", fmt_float(paired_lag_stats["templated_semantic"]["median"], digits=0)),
+        macro("LetterPairedLagMedian", fmt_float(paired_lag_stats["letter_label"]["median"], digits=0)),
+        macro("SemanticPairedPositivePct", fmt_pct(paired_lag_stats["semantic_exact"]["positive_frac"], digits=0)),
+        macro("TemplatedPairedPositivePct", fmt_pct(paired_lag_stats["templated_semantic"]["positive_frac"], digits=0)),
+        macro("LetterPairedPositivePct", fmt_pct(paired_lag_stats["letter_label"]["positive_frac"], digits=0)),
         macro("DuplicateOptionCount", str(context.qc_summary["example_flag_counts"].get("duplicate_option_text", 0))),
         macro("TokenCollisionCount", str(context.qc_summary["token_flag_counts"].get("tokenization_collision", 0))),
     ]

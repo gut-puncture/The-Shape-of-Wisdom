@@ -1,0 +1,50 @@
+metrics:
+  primary_tau: 0.8
+  primary_delta: 0.15
+  tie_epsilon: 1.0e-12
+  persistence_rule: all_later_layers
+  normalized_depth_denominator: transformer_blocks_only
+  sensitivity:
+    tau: [0.7, 0.8, 0.9]
+    delta: [0.05, 0.1, 0.15]
+  positivity_criteria:
+    authored: true
+    note: primary rule locked by user on March 27, 2026; secondary robustness summary is report-only
+    primary_rule:
+      scope: model_dataset
+      anchor: final_winner_anchor
+      readout_id: semantic_exact
+      permutation_id: identity
+      statistic: median_delta_margin
+      ci_level: 0.95
+      bootstrap_iterations: 1000
+      positive_if:
+        ci_lo_gt: 0.0
+      min_valid_examples: 10
+    secondary_robustness:
+      scope: model_dataset
+      anchor: final_winner_anchor
+      readout_id: semantic_exact
+      permutation_id: identity
+      statistic: proportion_delta_margin_gt_zero
+      ci_level: 0.95
+      bootstrap_iterations: 1000
+      threshold_gt: 0.6
+      ci_lo_gt: 0.5
+      min_valid_examples: 10
+      report_only: true
+    gold_answer_sensitivity:
+      enabled: true
+      anchor: gold_answer_anchor
+      readout_id: semantic_exact
+      permutation_id: identity
+      statistic: median_delta_margin
+      ci_level: 0.95
+      bootstrap_iterations: 1000
+      positive_if:
+        ci_lo_gt: 0.0
+      min_valid_examples: 10
+      report_only: true
+    cross_dataset_model_summary:
+      rule: descriptive_counts_only
+      note: no pooled across-dataset binary positivity rule is preregistered

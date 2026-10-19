@@ -1,0 +1,20 @@
+{
+  "datasets": [
+    {
+      "dataset_id": "cais/mmlu",
+      "dataset_name": "mmlu_abstract_algebra",
+      "example_count": 1,
+      "panel_name": "smoke",
+      "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+      "split": "validation"
+    },
+    {
+      "dataset_id": "allenai/ai2_arc",
+      "dataset_name": "ai2_arc_challenge",
+      "example_count": 1,
+      "panel_name": "smoke",
+      "revision": "210d026faf9955653af8916fad021475a3f00453",
+      "split": "validation"
+    }
+  ]
+}

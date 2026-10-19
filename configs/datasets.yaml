@@ -1,0 +1,26 @@
+datasets:
+  - name: mmlu_abstract_algebra
+    dataset_id: cais/mmlu
+    config_name: abstract_algebra
+    revision: c30699e8356da336a370243923dbaf21066bb9fe
+    split: validation
+    enabled: true
+    smoke_examples: 2
+    note: classic benchmark; answer may stream as integer index
+  - name: ai2_arc_challenge
+    dataset_id: allenai/ai2_arc
+    config_name: ARC-Challenge
+    revision: 210d026faf9955653af8916fad021475a3f00453
+    split: validation
+    enabled: true
+    smoke_examples: 2
+    note: classic benchmark; option count is not uniformly four
+  - name: commonsenseqa_validation
+    dataset_id: tau/commonsense_qa
+    config_name: null
+    revision: 94630fe30dad47192a8546eb75f094926d47e155
+    split: validation
+    enabled: true
+    smoke_examples: 2
+    note: classic benchmark; five-option questions are normal
+

@@ -1,0 +1,12 @@
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\textbf{Aspect} & \textbf{Configuration}\\
+\midrule
+Models & Nine tested instruction-tuned open-weight checkpoints from the Qwen 2.5 Instruct, Gemma 2 IT, and Llama Instruct families. \\
+Data source & Existing exact-option per-layer cache only. No new inference, no new completions, and no new model downloads. \\
+Primary readout & \texttt{semantic\_exact} with identity option ordering. \\
+Persistent depths & $d_2$: first layer after which the eventual winner never leaves the top-2; $d_1$: first layer after which it stays top-1; $d_{50}$: first layer after which the winner gap never falls below 50\% of its final gap. \\
+Primary lags & $\Delta_{21}=d_1-d_2$ and $\Delta_{250}=d_{50}-d_2$. \\
+Late-write metrics & Share of winner-gap growth written after $d_2$, after $d_1$, and in the final 20\% of depth. \\
+\bottomrule
+\end{tabularx}
