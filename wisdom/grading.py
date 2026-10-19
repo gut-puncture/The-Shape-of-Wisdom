@@ -21,14 +21,32 @@ class Grader:
             forms = {f for f in forms if len(f) >= 2}
             self.names.setdefault(a["answer_type"], []).append((qid, forms))
 
-    def given(self, reply: str, answer_type: str):
-        """The qid named earliest in the first line of the reply, or None."""
+    def mentions(self, reply: str, answer_type: str):
+        """Answer entities named in the first line of the reply, in order of first mention.
+        At the same position the longer name wins ("New Delhi" over "Delhi")."""
         first_line = normalize(reply.strip().split("\n")[0] if reply.strip() else "")
-        best = None
+        found = {}
         for qid, forms in self.names[answer_type]:
             for form in forms:
                 i = first_line.find(f" {form} ")
-                # Earliest mention wins; at the same position prefer the longer name ("New Delhi" over "Delhi").
-                if i >= 0 and (best is None or (i, -len(form)) < (best[0], -best[1])):
-                    best = (i, len(form), qid)
-        return best[2] if best else None
+                if i >= 0 and (qid not in found or (i, -len(form)) < found[qid]):
+                    found[qid] = (i, -len(form))
+        spans = sorted(found.items(), key=lambda kv: kv[1])
+        # drop a name that is only a piece of a longer name found at the same place
+        out, taken = [], []
+        for qid, (i, neg_len) in spans:
+            if any(i >= j and i - neg_len <= j + L for j, L in taken):
+                continue
+            out.append(qid)
+            taken.append((i, -neg_len))
+        return out
+
+    def given(self, reply: str, answer_type: str, hint_qid=None):
+        """The answer the reply commits to. When the user suggested `hint_qid` and the reply names
+        both it and another answer ("Germany? No, it's France"), the other answer is the commitment."""
+        named = self.mentions(reply, answer_type)
+        if hint_qid is not None:
+            others = [q for q in named if q != hint_qid]
+            if others:
+                return others[0]
+        return named[0] if named else None

@@ -33,6 +33,7 @@ class Whitener:
         U, S, Vt = np.linalg.svd(X - self.mu, full_matrices=False)
         var = S**2 / max(len(X) - 1, 1)
         var = (1 - SHRINK) * var + SHRINK * var.mean()
+        var = np.maximum(var, 1e-6 * var.max() + 1e-12)  # never divide by a zero-variance direction
         self.P = Vt[:k].T / np.sqrt(var[:k])
 
     def __call__(self, X):
@@ -126,7 +127,8 @@ def places_by_depth(recs, S, unembed=None, label_key="given_qid", shuffle=False)
                 y[i] = l
     types = [r["answer_type"] for r in recs]
     rows = []
-    for layer in range(S.shape[1]):
+    # Slot 0 (the input to block 0) holds the same template token for every prompt: no information.
+    for layer in range(1, S.shape[1]):
         X = S[:, layer]
         W = Whitener(X[tr])
         Z = W(X)
@@ -171,7 +173,9 @@ def text_baseline(recs, label_key="given_qid"):
     tr = [i for i, r in enumerate(recs) if r["split"] == "train" and r.get(label_key)]
     te = [i for i, r in enumerate(recs) if r["split"] == "test" and r.get(label_key)]
     vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 4), min_df=2).fit([recs[i]["text"] for i in tr])
-    Z = vec.transform([r["text"] for r in recs]).toarray()
+    from sklearn.decomposition import TruncatedSVD
+    T = vec.transform([r["text"] for r in recs])
+    Z = TruncatedSVD(min(256, T.shape[1] - 1), random_state=SEED).fit(T[tr]).transform(T)
     y = [r.get(label_key) for r in recs]
     types = [r["answer_type"] for r in recs]
     acc, ch, n = nc_accuracy(Z[tr], [y[i] for i in tr], Z[te], [y[i] for i in te], [types[i] for i in tr], [types[i] for i in te])
@@ -202,12 +206,29 @@ def fit_law(rows):
             "step_center": best[1], "step_width": best[2], "step_drop": best[3][1]}
 
 
-def onset_layer(rows):
-    """First layer where held-out accuracy covers half the way from chance to its maximum."""
-    acc = np.array([r["acc"] for r in rows])
-    ch = np.nanmean([r["chance"] for r in rows])
-    target = ch + 0.5 * (np.nanmax(acc) - ch)
-    return int(np.argmax(acc >= target))
+def onset_layer(recs, S, label_key="given_qid"):
+    """First layer where nearest-centroid accuracy covers half the way from chance to its maximum,
+    chosen using training subjects only (fit on one half of them, score on the other half), so the
+    layer at which errors are then examined is never selected with test data."""
+    tr = [i for i, r in enumerate(recs) if r["split"] == "train" and r.get(label_key)]
+    a = [i for i in tr if stable_half(recs[i]["subject_qid"])]
+    b = [i for i in tr if not stable_half(recs[i]["subject_qid"])]
+    y = [r.get(label_key) for r in recs]
+    types = [r["answer_type"] for r in recs]
+    acc, ch = [], []
+    for layer in range(1, S.shape[1]):
+        Z = Whitener(S[a, layer])(S[:, layer])
+        x, c, _ = nc_accuracy(Z[a], [y[i] for i in a], Z[b], [y[i] for i in b], [types[i] for i in a], [types[i] for i in b])
+        acc.append(x)
+        ch.append(c)
+    acc = np.array(acc)
+    target = np.nanmean(ch) + 0.5 * (np.nanmax(acc) - np.nanmean(ch))
+    return 1 + int(np.argmax(acc >= target))
+
+
+def stable_half(key) -> bool:
+    from wisdom.prompts import stable_unit
+    return stable_unit("half", key) < 0.5
 
 
 def error_anatomy(recs, S, layer, label_key="given_qid"):
@@ -245,18 +266,25 @@ def error_anatomy(recs, S, layer, label_key="given_qid"):
             out.append({"prompt_id": r["prompt_id"], "fact_id": r["fact_id"], "class": cls, "correct": r["correct"],
                         "answer_type": t, "dist_nearest": float(dmin), "place_margin": float(sorted_d[1] - sorted_d[0]),
                         "dist_gold": float(D[k, keys.index(r["answer_qid"])]) if r["answer_qid"] in cents else np.nan,
-                        "first_logprob": r.get("first_logprob"), "first_margin": r.get("first_margin"),
+                        "seq_logprob": float(sum(r.get("token_logprobs") or [np.nan])),
+                        "answer_margin": answer_margin(r),
                         "subject_qid": r["subject_qid"], "band": r["band"]})
     return out, radius
 
 
+def answer_margin(r):
+    lp = sorted((r.get("answer_logprobs") or {}).values(), reverse=True)
+    return lp[0] - lp[1] if len(lp) >= 2 else np.nan
+
+
 def auc_beyond_confidence(anat):
     """Does the place geometry predict a right answer better than the model's own confidence?
-    Grouped 5-fold cross-validation by subject; confidence = first-token log-prob and margin."""
-    rows = [a for a in anat if a["first_logprob"] is not None and np.isfinite(a["dist_nearest"])]
+    Grouped 5-fold cross-validation by subject; confidence = the reply's log-probability and the
+    margin between the two best-scoring answers at the first answer position."""
+    rows = [a for a in anat if np.isfinite(a["seq_logprob"]) and np.isfinite(a["answer_margin"]) and np.isfinite(a["dist_nearest"])]
     y = np.array([a["correct"] for a in rows])
     groups = [a["subject_qid"] for a in rows]
-    conf = np.array([[a["first_logprob"], a["first_margin"]] for a in rows])
+    conf = np.array([[a["seq_logprob"], a["answer_margin"]] for a in rows])
     geo = np.array([[np.log(a["dist_nearest"] + 1e-9), np.log(a["place_margin"] + 1e-9)] for a in rows])
     res = {}
     for name, X in [("confidence", conf), ("geometry", geo), ("both", np.c_[conf, geo])]:
@@ -320,7 +348,7 @@ def main():
                "depth": rows, "shuffled": [{"layer": r["layer"], "acc": r["acc"], "chance": r["chance"]} for r in null],
                "text_baseline": text_baseline(recs, label), "law": fit_law(rows)}
         if "untrained" not in m:
-            L = onset_layer(rows)
+            L = onset_layer(recs, S)
             anat, radius = error_anatomy(recs, S, L)
             res.update(onset_layer=L, onset_depth=L / (S.shape[1] - 1), radius=radius,
                        anatomy_counts={c: sum(a["class"] == c for a in anat) for c in sorted({a["class"] for a in anat})},

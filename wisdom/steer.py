@@ -58,7 +58,8 @@ def plan(ff_records, ff_states, hint_records, n_layers, answers):
     jobs = []
     for layer in layers:
         places = fit_places(ff_records, ff_states, layer)
-        center = ff_states[:, layer].astype(np.float32).mean(0)
+        train = [i for i, r in enumerate(ff_records) if r["split"] == "train"]
+        center = ff_states[train, layer].astype(np.float32).mean(0)  # the start for answers with no place
 
         def start(rec):
             return places.get(rec.get("given_qid"), center)
@@ -90,9 +91,9 @@ def plan(ff_records, ff_states, hint_records, n_layers, answers):
     return jobs
 
 
-def run_steer(model, tok, prompts, answers, run_dir, batch_size, device):
+def run_steer(model, tok, prompts, answers, run_dir, batch_size, device, first_ids):
     ff_records, ff_states = load_stage(run_dir / "ff", prompts, answers)
-    hint_records, _ = load_stage(run_dir / "hint", prompts, answers) if (run_dir / "hint" / "results.jsonl").exists() else ([], None)
+    hint_records, _ = load_stage(run_dir / "hint", prompts, answers, with_states=False) if (run_dir / "hint" / "results.jsonl").exists() else ([], None)
     n_layers = len(decoder_layers(model))
     jobs = plan(ff_records, ff_states, hint_records, n_layers, answers)
 
@@ -117,7 +118,7 @@ def run_steer(model, tok, prompts, answers, run_dir, batch_size, device):
         try:
             for batch in batches(js, batch_size):
                 push.vectors = torch.tensor(np.stack([j["vector"] for j in batch]), device=device)
-                rows = generate(model, tok, [j["prompt"] for j in batch], device)
+                rows = generate(model, tok, [j["prompt"] for j in batch], device, first_ids)
                 with open(results, "a") as f:
                     for j, r in zip(batch, rows):
                         f.write(json.dumps({"prompt_id": j["prompt"]["prompt_id"], "text_sha": sha(j["prompt"]["text"]),

@@ -26,12 +26,12 @@ import torch
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from wisdom.models import MODELS
-from wisdom.prompts import sha
+from wisdom.prompts import sha, stable_unit
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_NEW_TOKENS = 12
 DTYPE = torch.bfloat16
-CAPTURE = "last prompt position; embeddings output + every decoder block output, pre final norm; float16"
+CAPTURE = "last prompt position; input to block 0 + output of every block, pre final norm; float16"
 SHARD_SIZE = 512
 
 
@@ -46,7 +46,7 @@ def load_model(spec, device="cuda"):
         config = AutoConfig.from_pretrained(spec.repo, revision=spec.revision)
         model = AutoModelForCausalLM.from_config(config, **kw)
     else:
-        model = AutoModelForCausalLM.from_pretrained(spec.repo, revision=spec.revision, **kw)
+        model = AutoModelForCausalLM.from_pretrained(spec.repo, revision=spec.revision, device_map=device, **kw)
     return model.to(device).eval(), tok
 
 
@@ -55,27 +55,34 @@ def decoder_layers(model):
 
 
 class Capture:
-    """Records the last position's residual stream during the prompt's (prefill) pass only."""
+    """Records the last position's residual stream at every block boundary during the prompt's
+    (prefill) pass only: slot 0 is the input to the first block, slot i the output of block i.
+    Hooking block boundaries (not the embedding module) makes this exact for any architecture,
+    e.g. Gemma scales its embeddings after the embedding module."""
 
     def __init__(self, model):
         self.layers = decoder_layers(model)
         self.buf = [None] * (len(self.layers) + 1)
         self.armed = False
-        self.handles = [model.get_input_embeddings().register_forward_hook(self._hook(0))]
+        self.handles = [self.layers[0].register_forward_pre_hook(self._pre_hook)]
         self.handles += [layer.register_forward_hook(self._hook(i + 1)) for i, layer in enumerate(self.layers)]
+
+    def _pre_hook(self, module, args, kwargs=None):
+        if self.armed:
+            self.buf[0] = args[0][:, -1, :].detach().float()
 
     def _hook(self, slot):
         def fn(module, inputs, output):
             if not self.armed:
                 return
             h = output[0] if isinstance(output, tuple) else output
-            self.buf[slot] = h[:, -1, :].float().cpu().numpy().astype(np.float16)
+            self.buf[slot] = h[:, -1, :].detach().float()
             if slot == len(self.layers):
                 self.armed = False  # later calls are single-token decoding steps
         return fn
 
     def take(self):
-        states = np.stack(self.buf, axis=1)  # (batch, layers + 1, d)
+        states = torch.stack(self.buf, dim=1).half().cpu().numpy()  # (batch, layers + 1, d), one copy
         self.buf = [None] * len(self.buf)
         return states
 
@@ -100,19 +107,41 @@ def letter_token_ids(tok):
     return ids
 
 
+def answer_first_ids(tok, answers):
+    """{answer_type: {qid: first-token ids of its names}}: the tokens that can start each answer."""
+    out = {}
+    for qid, a in answers.items():
+        ids = set()
+        for name in [a["label"], *a.get("aliases", [])]:
+            for variant in (name, " " + name):
+                t = tok.encode(variant, add_special_tokens=False)
+                if t:
+                    ids.add(t[0])
+        out.setdefault(a["answer_type"], {})[qid] = sorted(ids)
+    return out
+
+
 @torch.no_grad()
-def generate(model, tok, batch, device, pre_hook=None):
+def generate(model, tok, batch, device, first_ids):
+    """Greedy answer plus confidence about the answer itself: the log-prob of every generated token,
+    and, at the first answer position, the best logit among each candidate answer's first tokens."""
     enc = encode(tok, [p["text"] for p in batch], device)
     out = model.generate(**enc, max_new_tokens=MAX_NEW_TOKENS, do_sample=False, output_scores=True,
                          return_dict_in_generate=True, pad_token_id=tok.pad_token_id)
     new = out.sequences[:, enc["input_ids"].shape[1]:]
-    first = torch.log_softmax(out.scores[0].float(), dim=-1)
-    top2 = first.topk(2, dim=-1).values
+    logp = torch.stack([torch.log_softmax(s.float(), dim=-1) for s in out.scores], dim=1)  # (b, steps, vocab)
+    chosen = logp.gather(-1, new[:, :logp.shape[1], None])[..., 0].cpu()
+    first = logp[:, 0].cpu()
+    eos = model.generation_config.eos_token_id
+    stop_ids = set(eos if isinstance(eos, list) else [eos]) | {tok.eos_token_id}
     rows = []
     for i, p in enumerate(batch):
+        ans = {q: round(max(first[i, j].item() for j in ids), 4) for q, ids in first_ids[p["answer_type"]].items() if ids}
+        ends = [k for k, t in enumerate(new[i].tolist()) if t in stop_ids]
+        n = min(ends[0] + 1 if ends else new.shape[1], chosen.shape[1])
         rows.append({"reply": tok.decode(new[i], skip_special_tokens=True),
-                     "first_logprob": round(top2[i, 0].item(), 4),
-                     "first_margin": round((top2[i, 0] - top2[i, 1]).item(), 4)})
+                     "token_logprobs": [round(x, 4) for x in chosen[i, :n].tolist()],
+                     "answer_logprobs": ans})
     return rows
 
 
@@ -178,7 +207,7 @@ def batches(items, size):
         yield items[i:i + size]
 
 
-def run_extract(stage, model, tok, prompts, store, batch_size, device):
+def run_extract(stage, model, tok, prompts, store, batch_size, device, first_ids):
     cap = Capture(model)
     letters = letter_token_ids(tok) if stage == "mcq" else None
     todo = sorted(store.todo(prompts), key=lambda p: len(p["text"]))
@@ -186,7 +215,7 @@ def run_extract(stage, model, tok, prompts, store, batch_size, device):
     try:
         for batch in batches(todo, batch_size):
             cap.armed = True
-            rows = letter_scores(model, tok, batch, device, letters) if stage == "mcq" else generate(model, tok, batch, device)
+            rows = letter_scores(model, tok, batch, device, letters) if stage == "mcq" else generate(model, tok, batch, device, first_ids)
             states = cap.take()
             for p, r in zip(batch, rows):
                 r.update(prompt_id=p["prompt_id"], text_sha=sha(p["text"]))
@@ -209,7 +238,7 @@ def save_unembedding(model, tok, answers, path):
                 if t:
                     ids.add(t[0])
     ids = sorted(ids)
-    W = model.get_output_embeddings().weight[ids].float().cpu().numpy()
+    W = model.get_output_embeddings().weight[ids].detach().float().cpu().numpy()
     np.savez(path, token_ids=np.array(ids), rows=W.astype(np.float32))
 
 
@@ -222,6 +251,7 @@ def git_commit():
 
 def check_invariants(run_dir: Path, spec, tok):
     inv = {"model": spec.key, "repo": spec.repo, "revision": spec.revision, "untrained": spec.untrained,
+           "attn_implementation": spec.attn_implementation,
            "dtype": str(DTYPE), "capture": CAPTURE, "max_new_tokens": MAX_NEW_TOKENS,
            "chat_template_sha": sha(tok.chat_template or "")}
     path = run_dir / "run.json"
@@ -241,7 +271,7 @@ def main():
     ap.add_argument("--run-dir", default="runs/main")
     ap.add_argument("--prompts", default=str(ROOT / "dataset" / "prompts.jsonl"))
     ap.add_argument("--answers", default=str(ROOT / "dataset" / "answers.json"))
-    ap.add_argument("--batch-size", type=int, default=32)
+    ap.add_argument("--batch-size", type=int, default=64)
     ap.add_argument("--limit-facts", type=int, default=0, help="pilot: use only the first N facts")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
@@ -251,8 +281,9 @@ def main():
     run_dir.mkdir(parents=True, exist_ok=True)
     prompts = [json.loads(l) for l in open(args.prompts)]
     if args.limit_facts:
-        keep = sorted({p["fact_id"] for p in prompts})[:args.limit_facts]
-        prompts = [p for p in prompts if p["fact_id"] in set(keep)]
+        facts = sorted({p["fact_id"] for p in prompts}, key=lambda f: stable_unit("pilot", f))
+        keep = set(facts[:args.limit_facts])  # a deterministic sample spread over every type and relation
+        prompts = [p for p in prompts if p["fact_id"] in keep]
     answers = json.load(open(args.answers))
 
     model, tok = load_model(spec, args.device)
@@ -260,18 +291,19 @@ def main():
     with open(run_dir / "resume_log.jsonl", "a") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "commit": git_commit(), "args": vars(args)}) + "\n")
     meta = run_dir / "model_meta.json"
-    if not meta.exists():
-        meta.write_text(json.dumps({"n_layers": len(decoder_layers(model)), "d_model": model.config.hidden_size}))
+    if not meta.exists():  # written last, so a crash here simply repeats this step on resume
         save_unembedding(model, tok, answers, run_dir / "unembed_answers.npz")
+        meta.write_text(json.dumps({"n_layers": len(decoder_layers(model)), "d_model": model.config.hidden_size}))
 
     for stage in args.stages.split(","):
         if stage == "steer":
             from wisdom.steer import run_steer
-            run_steer(model, tok, prompts, answers, run_dir, args.batch_size, args.device)
+            run_steer(model, tok, prompts, answers, run_dir, args.batch_size, args.device, answer_first_ids(tok, answers))
             continue
         kind = {"ff": "ff", "mcq": "mcq", "hint": "hint"}[stage]
         store = StageStore(run_dir / stage)
-        run_extract(stage, model, tok, [p for p in prompts if p["kind"] == kind], store, args.batch_size, args.device)
+        run_extract(stage, model, tok, [p for p in prompts if p["kind"] == kind], store, args.batch_size, args.device,
+                    answer_first_ids(tok, answers))
         print(f"[{stage}] done", flush=True)
 
 

@@ -12,7 +12,7 @@ from wisdom.prompts import sha
 MIN_ITEMS_PER_PLACE = 5
 
 
-def load_stage(stage_dir: Path, prompts: list, answers: dict):
+def load_stage(stage_dir: Path, prompts: list, answers: dict, with_states: bool = True):
     """Records for the current prompts (latest result per prompt, matching the current text),
     with graded answers, and their states as one (n, layers + 1, d) float16 array."""
     by_id = {p["prompt_id"]: p for p in prompts}
@@ -28,14 +28,18 @@ def load_stage(stage_dir: Path, prompts: list, answers: dict):
     for pid, r in latest.items():
         rec = {**by_id[pid], **r}
         if "reply" in r:
-            rec["given_qid"] = grader.given(r["reply"], rec["answer_type"])
+            rec["mentions"] = grader.mentions(r["reply"], rec["answer_type"])
+            rec["given_qid"] = grader.given(r["reply"], rec["answer_type"], rec.get("hint_qid"))
         elif "letter_logits" in r:
-            letter = max(r["letter_logits"], key=r["letter_logits"].get)
-            rec["given_letter"] = letter
-            rec["given_qid"] = rec["options"]["ABCD".index(letter)]
+            # Only an actual letter counts as an answer; otherwise the model did not answer the format.
+            letter = r["argmax_token"].strip()
+            rec["given_letter"] = letter if letter in ("A", "B", "C", "D") else None
+            rec["given_qid"] = rec["options"]["ABCD".index(letter)] if rec["given_letter"] else None
         rec["correct"] = rec.get("given_qid") == rec["answer_qid"]
         records.append(rec)
         index.append((r["shard"], r["row"]))
+    if not with_states:
+        return records, None
     shards = {s: np.load(stage_dir / "states" / f"{s}.npy", mmap_mode="r") for s in {s for s, _ in index}}
     states = np.stack([shards[s][i] for s, i in index]) if index else np.zeros((0, 0, 0), np.float16)
     return records, states
