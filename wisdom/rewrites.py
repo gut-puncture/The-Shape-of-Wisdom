@@ -51,7 +51,9 @@ STYLES = [
 
 
 def prep():
-    facts = [json.loads(l) for l in open(DATASET / "facts.jsonl")]
+    from wisdom.prompts import EXCLUDE_CELLS, EXCLUDE_SUBJECTS
+    facts = [f for f in (json.loads(l) for l in open(DATASET / "facts.jsonl"))
+             if (f["relation"], f["answer_qid"]) not in EXCLUDE_CELLS and f["subject_label"] not in EXCLUDE_SUBJECTS]
     JOBS.mkdir(parents=True, exist_ok=True)
     rng = random.Random(7)
     jobs = []

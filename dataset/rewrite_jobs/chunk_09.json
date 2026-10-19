@@ -1,0 +1,1402 @@
+[
+{
+"fact_id": "F1327",
+"subject": "HeForShe",
+"ask": "which city the organisation HeForShe has its headquarters in",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1530",
+"subject": "Elizabeth Grigoryevna Temkina",
+"ask": "which city the person Elizabeth Grigoryevna Temkina was born in",
+"style1": "a formal written exam question",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0970",
+"subject": "Coming from Insanity",
+"ask": "which country the film Coming from Insanity comes from",
+"style1": "a polite email-style request in one sentence",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F0002",
+"subject": "Ireneo Portela",
+"ask": "which country the place Ireneo Portela is in",
+"style1": "a terse search-style question of at most eight words",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1184",
+"subject": "Egyptian Television Network",
+"ask": "which city the organisation Egyptian Television Network has its headquarters in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0933",
+"subject": "Ora sí ¡tenemos que ganar!",
+"ask": "which country the film Ora sí ¡tenemos que ganar! comes from",
+"style1": "a teacher prompting a student",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0647",
+"subject": "Paulo Pinto Mascarenhas",
+"ask": "which country the person Paulo Pinto Mascarenhas is a citizen of",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F1370",
+"subject": "NTT Docomo Business",
+"ask": "which city the organisation NTT Docomo Business has its headquarters in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1125",
+"subject": "Shattered Soul",
+"ask": "which country the film Shattered Soul comes from",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0907",
+"subject": "The Whispering Star",
+"ask": "which country the film The Whispering Star comes from",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F2219",
+"subject": "Francois Pienaar",
+"ask": "which sport the person Francois Pienaar plays or played",
+"style1": "a teacher prompting a student",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F1404",
+"subject": "Uğur Tezel",
+"ask": "which city the person Uğur Tezel was born in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0665",
+"subject": "Dmitri Kostromitin",
+"ask": "which country the person Dmitri Kostromitin is a citizen of",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F1144",
+"subject": "Atotech",
+"ask": "which city the organisation Atotech has its headquarters in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1423",
+"subject": "Cecilia Grierson",
+"ask": "which city the person Cecilia Grierson was born in",
+"style1": "a polite email-style request in one sentence",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F0832",
+"subject": "Lili Marleen",
+"ask": "which country the film Lili Marleen comes from",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0102",
+"subject": "Prabhas Patan",
+"ask": "which country the place Prabhas Patan is in",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F1960",
+"subject": "Day of the Wacko",
+"ask": "what the original language of the film Day of the Wacko is",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0069",
+"subject": "Neustadt/Spree",
+"ask": "which country the place Neustadt/Spree is in",
+"style1": "a terse search-style question of at most eight words",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1607",
+"subject": "Stefano Papiri",
+"ask": "which city the person Stefano Papiri was born in",
+"style1": "a trivia app notification",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1272",
+"subject": "Central Suburban Passenger Company",
+"ask": "which city the organisation Central Suburban Passenger Company has its headquarters in",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1744",
+"subject": "Marco Pannella",
+"ask": "which language the person Marco Pannella spoke or wrote",
+"style1": "someone who half-remembers and asks for confirmation without guessing",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0178",
+"subject": "Bekenes",
+"ask": "which country the place Bekenes is in",
+"style1": "a polite email-style request in one sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0238",
+"subject": "Lanzhou",
+"ask": "which country the place Lanzhou is in",
+"style1": "a teacher prompting a student",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1360",
+"subject": "Italian Football Federation",
+"ask": "which city the organisation Italian Football Federation has its headquarters in",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0407",
+"subject": "Zozo Labib",
+"ask": "which country the person Zozo Labib is a citizen of",
+"style1": "an archivist cataloguing records",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F1692",
+"subject": "Marc Lépine",
+"ask": "which language the person Marc Lépine spoke or wrote",
+"style1": "a formal written exam question",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F0494",
+"subject": "Gregoria Mariska Tunjung",
+"ask": "which country the person Gregoria Mariska Tunjung is a citizen of",
+"style1": "a teacher prompting a student",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0773",
+"subject": "Por Que Você Veio Morar Aqui?",
+"ask": "which country the film Por Que Você Veio Morar Aqui? comes from",
+"style1": "someone who half-remembers and asks for confirmation without guessing",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F1497",
+"subject": "José Jiménez Ruiz",
+"ask": "which city the person José Jiménez Ruiz was born in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F1252",
+"subject": "EjeCentral",
+"ask": "which city the organisation EjeCentral has its headquarters in",
+"style1": "a teacher prompting a student",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F1422",
+"subject": "Antonio Mohamed",
+"ask": "which city the person Antonio Mohamed was born in",
+"style1": "a trivia app notification",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F0522",
+"subject": "Keito Furushima",
+"ask": "which country the person Keito Furushima is a citizen of",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F1027",
+"subject": "Sapatos Pretos",
+"ask": "which country the film Sapatos Pretos comes from",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1245",
+"subject": "Menéame",
+"ask": "which city the organisation Menéame has its headquarters in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0490",
+"subject": "Siti Fadilah",
+"ask": "which country the person Siti Fadilah is a citizen of",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0011",
+"subject": "Villa Centenario",
+"ask": "which country the place Villa Centenario is in",
+"style1": "a formal written exam question",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F1302",
+"subject": "SaveLIFE Foundation",
+"ask": "which city the organisation SaveLIFE Foundation has its headquarters in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F0293",
+"subject": "Freedom Park, North West",
+"ask": "which country the place Freedom Park, North West is in",
+"style1": "a formal written exam question",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F1648",
+"subject": "Rosa Mayreder",
+"ask": "which city the person Rosa Mayreder was born in",
+"style1": "a formal written exam question",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F2092",
+"subject": "Koko Archibong",
+"ask": "which sport the person Koko Archibong plays or played",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1823",
+"subject": "Joaquín Larrivey",
+"ask": "which language the person Joaquín Larrivey spoke or wrote",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0790",
+"subject": "Ma tee'gy nir'oss",
+"ask": "which country the film Ma tee'gy nir'oss comes from",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1560",
+"subject": "Ishita Raj",
+"ask": "which city the person Ishita Raj was born in",
+"style1": "someone who half-remembers and asks for confirmation without guessing",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0793",
+"subject": "Appointment with Happiness",
+"ask": "which country the film Appointment with Happiness comes from",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0310",
+"subject": "Hoeryongpo",
+"ask": "which country the place Hoeryongpo is in",
+"style1": "a formal written exam question",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F0785",
+"subject": "The Way He Looks",
+"ask": "which country the film The Way He Looks comes from",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0859",
+"subject": "Rock Dancer",
+"ask": "which country the film Rock Dancer comes from",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1106",
+"subject": "ABBA In Concert",
+"ask": "which country the film ABBA In Concert comes from",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F0652",
+"subject": "Teotonio de Souza",
+"ask": "which country the person Teotonio de Souza is a citizen of",
+"style1": "a formal written exam question",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0865",
+"subject": "Zubeidaa",
+"ask": "which country the film Zubeidaa comes from",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0818",
+"subject": "Auf Wiedersehen",
+"ask": "which country the film Auf Wiedersehen comes from",
+"style1": "an archivist cataloguing records",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F1896",
+"subject": "Beloved Sisters",
+"ask": "what the original language of the film Beloved Sisters is",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F1471",
+"subject": "Ianis Hagi",
+"ask": "which city the person Ianis Hagi was born in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1528",
+"subject": "Anastasia Skoptsova",
+"ask": "which city the person Anastasia Skoptsova was born in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1808",
+"subject": "Gleb Uspensky",
+"ask": "which language the person Gleb Uspensky spoke or wrote",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0841",
+"subject": "Blood on the Land",
+"ask": "which country the film Blood on the Land comes from",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1415",
+"subject": "Mariano Alperin",
+"ask": "which city the person Mariano Alperin was born in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F0678",
+"subject": "Thulani Ngcepe",
+"ask": "which country the person Thulani Ngcepe is a citizen of",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F1124",
+"subject": "Kurtuluş: The Steamship That Carried Peace",
+"ask": "which country the film Kurtuluş: The Steamship That Carried Peace comes from",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0578",
+"subject": "Atinuke Olusola Adebanji",
+"ask": "which country the person Atinuke Olusola Adebanji is a citizen of",
+"style1": "a pub-quiz host reading out a question",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F1115",
+"subject": "Kungliga patrasket",
+"ask": "which country the film Kungliga patrasket comes from",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0930",
+"subject": "Adán y Eva",
+"ask": "which country the film Adán y Eva comes from",
+"style1": "an archivist cataloguing records",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F1339",
+"subject": "SeaFrance",
+"ask": "which city the organisation SeaFrance has its headquarters in",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F2254",
+"subject": "Michele Totire",
+"ask": "which sport the person Michele Totire plays or played",
+"style1": "a trivia app notification",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F2079",
+"subject": "Masaoka Shiki",
+"ask": "which sport the person Masaoka Shiki plays or played",
+"style1": "someone who half-remembers and asks for confirmation without guessing",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F2046",
+"subject": "Júlio Correia da Silva",
+"ask": "which sport the person Júlio Correia da Silva plays or played",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F0022",
+"subject": "Vila Ferroviária de Paranapiacaba",
+"ask": "which country the place Vila Ferroviária de Paranapiacaba is in",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F2028",
+"subject": "The Poor",
+"ask": "what the original language of the film The Poor is",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0743",
+"subject": "Çağatay Güç",
+"ask": "which country the person Çağatay Güç is a citizen of",
+"style1": "a terse search-style question of at most eight words",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F2110",
+"subject": "Mohamed Haioun",
+"ask": "which sport the person Mohamed Haioun plays or played",
+"style1": "a trivia app notification",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F1618",
+"subject": "Aoi Yaguchi",
+"ask": "which city the person Aoi Yaguchi was born in",
+"style1": "a trivia app notification",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0836",
+"subject": "My Daughter, the Socialist",
+"ask": "which country the film My Daughter, the Socialist comes from",
+"style1": "a polite email-style request in one sentence",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F2263",
+"subject": "Kaori Kodaira",
+"ask": "which sport the person Kaori Kodaira plays or played",
+"style1": "a polite email-style request in one sentence",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1042",
+"subject": "Caucasian Roulette",
+"ask": "which country the film Caucasian Roulette comes from",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0403",
+"subject": "Gamal Al 'atifi",
+"ask": "which country the person Gamal Al 'atifi is a citizen of",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0089",
+"subject": "Kalabaka",
+"ask": "which country the place Kalabaka is in",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0142",
+"subject": "Nagoro",
+"ask": "which country the place Nagoro is in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F0551",
+"subject": "Sandy de Santos",
+"ask": "which country the person Sandy de Santos is a citizen of",
+"style1": "an archivist cataloguing records",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0542",
+"subject": "John Ngugi",
+"ask": "which country the person John Ngugi is a citizen of",
+"style1": "a teacher prompting a student",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F1948",
+"subject": "Will to Live",
+"ask": "what the original language of the film Will to Live is",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0363",
+"subject": "Sarıcakaya district",
+"ask": "which country the place Sarıcakaya district is in",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1442",
+"subject": "Albert H.Z. Carr",
+"ask": "which city the person Albert H.Z. Carr was born in",
+"style1": "a polite email-style request in one sentence",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F2160",
+"subject": "Ross Whitehead",
+"ask": "which sport the person Ross Whitehead plays or played",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0149",
+"subject": "Kwanza",
+"ask": "which country the place Kwanza is in",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F2089",
+"subject": "Silas Mills",
+"ask": "which sport the person Silas Mills plays or played",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F1923",
+"subject": "Blood of the Losers",
+"ask": "what the original language of the film Blood of the Losers is",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F2004",
+"subject": "La hija de Moctezuma",
+"ask": "what the original language of the film La hija de Moctezuma is",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F1765",
+"subject": "Grażyna Stachówna",
+"ask": "which language the person Grażyna Stachówna spoke or wrote",
+"style1": "a formal written exam question",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0441",
+"subject": "Heinrich Hollreiser",
+"ask": "which country the person Heinrich Hollreiser is a citizen of",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0716",
+"subject": "Lola González Ruiz",
+"ask": "which country the person Lola González Ruiz is a citizen of",
+"style1": "a teacher prompting a student",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0159",
+"subject": "Homa Bay",
+"ask": "which country the place Homa Bay is in",
+"style1": "a polite email-style request in one sentence",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F1962",
+"subject": "The Third Part of the Night",
+"ask": "what the original language of the film The Third Part of the Night is",
+"style1": "a polite email-style request in one sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F1017",
+"subject": "Edi",
+"ask": "which country the film Edi comes from",
+"style1": "a polite email-style request in one sentence",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1737",
+"subject": "Gloria Milland",
+"ask": "which language the person Gloria Milland spoke or wrote",
+"style1": "someone who half-remembers and asks for confirmation without guessing",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0725",
+"subject": "Henrik Vinge",
+"ask": "which country the person Henrik Vinge is a citizen of",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F1086",
+"subject": "Joint Security Area",
+"ask": "which country the film Joint Security Area comes from",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F0231",
+"subject": "Tseng Tau Tsuen",
+"ask": "which country the place Tseng Tau Tsuen is in",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1026",
+"subject": "98 Octanas",
+"ask": "which country the film 98 Octanas comes from",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F1118",
+"subject": "Summer Interlude",
+"ask": "which country the film Summer Interlude comes from",
+"style1": "a trivia app notification",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1513",
+"subject": "Leobardo López Arretche",
+"ask": "which city the person Leobardo López Arretche was born in",
+"style1": "an archivist cataloguing records",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F1298",
+"subject": "CMC Limited",
+"ask": "which city the organisation CMC Limited has its headquarters in",
+"style1": "an archivist cataloguing records",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0303",
+"subject": "Standerton",
+"ask": "which country the place Standerton is in",
+"style1": "a trivia app notification",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F1107",
+"subject": "Bashful Anton",
+"ask": "which country the film Bashful Anton comes from",
+"style1": "a formal written exam question",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F1986",
+"subject": "Chetyre taksista i sobaka 2",
+"ask": "what the original language of the film Chetyre taksista i sobaka 2 is",
+"style1": "a trivia app notification",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F2057",
+"subject": "Yuta Nakayama",
+"ask": "which sport the person Yuta Nakayama plays or played",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F0367",
+"subject": "Genç",
+"ask": "which country the place Genç is in",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0006",
+"subject": "Tomás Jofré",
+"ask": "which country the place Tomás Jofré is in",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0878",
+"subject": "Lagu Kenangan",
+"ask": "which country the film Lagu Kenangan comes from",
+"style1": "a trivia app notification",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F1077",
+"subject": "Jongro A Venue, Winter",
+"ask": "which country the film Jongro A Venue, Winter comes from",
+"style1": "a teacher prompting a student",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F0279",
+"subject": "İsänsef",
+"ask": "which country the place İsänsef is in",
+"style1": "a formal written exam question",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F0999",
+"subject": "Vajra Sky Over Tibet",
+"ask": "which country the film Vajra Sky Over Tibet comes from",
+"style1": "someone who half-remembers and asks for confirmation without guessing",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F2094",
+"subject": "Preston Knowles",
+"ask": "which sport the person Preston Knowles plays or played",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F0226",
+"subject": "Mok Tse Che",
+"ask": "which country the place Mok Tse Che is in",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1817",
+"subject": "Darío Scotto",
+"ask": "which language the person Darío Scotto spoke or wrote",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0133",
+"subject": "Urbino",
+"ask": "which country the place Urbino is in",
+"style1": "a trivia app notification",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0649",
+"subject": "Jaime Bragança",
+"ask": "which country the person Jaime Bragança is a citizen of",
+"style1": "a formal written exam question",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1848",
+"subject": "Damascus with Love",
+"ask": "what the original language of the film Damascus with Love is",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F0099",
+"subject": "Bhilai Charoda",
+"ask": "which country the place Bhilai Charoda is in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F0041",
+"subject": "El Quseyya",
+"ask": "which country the place El Quseyya is in",
+"style1": "a polite email-style request in one sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F1493",
+"subject": "José Joaquín Álvarez de Toledo, 19th Duke of Medina Sidonia",
+"ask": "which city the person José Joaquín Álvarez de Toledo, 19th Duke of Medina Sidonia was born in",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0215",
+"subject": "Øvrebygd",
+"ask": "which country the place Øvrebygd is in",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F2213",
+"subject": "Juan Manuel Leguizamón",
+"ask": "which sport the person Juan Manuel Leguizamón plays or played",
+"style1": "a polite email-style request in one sentence",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0882",
+"subject": "Beauties on Motor Scooters",
+"ask": "which country the film Beauties on Motor Scooters comes from",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1178",
+"subject": "Arab Organization for Human Rights",
+"ask": "which city the organisation Arab Organization for Human Rights has its headquarters in",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0475",
+"subject": "Sasmita Mallik",
+"ask": "which country the person Sasmita Mallik is a citizen of",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1219",
+"subject": "Café Rouge",
+"ask": "which city the organisation Café Rouge has its headquarters in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F1034",
+"subject": "Luanda, The Music Factory",
+"ask": "which country the film Luanda, The Music Factory comes from",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0277",
+"subject": "Mikhaylo-Khlyustino",
+"ask": "which country the place Mikhaylo-Khlyustino is in",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0078",
+"subject": "Gournes, Irakleio",
+"ask": "which country the place Gournes, Irakleio is in",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0032",
+"subject": "Sheraton Al Matar",
+"ask": "which country the place Sheraton Al Matar is in",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F1414",
+"subject": "Julieta Prandi",
+"ask": "which city the person Julieta Prandi was born in",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F2059",
+"subject": "Carlton Lord",
+"ask": "which sport the person Carlton Lord plays or played",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F2205",
+"subject": "Fred Hickes",
+"ask": "which sport the person Fred Hickes plays or played",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F0413",
+"subject": "Ahmed Adly",
+"ask": "which country the person Ahmed Adly is a citizen of",
+"style1": "a polite email-style request in one sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0481",
+"subject": "Yukta Mookhey",
+"ask": "which country the person Yukta Mookhey is a citizen of",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1199",
+"subject": "Kellanova",
+"ask": "which city the organisation Kellanova has its headquarters in",
+"style1": "a teacher prompting a student",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F0068",
+"subject": "Kopschin",
+"ask": "which country the place Kopschin is in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F1850",
+"subject": "La Tutf'e al-Shams",
+"ask": "what the original language of the film La Tutf'e al-Shams is",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F0688",
+"subject": "Yvonne Chaka Chaka",
+"ask": "which country the person Yvonne Chaka Chaka is a citizen of",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F1824",
+"subject": "José Della Torre",
+"ask": "which language the person José Della Torre spoke or wrote",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0813",
+"subject": "A Very Long Engagement",
+"ask": "which country the film A Very Long Engagement comes from",
+"style1": "an archivist cataloguing records",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1469",
+"subject": "Barış Manço",
+"ask": "which city the person Barış Manço was born in",
+"style1": "a teacher prompting a student",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F1364",
+"subject": "France Bed Holdings",
+"ask": "which city the organisation France Bed Holdings has its headquarters in",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F2252",
+"subject": "Ilkin Aliyev",
+"ask": "which sport the person Ilkin Aliyev plays or played",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1317",
+"subject": "National Asian American Theater Company",
+"ask": "which city the organisation National Asian American Theater Company has its headquarters in",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F2267",
+"subject": "Emanuele Birarelli",
+"ask": "which sport the person Emanuele Birarelli plays or played",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0849",
+"subject": "The Travelling Players",
+"ask": "which country the film The Travelling Players comes from",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0185",
+"subject": "Langeraar",
+"ask": "which country the place Langeraar is in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a formal written exam question"
+},
+{
+"fact_id": "F0814",
+"subject": "Bed and Board",
+"ask": "which country the film Bed and Board comes from",
+"style1": "a formal written exam question",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F2012",
+"subject": "With Good Reason",
+"ask": "what the original language of the film With Good Reason is",
+"style1": "a trivia app notification",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0952",
+"subject": "Cool Kids Don't Cry",
+"ask": "which country the film Cool Kids Don't Cry comes from",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F0346",
+"subject": "Södra Harads",
+"ask": "which country the place Södra Harads is in",
+"style1": "an archivist cataloguing records",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F1540",
+"subject": "Bosco Penha",
+"ask": "which city the person Bosco Penha was born in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F2164",
+"subject": "Kiradech Aphibarnrat",
+"ask": "which sport the person Kiradech Aphibarnrat plays or played",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F0721",
+"subject": "Pompeu Fabra",
+"ask": "which country the person Pompeu Fabra is a citizen of",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F1509",
+"subject": "Francisco Ortiz Pinchetti",
+"ask": "which city the person Francisco Ortiz Pinchetti was born in",
+"style1": "a pub-quiz host reading out a question",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1030",
+"subject": "What Will I Do with This Sword?",
+"ask": "which country the film What Will I Do with This Sword? comes from",
+"style1": "a polite email-style request in one sentence",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F0309",
+"subject": "Gwangju Koryoin Village",
+"ask": "which country the place Gwangju Koryoin Village is in",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0620",
+"subject": "Zhao Shasha",
+"ask": "which country the person Zhao Shasha is a citizen of",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1884",
+"subject": "White Paradise",
+"ask": "what the original language of the film White Paradise is",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0274",
+"subject": "Atamış",
+"ask": "which country the place Atamış is in",
+"style1": "a teacher prompting a student",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F0020",
+"subject": "Rio Claro do Sul",
+"ask": "which country the place Rio Claro do Sul is in",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1887",
+"subject": "La Boum",
+"ask": "what the original language of the film La Boum is",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F0312",
+"subject": "Sehwa-ri",
+"ask": "which country the place Sehwa-ri is in",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0229",
+"subject": "Tai Lam Wu",
+"ask": "which country the place Tai Lam Wu is in",
+"style1": "a teacher prompting a student",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F1650",
+"subject": "Ali Awni al-Harzi",
+"ask": "which language the person Ali Awni al-Harzi spoke or wrote",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0051",
+"subject": "Argentière",
+"ask": "which country the place Argentière is in",
+"style1": "a teacher prompting a student",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F1405",
+"subject": "Adolf von Baeyer",
+"ask": "which city the person Adolf von Baeyer was born in",
+"style1": "a trivia app notification",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F0610",
+"subject": "Bao Jianfeng",
+"ask": "which country the person Bao Jianfeng is a citizen of",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1935",
+"subject": "Il Posto",
+"ask": "what the original language of the film Il Posto is",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F0287",
+"subject": "Krasnaya Gora, Krasnogorsky District, Bryansk Oblast",
+"ask": "which country the place Krasnaya Gora, Krasnogorsky District, Bryansk Oblast is in",
+"style1": "a trivia app notification",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1787",
+"subject": "Geraldo Vieira Gusmão",
+"ask": "which language the person Geraldo Vieira Gusmão spoke or wrote",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F0891",
+"subject": "Classe mista",
+"ask": "which country the film Classe mista comes from",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F0374",
+"subject": "Lucho Vega",
+"ask": "which country the person Lucho Vega is a citizen of",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "a polite email-style request in one sentence"
+},
+{
+"fact_id": "F0900",
+"subject": "Hana no Shōgai: Hikone-hen & Edo-hen",
+"ask": "which country the film Hana no Shōgai: Hikone-hen & Edo-hen comes from",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+},
+{
+"fact_id": "F1786",
+"subject": "Fabiane Hukuda-Strubreiter",
+"ask": "which language the person Fabiane Hukuda-Strubreiter spoke or wrote",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F1587",
+"subject": "David Haguenau",
+"ask": "which city the person David Haguenau was born in",
+"style1": "a pub-quiz host reading out a question",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1599",
+"subject": "Flora Tristan",
+"ask": "which city the person Flora Tristan was born in",
+"style1": "a trivia app notification",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F2241",
+"subject": "Tomáš Anzari",
+"ask": "which sport the person Tomáš Anzari plays or played",
+"style1": "a casual chat message in lowercase, possibly with one small typo (not in the name)",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F0739",
+"subject": "Furkan Durucan",
+"ask": "which country the person Furkan Durucan is a citizen of",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a question with the subject placed at the end of the sentence"
+},
+{
+"fact_id": "F1508",
+"subject": "Fernando Curiel",
+"ask": "which city the person Fernando Curiel was born in",
+"style1": "a polite email-style request in one sentence",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F1827",
+"subject": "Ali Erkan Kavaklı",
+"ask": "which language the person Ali Erkan Kavaklı spoke or wrote",
+"style1": "a question with the subject placed at the end of the sentence",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F1761",
+"subject": "Yasuhiro Hato",
+"ask": "which language the person Yasuhiro Hato spoke or wrote",
+"style1": "an archivist cataloguing records",
+"style2": "a pub-quiz host reading out a question"
+},
+{
+"fact_id": "F0430",
+"subject": "Albert Sarraut",
+"ask": "which country the person Albert Sarraut is a citizen of",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "an archivist cataloguing records"
+},
+{
+"fact_id": "F1603",
+"subject": "Giancarlo Pantano",
+"ask": "which city the person Giancarlo Pantano was born in",
+"style1": "a teacher prompting a student",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F2082",
+"subject": "Aleksi Akpaso",
+"ask": "which sport the person Aleksi Akpaso plays or played",
+"style1": "a curious ten-year-old asking a parent",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F0107",
+"subject": "Vasai",
+"ask": "which country the place Vasai is in",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F1187",
+"subject": "Halsey, Stuart & Co.",
+"ask": "which city the organisation Halsey, Stuart & Co. has its headquarters in",
+"style1": "a terse search-style question of at most eight words",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0435",
+"subject": "Gertrud Schilling",
+"ask": "which country the person Gertrud Schilling is a citizen of",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F0928",
+"subject": "The Legend of Ngong Hills",
+"ask": "which country the film The Legend of Ngong Hills comes from",
+"style1": "a trivia app notification",
+"style2": "an indirect question starting 'Do you know' or 'Could you tell me'"
+},
+{
+"fact_id": "F1977",
+"subject": "Days of Nietzsche in Turin",
+"ask": "what the original language of the film Days of Nietzsche in Turin is",
+"style1": "an archivist cataloguing records",
+"style2": "a curious ten-year-old asking a parent"
+},
+{
+"fact_id": "F1224",
+"subject": "Close Brothers Group",
+"ask": "which city the organisation Close Brothers Group has its headquarters in",
+"style1": "a trivia app notification",
+"style2": "someone who half-remembers and asks for confirmation without guessing"
+},
+{
+"fact_id": "F1250",
+"subject": "Banco Nacional del Ejército, Fuerza Aérea y Armada, S.N.C.",
+"ask": "which city the organisation Banco Nacional del Ejército, Fuerza Aérea y Armada, S.N.C. has its headquarters in",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a terse search-style question of at most eight words"
+},
+{
+"fact_id": "F2228",
+"subject": "Kurt Gies",
+"ask": "which sport the person Kurt Gies plays or played",
+"style1": "a polite email-style request in one sentence",
+"style2": "a trivia app notification"
+},
+{
+"fact_id": "F0655",
+"subject": "Luísa Sobral",
+"ask": "which country the person Luísa Sobral is a citizen of",
+"style1": "a speaker of English as a second language, slightly unusual grammar",
+"style2": "a casual chat message in lowercase, possibly with one small typo (not in the name)"
+},
+{
+"fact_id": "F0331",
+"subject": "Mesas de Asta",
+"ask": "which country the place Mesas de Asta is in",
+"style1": "an indirect question starting 'Do you know' or 'Could you tell me'",
+"style2": "a journalist double-checking a detail with a colleague"
+},
+{
+"fact_id": "F0512",
+"subject": "Nino Cerruti",
+"ask": "which country the person Nino Cerruti is a citizen of",
+"style1": "a polite email-style request in one sentence",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F2206",
+"subject": "Jeremy Lenaerts",
+"ask": "which sport the person Jeremy Lenaerts plays or played",
+"style1": "a formal written exam question",
+"style2": "a teacher prompting a student"
+},
+{
+"fact_id": "F1804",
+"subject": "Yevgeniya Lamonova",
+"ask": "which language the person Yevgeniya Lamonova spoke or wrote",
+"style1": "a journalist double-checking a detail with a colleague",
+"style2": "a speaker of English as a second language, slightly unusual grammar"
+}
+]

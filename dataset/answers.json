@@ -1,0 +1,1829 @@
+{
+ "Q142": {
+  "name": "France",
+  "answer_type": "country",
+  "label": "France",
+  "aliases": [],
+  "demonyms": [
+   "French"
+  ],
+  "leak_terms": [
+   "France",
+   "French Republic",
+   "French"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "French Republic"
+  ],
+  "wikidata_label": "France"
+ },
+ "Q183": {
+  "name": "Germany",
+  "answer_type": "country",
+  "label": "Germany",
+  "aliases": [],
+  "demonyms": [
+   "German"
+  ],
+  "leak_terms": [
+   "Germany",
+   "BRD",
+   "DE",
+   "DEU",
+   "FRG",
+   "Federal Republic of Germany",
+   "German"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "BRD",
+   "DE",
+   "DEU",
+   "FRG",
+   "Federal Republic of Germany"
+  ],
+  "wikidata_label": "Germany"
+ },
+ "Q38": {
+  "name": "Italy",
+  "answer_type": "country",
+  "label": "Italy",
+  "aliases": [],
+  "demonyms": [
+   "Italian"
+  ],
+  "leak_terms": [
+   "Italy",
+   "Italian Republic",
+   "Republic of Italy",
+   "Italian"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Italian Republic",
+   "Republic of Italy"
+  ],
+  "wikidata_label": "Italy"
+ },
+ "Q29": {
+  "name": "Spain",
+  "answer_type": "country",
+  "label": "Spain",
+  "aliases": [],
+  "demonyms": [
+   "Spaniard",
+   "Spanish"
+  ],
+  "leak_terms": [
+   "Spain",
+   "Kingdom of Spain",
+   "Spaniard",
+   "Spanish"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Kingdom of Spain"
+  ],
+  "wikidata_label": "Spain"
+ },
+ "Q45": {
+  "name": "Portugal",
+  "answer_type": "country",
+  "label": "Portugal",
+  "aliases": [],
+  "demonyms": [
+   "Portuguese"
+  ],
+  "leak_terms": [
+   "Portugal",
+   "POR",
+   "Portuguese Republic",
+   "Portuguese"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "POR",
+   "Portuguese Republic"
+  ],
+  "wikidata_label": "Portugal"
+ },
+ "Q55": {
+  "name": "Netherlands",
+  "answer_type": "country",
+  "label": "Netherlands",
+  "aliases": [
+   "Holland"
+  ],
+  "demonyms": [
+   "Dutch"
+  ],
+  "leak_terms": [
+   "Netherlands",
+   "Holland",
+   "NL",
+   "NLD",
+   "Nederland",
+   "Nederlanden",
+   "de Nederlanden",
+   "the Netherlands",
+   "Dutch",
+   "Netherlandish"
+  ],
+  "equivalent_qids": [
+   "Q29999"
+  ],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Holland",
+   "NL",
+   "NLD",
+   "Nederland",
+   "Nederlanden",
+   "de Nederlanden",
+   "the Netherlands"
+  ],
+  "wikidata_label": "Netherlands"
+ },
+ "Q34": {
+  "name": "Sweden",
+  "answer_type": "country",
+  "label": "Sweden",
+  "aliases": [],
+  "demonyms": [
+   "Swedish"
+  ],
+  "leak_terms": [
+   "Sweden",
+   "Kingdom of Sweden",
+   "Swedish Kingdom",
+   "se",
+   "Swedish",
+   "Swede"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Kingdom of Sweden",
+   "Swedish Kingdom",
+   "se"
+  ],
+  "wikidata_label": "Sweden"
+ },
+ "Q20": {
+  "name": "Norway",
+  "answer_type": "country",
+  "label": "Norway",
+  "aliases": [],
+  "demonyms": [
+   "Norwegian"
+  ],
+  "leak_terms": [
+   "Norway",
+   "Kingdom of Norway",
+   "Norwegian"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Kingdom of Norway"
+  ],
+  "wikidata_label": "Norway"
+ },
+ "Q36": {
+  "name": "Poland",
+  "answer_type": "country",
+  "label": "Poland",
+  "aliases": [],
+  "demonyms": [
+   "Polish"
+  ],
+  "leak_terms": [
+   "Poland",
+   "Republic of Poland",
+   "Polish"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Republic of Poland"
+  ],
+  "wikidata_label": "Poland"
+ },
+ "Q41": {
+  "name": "Greece",
+  "answer_type": "country",
+  "label": "Greece",
+  "aliases": [],
+  "demonyms": [
+   "Greek"
+  ],
+  "leak_terms": [
+   "Greece",
+   "Ellada",
+   "Greek Republic",
+   "Hellas",
+   "Hellas, Greece",
+   "Hellenic Republic",
+   "el",
+   "gr",
+   "Greek",
+   "Hellenic"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Ellada",
+   "Greek Republic",
+   "Hellas",
+   "Hellas, Greece",
+   "Hellenic Republic",
+   "el",
+   "gr"
+  ],
+  "wikidata_label": "Greece"
+ },
+ "Q159": {
+  "name": "Russia",
+  "answer_type": "country",
+  "label": "Russia",
+  "aliases": [
+   "Russian Federation"
+  ],
+  "demonyms": [
+   "Russian"
+  ],
+  "leak_terms": [
+   "Russia",
+   "Russian Federation",
+   "Russian"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Russian Federation"
+  ],
+  "wikidata_label": "Russia"
+ },
+ "Q43": {
+  "name": "Turkey",
+  "answer_type": "country",
+  "label": "Turkey",
+  "aliases": [
+   "Türkiye",
+   "Turkiye"
+  ],
+  "demonyms": [
+   "Turkish"
+  ],
+  "leak_terms": [
+   "Turkey",
+   "Republic of Turkey",
+   "Republic of Türkiye",
+   "Turkish",
+   "Turk",
+   "Türkiye"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Republic of Turkey",
+   "Republic of Türkiye"
+  ],
+  "wikidata_label": "Turkey"
+ },
+ "Q79": {
+  "name": "Egypt",
+  "answer_type": "country",
+  "label": "Egypt",
+  "aliases": [],
+  "demonyms": [
+   "Egyptian"
+  ],
+  "leak_terms": [
+   "Egypt",
+   "Arab Rep. Egypt",
+   "Arab Republic of Egypt",
+   "Misr",
+   "Rep. Egypt",
+   "Republic of Egypt",
+   "Egyptian"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Arab Rep. Egypt",
+   "Arab Republic of Egypt",
+   "Misr",
+   "Rep. Egypt",
+   "Republic of Egypt"
+  ],
+  "wikidata_label": "Egypt"
+ },
+ "Q1033": {
+  "name": "Nigeria",
+  "answer_type": "country",
+  "label": "Nigeria",
+  "aliases": [],
+  "demonyms": [
+   "Nigerian",
+   "Nigerians"
+  ],
+  "leak_terms": [
+   "Nigeria",
+   "Federal Republic of Nigeria",
+   "Naija",
+   "Nigerian",
+   "Nigerians"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Federal Republic of Nigeria",
+   "Naija"
+  ],
+  "wikidata_label": "Nigeria"
+ },
+ "Q258": {
+  "name": "South Africa",
+  "answer_type": "country",
+  "label": "South Africa",
+  "aliases": [],
+  "demonyms": [
+   "South African"
+  ],
+  "leak_terms": [
+   "South Africa",
+   "R.S.A.",
+   "RSA",
+   "Republic of South Africa",
+   "SA",
+   "zaf",
+   "South African"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "R.S.A.",
+   "RSA",
+   "Republic of South Africa",
+   "SA",
+   "zaf"
+  ],
+  "wikidata_label": "South Africa"
+ },
+ "Q114": {
+  "name": "Kenya",
+  "answer_type": "country",
+  "label": "Kenya",
+  "aliases": [],
+  "demonyms": [
+   "Kenyan"
+  ],
+  "leak_terms": [
+   "Kenya",
+   "Republic of Kenya",
+   "ke",
+   "Kenyan"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Republic of Kenya",
+   "ke"
+  ],
+  "wikidata_label": "Kenya"
+ },
+ "Q668": {
+  "name": "India",
+  "answer_type": "country",
+  "label": "India",
+  "aliases": [],
+  "demonyms": [
+   "Indian"
+  ],
+  "leak_terms": [
+   "India",
+   "Al Hind",
+   "Bharat Ganarajya",
+   "Bharata",
+   "Bharatvarsh",
+   "Hindoostan",
+   "Hindustan",
+   "Indostan",
+   "Republic of India",
+   "Tenjiku",
+   "Tianzhu",
+   "Indian"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Al Hind",
+   "Bharat Ganarajya",
+   "Bharata",
+   "Bharatvarsh",
+   "Hindoostan",
+   "Hindustan",
+   "Indostan",
+   "Republic of India",
+   "Tenjiku",
+   "Tianzhu"
+  ],
+  "wikidata_label": "India"
+ },
+ "Q148": {
+  "name": "China",
+  "answer_type": "country",
+  "label": "China",
+  "aliases": [
+   "People's Republic of China",
+   "PRC"
+  ],
+  "demonyms": [
+   "Chinese"
+  ],
+  "leak_terms": [
+   "People's Republic of China",
+   "China",
+   "China PR",
+   "Communist China",
+   "P.R.C.",
+   "PR China",
+   "Red China",
+   "The PRC",
+   "cn",
+   "the People's Republic of China",
+   "Chinese"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "China PR",
+   "Communist China",
+   "P.R.C.",
+   "PR China",
+   "Red China",
+   "The PRC",
+   "cn",
+   "the People's Republic of China"
+  ],
+  "wikidata_label": "People's Republic of China"
+ },
+ "Q17": {
+  "name": "Japan",
+  "answer_type": "country",
+  "label": "Japan",
+  "aliases": [],
+  "demonyms": [
+   "Japanese"
+  ],
+  "leak_terms": [
+   "Japan",
+   "Iapan",
+   "Iapon",
+   "Land of Rising Sun",
+   "Land of the Rising Sun",
+   "Nihon-koku",
+   "Nippon-koku",
+   "State of Japan",
+   "Japanese"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Iapan",
+   "Iapon",
+   "Land of Rising Sun",
+   "Land of the Rising Sun",
+   "Nihon-koku",
+   "Nippon-koku",
+   "State of Japan"
+  ],
+  "wikidata_label": "Japan"
+ },
+ "Q884": {
+  "name": "South Korea",
+  "answer_type": "country",
+  "label": "South Korea",
+  "aliases": [
+   "Korea",
+   "Republic of Korea"
+  ],
+  "demonyms": [
+   "South Korean"
+  ],
+  "leak_terms": [
+   "South Korea",
+   "Choson",
+   "Daehan Minguk",
+   "Daehanminguk",
+   "Hanguk",
+   "Korea (South)",
+   "Korea Republic",
+   "Rep. Korea",
+   "Republic of Korea",
+   "S. Korea",
+   "Silla",
+   "South Korean",
+   "Korea",
+   "Korean"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Choson",
+   "Daehan Minguk",
+   "Daehanminguk",
+   "Hanguk",
+   "Korea (South)",
+   "Korea Republic",
+   "Rep. Korea",
+   "Republic of Korea",
+   "S. Korea",
+   "Silla"
+  ],
+  "wikidata_label": "South Korea"
+ },
+ "Q252": {
+  "name": "Indonesia",
+  "answer_type": "country",
+  "label": "Indonesia",
+  "aliases": [],
+  "demonyms": [
+   "Indonesian"
+  ],
+  "leak_terms": [
+   "Indonesia",
+   "Republic of Indonesia",
+   "id",
+   "Indonesian"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Republic of Indonesia",
+   "id"
+  ],
+  "wikidata_label": "Indonesia"
+ },
+ "Q155": {
+  "name": "Brazil",
+  "answer_type": "country",
+  "label": "Brazil",
+  "aliases": [
+   "Brasil"
+  ],
+  "demonyms": [
+   "Brazilian",
+   "Brazilians"
+  ],
+  "leak_terms": [
+   "Brazil",
+   "Federative Republic of Brazil",
+   "Brazilian",
+   "Brazilians",
+   "Brasil"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Federative Republic of Brazil"
+  ],
+  "wikidata_label": "Brazil"
+ },
+ "Q414": {
+  "name": "Argentina",
+  "answer_type": "country",
+  "label": "Argentina",
+  "aliases": [],
+  "demonyms": [
+   "Argentine",
+   "Argentinian"
+  ],
+  "leak_terms": [
+   "Argentina",
+   "Argentine Republic",
+   "Republic of Argentina",
+   "Republica Argentina",
+   "Argentine",
+   "Argentinian",
+   "Argentinean"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "Argentine Republic",
+   "Republic of Argentina",
+   "Republica Argentina"
+  ],
+  "wikidata_label": "Argentina"
+ },
+ "Q96": {
+  "name": "Mexico",
+  "answer_type": "country",
+  "label": "Mexico",
+  "aliases": [],
+  "demonyms": [
+   "Mexican",
+   "Mexicans"
+  ],
+  "leak_terms": [
+   "Mexico",
+   "MXN",
+   "Mexican Republic",
+   "Mexican United States",
+   "US of M",
+   "United Mexican States",
+   "United States of Mexico",
+   "mx",
+   "Mexican",
+   "Mexicans",
+   "México"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P27",
+   "P17",
+   "P495"
+  ],
+  "wikidata_aliases": [
+   "MXN",
+   "Mexican Republic",
+   "Mexican United States",
+   "US of M",
+   "United Mexican States",
+   "United States of Mexico",
+   "mx"
+  ],
+  "wikidata_label": "Mexico"
+ },
+ "Q90": {
+  "name": "Paris",
+  "answer_type": "city",
+  "label": "Paris",
+  "aliases": [],
+  "demonyms": [
+   "Parisian",
+   "Parisians"
+  ],
+  "leak_terms": [
+   "Paris",
+   "City of Light",
+   "City of Love",
+   "Lutetia",
+   "Parisian",
+   "Parisians"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "City of Light",
+   "City of Love",
+   "Lutetia"
+  ],
+  "wikidata_label": "Paris"
+ },
+ "Q84": {
+  "name": "London",
+  "answer_type": "city",
+  "label": "London",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "London",
+   "Augusta",
+   "Big Smoke",
+   "Kaerlud",
+   "Karelundein",
+   "LDN",
+   "Llan Dian",
+   "Llyn Dain",
+   "Lon.",
+   "Lond.",
+   "Londini",
+   "Londiniensium",
+   "Londinio",
+   "Londinion",
+   "Londinium",
+   "London U.K.",
+   "London UK",
+   "London, England",
+   "London, UK",
+   "London, United Kingdom",
+   "Loniniensi",
+   "Loñ",
+   "Loñ.",
+   "Lunden",
+   "Lundenburgh",
+   "Lundenburh",
+   "Lundenwic",
+   "Trinovantum",
+   "the Big Smoke",
+   "Londoner"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Augusta",
+   "Big Smoke",
+   "Kaerlud",
+   "Karelundein",
+   "LDN",
+   "Llan Dian",
+   "Llyn Dain",
+   "Lon.",
+   "Lond.",
+   "Londini",
+   "Londiniensium",
+   "Londinio",
+   "Londinion",
+   "Londinium",
+   "London U.K.",
+   "London UK",
+   "London, England",
+   "London, UK",
+   "London, United Kingdom",
+   "Loniniensi",
+   "Loñ",
+   "Loñ.",
+   "Lunden",
+   "Lundenburgh",
+   "Lundenburh",
+   "Lundenwic",
+   "Trinovantum",
+   "the Big Smoke"
+  ],
+  "wikidata_label": "London"
+ },
+ "Q64": {
+  "name": "Berlin",
+  "answer_type": "city",
+  "label": "Berlin",
+  "aliases": [],
+  "demonyms": [
+   "Berliner",
+   "Berliners"
+  ],
+  "leak_terms": [
+   "Berlin",
+   "Berlin, Germany",
+   "DE-BE",
+   "Berliner",
+   "Berliners"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Berlin, Germany",
+   "DE-BE"
+  ],
+  "wikidata_label": "Berlin"
+ },
+ "Q220": {
+  "name": "Rome",
+  "answer_type": "city",
+  "label": "Rome",
+  "aliases": [],
+  "demonyms": [
+   "Roman"
+  ],
+  "leak_terms": [
+   "Rome",
+   "Capital of the World",
+   "City of Marble",
+   "City of Seven Hills",
+   "Eternal City",
+   "Rome, Italy",
+   "The Capital of the World",
+   "The City of Marble",
+   "The Eternal City",
+   "Roman",
+   "Roma"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Capital of the World",
+   "City of Marble",
+   "City of Seven Hills",
+   "Eternal City",
+   "Rome, Italy",
+   "The Capital of the World",
+   "The City of Marble",
+   "The Eternal City"
+  ],
+  "wikidata_label": "Rome"
+ },
+ "Q2807": {
+  "name": "Madrid",
+  "answer_type": "city",
+  "label": "Madrid",
+  "aliases": [],
+  "demonyms": [
+   "Madrilenian"
+  ],
+  "leak_terms": [
+   "Madrid",
+   "Madrilenian",
+   "Madrileño"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [],
+  "wikidata_label": "Madrid"
+ },
+ "Q1741": {
+  "name": "Vienna",
+  "answer_type": "city",
+  "label": "Vienna",
+  "aliases": [
+   "Wien"
+  ],
+  "demonyms": [
+   "Viennese"
+  ],
+  "leak_terms": [
+   "Vienna",
+   "Vienna, Austria",
+   "Viennese",
+   "Wien"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Vienna, Austria"
+  ],
+  "wikidata_label": "Vienna"
+ },
+ "Q649": {
+  "name": "Moscow",
+  "answer_type": "city",
+  "label": "Moscow",
+  "aliases": [
+   "Moskva"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "Moscow",
+   "City of Moscow",
+   "Moscow, Russia",
+   "Moscow, Russian Federation",
+   "Moscow, Russian SFSR",
+   "Moscow, Soviet Union",
+   "Moscow, USSR",
+   "Moskovĭ",
+   "Moskva Federal City, Russia",
+   "Moskva, Rossiya",
+   "Moskva, Russia",
+   "Moskve",
+   "Moskvi",
+   "Moskvë",
+   "Mosky",
+   "Москва",
+   "Muscovite",
+   "Moskva"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "City of Moscow",
+   "Moscow, Russia",
+   "Moscow, Russian Federation",
+   "Moscow, Russian SFSR",
+   "Moscow, Soviet Union",
+   "Moscow, USSR",
+   "Moskovĭ",
+   "Moskva Federal City, Russia",
+   "Moskva, Rossiya",
+   "Moskva, Russia",
+   "Moskve",
+   "Moskvi",
+   "Moskvë",
+   "Mosky",
+   "Москва"
+  ],
+  "wikidata_label": "Moscow"
+ },
+ "Q406": {
+  "name": "Istanbul",
+  "answer_type": "city",
+  "label": "Istanbul",
+  "aliases": [],
+  "demonyms": [
+   "Istanbulite"
+  ],
+  "leak_terms": [
+   "Istanbul",
+   "Istanbulite",
+   "Constantinople",
+   "İstanbul"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [],
+  "wikidata_label": "Istanbul"
+ },
+ "Q85": {
+  "name": "Cairo",
+  "answer_type": "city",
+  "label": "Cairo",
+  "aliases": [],
+  "demonyms": [
+   "Cairene"
+  ],
+  "leak_terms": [
+   "Cairo",
+   "Cairo, Egypt",
+   "Qahira",
+   "ghahere",
+   "Cairene"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Cairo, Egypt",
+   "Qahira",
+   "ghahere"
+  ],
+  "wikidata_label": "Cairo"
+ },
+ "Q1490": {
+  "name": "Tokyo",
+  "answer_type": "city",
+  "label": "Tokyo",
+  "aliases": [],
+  "demonyms": [
+   "Tokyoite"
+  ],
+  "leak_terms": [
+   "Tokyo",
+   "Edo",
+   "Jedo",
+   "Tokei",
+   "Tokio",
+   "Tokyo (Japan)",
+   "Tokyo Metropolis",
+   "Tokyo Metropolitan prefecture",
+   "Tokyo Prefecture",
+   "Tokyo, Japan",
+   "Tokyo-to",
+   "Tôkyô",
+   "Tôkyô-to",
+   "Tōkyō-to",
+   "Yedo",
+   "Tokyoite"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Edo",
+   "Jedo",
+   "Tokei",
+   "Tokio",
+   "Tokyo (Japan)",
+   "Tokyo Metropolis",
+   "Tokyo Metropolitan prefecture",
+   "Tokyo Prefecture",
+   "Tokyo, Japan",
+   "Tokyo-to",
+   "Tôkyô",
+   "Tôkyô-to",
+   "Tōkyō-to",
+   "Yedo"
+  ],
+  "wikidata_label": "Tokyo"
+ },
+ "Q1156": {
+  "name": "Mumbai",
+  "answer_type": "city",
+  "label": "Mumbai",
+  "aliases": [
+   "Bombay"
+  ],
+  "demonyms": [
+   "Mumbaikar"
+  ],
+  "leak_terms": [
+   "Mumbai",
+   "Bombay",
+   "Mumbaikar"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Bombay"
+  ],
+  "wikidata_label": "Mumbai"
+ },
+ "Q987": {
+  "name": "New Delhi",
+  "answer_type": "city",
+  "label": "New Delhi",
+  "aliases": [
+   "Delhi"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "New Delhi",
+   "NDMC area",
+   "Nai Dilli",
+   "Nayi Dilli",
+   "New Delhi Municipal Council Area",
+   "Delhi"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "NDMC area",
+   "Nai Dilli",
+   "Nayi Dilli",
+   "New Delhi Municipal Council Area"
+  ],
+  "wikidata_label": "New Delhi"
+ },
+ "Q60": {
+  "name": "New York City",
+  "answer_type": "city",
+  "label": "New York City",
+  "aliases": [
+   "New York",
+   "NYC"
+  ],
+  "demonyms": [
+   "New Yorker"
+  ],
+  "leak_terms": [
+   "New York City",
+   "Capital of the World",
+   "Center of the Universe",
+   "City of New York",
+   "Empire City",
+   "N. Y., N. Y.",
+   "NY City",
+   "NY, NY",
+   "New York (NY)",
+   "New York (city)",
+   "New York City (NYC)",
+   "New York City, NY",
+   "New York City, New York",
+   "New York City, New York, United States",
+   "New York City, USA",
+   "New York City, United States",
+   "New York City, United States of America",
+   "New York, N.Y.",
+   "New York, NY",
+   "New York, New York, USA",
+   "city of New York",
+   "the five boroughs",
+   "New Yorker",
+   "New York",
+   "NYC"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Capital of the World",
+   "Center of the Universe",
+   "City of New York",
+   "Empire City",
+   "N. Y., N. Y.",
+   "NY City",
+   "NY, NY",
+   "New York (NY)",
+   "New York (city)",
+   "New York City (NYC)",
+   "New York City, NY",
+   "New York City, New York",
+   "New York City, New York, United States",
+   "New York City, USA",
+   "New York City, United States",
+   "New York City, United States of America",
+   "New York, N.Y.",
+   "New York, NY",
+   "New York, New York, USA",
+   "city of New York",
+   "the five boroughs"
+  ],
+  "wikidata_label": "New York City"
+ },
+ "Q1489": {
+  "name": "Mexico City",
+  "answer_type": "city",
+  "label": "Mexico City",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Mexico City",
+   "City of Mexico",
+   "Mexico",
+   "Mexico City, Mexico",
+   "Mexico D.F."
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "City of Mexico",
+   "Mexico",
+   "Mexico City, Mexico",
+   "Mexico D.F."
+  ],
+  "wikidata_label": "Mexico City"
+ },
+ "Q1486": {
+  "name": "Buenos Aires",
+  "answer_type": "city",
+  "label": "Buenos Aires",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Buenos Aires",
+   "Ciudad Autonoma de Buenos Aires",
+   "Ciudad de Buenos Aires",
+   "Porteño"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Ciudad Autonoma de Buenos Aires",
+   "Ciudad de Buenos Aires"
+  ],
+  "wikidata_label": "Buenos Aires"
+ },
+ "Q1297": {
+  "name": "Chicago",
+  "answer_type": "city",
+  "label": "Chicago",
+  "aliases": [],
+  "demonyms": [
+   "Chicagoan"
+  ],
+  "leak_terms": [
+   "Chicago",
+   "Chi-Raq",
+   "Chi-Town",
+   "Chicago, IL",
+   "Chitown",
+   "City by the Lake",
+   "City of Broad Shoulders",
+   "City of Chicago",
+   "The Queen of the West",
+   "The Second City",
+   "The Windy City",
+   "Chicagoan"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P19",
+   "P159"
+  ],
+  "wikidata_aliases": [
+   "Chi-Raq",
+   "Chi-Town",
+   "Chicago, IL",
+   "Chitown",
+   "City by the Lake",
+   "City of Broad Shoulders",
+   "City of Chicago",
+   "The Queen of the West",
+   "The Second City",
+   "The Windy City"
+  ],
+  "wikidata_label": "Chicago"
+ },
+ "Q150": {
+  "name": "French",
+  "answer_type": "language",
+  "label": "French",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "French",
+   "French language"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "French language"
+  ],
+  "wikidata_label": "French"
+ },
+ "Q188": {
+  "name": "German",
+  "answer_type": "language",
+  "label": "German",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "German",
+   "German language"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "German language"
+  ],
+  "wikidata_label": "German"
+ },
+ "Q1321": {
+  "name": "Spanish",
+  "answer_type": "language",
+  "label": "Spanish",
+  "aliases": [
+   "Castilian"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "Spanish",
+   "Castilian",
+   "Castilian language",
+   "Spanish language"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Castilian",
+   "Castilian language",
+   "Spanish language"
+  ],
+  "wikidata_label": "Spanish"
+ },
+ "Q652": {
+  "name": "Italian",
+  "answer_type": "language",
+  "label": "Italian",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Italian",
+   "Italian language",
+   "Italiana"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Italian language",
+   "Italiana"
+  ],
+  "wikidata_label": "Italian"
+ },
+ "Q5146": {
+  "name": "Portuguese",
+  "answer_type": "language",
+  "label": "Portuguese",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Portuguese",
+   "Portuguese language"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Portuguese language"
+  ],
+  "wikidata_label": "Portuguese"
+ },
+ "Q7737": {
+  "name": "Russian",
+  "answer_type": "language",
+  "label": "Russian",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Russian",
+   "Russian language",
+   "Russkiy",
+   "Russkiy yazyk"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Russian language",
+   "Russkiy",
+   "Russkiy yazyk"
+  ],
+  "wikidata_label": "Russian"
+ },
+ "Q5287": {
+  "name": "Japanese",
+  "answer_type": "language",
+  "label": "Japanese",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Japanese",
+   "Japanese language",
+   "Japanesic"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Japanese language",
+   "Japanesic"
+  ],
+  "wikidata_label": "Japanese"
+ },
+ "Q7850": {
+  "name": "Chinese",
+  "answer_type": "language",
+  "label": "Chinese",
+  "aliases": [
+   "Mandarin",
+   "Mandarin Chinese",
+   "Standard Chinese"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "Chinese",
+   "Chinese language",
+   "Chinese languages",
+   "Mandarin"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Chinese language",
+   "Chinese languages"
+  ],
+  "wikidata_label": "Chinese"
+ },
+ "Q13955": {
+  "name": "Arabic",
+  "answer_type": "language",
+  "label": "Arabic",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Arabic",
+   "Arabian",
+   "Arabian language",
+   "Arabic language"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Arabian",
+   "Arabian language",
+   "Arabic language"
+  ],
+  "wikidata_label": "Arabic"
+ },
+ "Q1568": {
+  "name": "Hindi",
+  "answer_type": "language",
+  "label": "Hindi",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Hindi",
+   "Hindi language",
+   "Modern Standard Hindi"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Hindi language",
+   "Modern Standard Hindi"
+  ],
+  "wikidata_label": "Hindi"
+ },
+ "Q809": {
+  "name": "Polish",
+  "answer_type": "language",
+  "label": "Polish",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Polish",
+   "Polish language"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Polish language"
+  ],
+  "wikidata_label": "Polish"
+ },
+ "Q256": {
+  "name": "Turkish",
+  "answer_type": "language",
+  "label": "Turkish",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "Turkish",
+   "Anatolian Turkish",
+   "Istanbul Turkish",
+   "Turkish language",
+   "Turkish of Turkey",
+   "Türkçe"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P1412",
+   "P364"
+  ],
+  "wikidata_aliases": [
+   "Anatolian Turkish",
+   "Istanbul Turkish",
+   "Turkish language",
+   "Turkish of Turkey",
+   "Türkçe"
+  ],
+  "wikidata_label": "Turkish"
+ },
+ "Q2736": {
+  "name": "association football",
+  "answer_type": "sport",
+  "label": "association football",
+  "aliases": [
+   "football",
+   "soccer"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "association football",
+   "association soccer",
+   "foot ball",
+   "football",
+   "footie",
+   "footy",
+   "futbol",
+   "futebol",
+   "soccer",
+   "footballer"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "association soccer",
+   "foot ball",
+   "football",
+   "footie",
+   "footy",
+   "futbol",
+   "futebol",
+   "soccer"
+  ],
+  "wikidata_label": "association football"
+ },
+ "Q5372": {
+  "name": "basketball",
+  "answer_type": "sport",
+  "label": "basketball",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "basketball",
+   "BB",
+   "Basketball",
+   "b-ball",
+   "basket",
+   "basket ball",
+   "hoops"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "BB",
+   "Basketball",
+   "b-ball",
+   "basket",
+   "basket ball",
+   "hoops"
+  ],
+  "wikidata_label": "basketball"
+ },
+ "Q847": {
+  "name": "tennis",
+  "answer_type": "sport",
+  "label": "tennis",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "tennis",
+   "lawn tennis",
+   "lawntennis"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "lawn tennis",
+   "lawntennis"
+  ],
+  "wikidata_label": "tennis"
+ },
+ "Q41466": {
+  "name": "ice hockey",
+  "answer_type": "sport",
+  "label": "ice hockey",
+  "aliases": [
+   "hockey"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "ice hockey",
+   "hockey"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "hockey"
+  ],
+  "wikidata_label": "ice hockey"
+ },
+ "Q5369": {
+  "name": "baseball",
+  "answer_type": "sport",
+  "label": "baseball",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "baseball",
+   "America's pastime"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "America's pastime"
+  ],
+  "wikidata_label": "baseball"
+ },
+ "Q5375": {
+  "name": "cricket",
+  "answer_type": "sport",
+  "label": "cricket",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "cricket",
+   "cricketer"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [],
+  "wikidata_label": "cricket"
+ },
+ "Q5849": {
+  "name": "rugby union",
+  "answer_type": "sport",
+  "label": "rugby union",
+  "aliases": [
+   "rugby"
+  ],
+  "demonyms": [],
+  "leak_terms": [
+   "rugby union",
+   "rugby"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "rugby"
+  ],
+  "wikidata_label": "rugby union"
+ },
+ "Q5377": {
+  "name": "golf",
+  "answer_type": "sport",
+  "label": "golf",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "golf",
+   "golfer"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [],
+  "wikidata_label": "golf"
+ },
+ "Q32112": {
+  "name": "boxing",
+  "answer_type": "sport",
+  "label": "boxing",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "boxing",
+   "pugilism",
+   "boxer"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [
+   "pugilism"
+  ],
+  "wikidata_label": "boxing"
+ },
+ "Q1734": {
+  "name": "volleyball",
+  "answer_type": "sport",
+  "label": "volleyball",
+  "aliases": [],
+  "demonyms": [],
+  "leak_terms": [
+   "volleyball"
+  ],
+  "equivalent_qids": [],
+  "relations": [
+   "P641"
+  ],
+  "wikidata_aliases": [],
+  "wikidata_label": "volleyball"
+ }
+}

@@ -29,6 +29,10 @@ FF_SUFFIX = "Answer with just the name."
 MCQ_SUFFIX = "Answer with the letter only."
 LETTERS = "ABCD"
 HINT_FRACTION = 0.3
+# Facts whose Wikidata answer is unreliable (checked by hand; see dataset/README_facts.md):
+# P1412 = Hindi was bulk-assigned to Indian public figures regardless of their language.
+EXCLUDE_CELLS = {("P1412", "Q1568")}
+EXCLUDE_SUBJECTS = {"Imperial Bank of India"}  # headquarters was Calcutta, not Mumbai
 
 
 def sha(text: str) -> str:
@@ -87,7 +91,8 @@ def build(facts, rewrites, answers):
 
 
 def main():
-    facts = load_jsonl(DATASET / "facts.jsonl")
+    facts = [f for f in load_jsonl(DATASET / "facts.jsonl")
+             if (f["relation"], f["answer_qid"]) not in EXCLUDE_CELLS and f["subject_label"] not in EXCLUDE_SUBJECTS]
     rw_path = DATASET / "rewrites.jsonl"
     rewrites = {r["fact_id"]: r for r in load_jsonl(rw_path)} if rw_path.exists() else {}
     answers = json.load(open(DATASET / "answers.json"))
