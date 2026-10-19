@@ -34,7 +34,7 @@ from wisdom.prompts import sha, stable_unit
 ROOT = Path(__file__).resolve().parent.parent
 MAX_NEW_TOKENS = 12
 DTYPE = torch.bfloat16
-CAPTURE = "last prompt position; input to block 0 + output of every block, pre final norm; float16"
+CAPTURE = "last prompt position; input to block 0 + output of every block, pre final norm; bfloat16 bits"
 SHARD_SIZE = 512
 
 
@@ -85,7 +85,8 @@ class Capture:
         return fn
 
     def take(self):
-        states = torch.stack(self.buf, dim=1).half().cpu().numpy()  # (batch, layers + 1, d), one copy
+        # The model computes in bfloat16; store exactly those bits (as int16) so nothing overflows or rounds.
+        states = torch.stack(self.buf, dim=1).to(torch.bfloat16).view(torch.int16).cpu().numpy()
         self.buf = [None] * len(self.buf)
         return states
 
@@ -243,8 +244,13 @@ def save_unembedding(model, tok, answers, path):
                 ids.update(tok.encode(variant, add_special_tokens=False))
     ids = sorted(ids)
     W = model.get_output_embeddings().weight[ids].detach().float().cpu().numpy()
-    norm_w = model.model.norm.weight.detach().float().cpu().numpy()
-    np.savez(path, token_ids=np.array(ids), rows=W.astype(np.float32), final_norm_weight=norm_w)
+    # The final norm's per-dimension scale, measured rather than assumed (Gemma multiplies by 1 + weight):
+    # the norm applied to a vector of ones (RMS exactly 1) returns that scale.
+    norm = model.model.norm
+    ones = torch.ones(1, model.config.hidden_size, device=norm.weight.device, dtype=torch.float32)
+    norm_w = norm.float()(ones)[0].detach().cpu().numpy()
+    norm.to(DTYPE)
+    np.savez(path, token_ids=np.array(ids), rows=W.astype(np.float32), final_norm_scale=norm_w)
 
 
 def git_commit():
@@ -278,7 +284,7 @@ def main():
     ap.add_argument("--prompts", default=str(ROOT / "dataset" / "prompts.jsonl"))
     ap.add_argument("--answers", default=str(ROOT / "dataset" / "answers.json"))
     ap.add_argument("--batch-size", type=int, default=64)
-    ap.add_argument("--limit-facts", type=int, default=0, help="pilot: use only the first N facts")
+    ap.add_argument("--limit-facts", type=int, default=0, help="pilot: a deterministic sample of N facts")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
 

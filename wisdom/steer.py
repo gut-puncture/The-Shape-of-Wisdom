@@ -62,9 +62,9 @@ def make_plan(ff_records, ff_states, hint_records, n_layers, answers):
     clean_right = {r["fact_id"] for r in test_w0 if r["correct"]}
     right = random.Random(0).sample(sorted((r for r in test_w0 if r["correct"]), key=lambda r: r["prompt_id"]),
                                     min(N_RIGHT, len(clean_right)))
-    wrong = [r for r in test_w0 if not r["correct"]]
+    wrong = [r for r in test_w0 if not r["correct"] and r["answered"]]
     misled = [r for r in hint_records if r["split"] == "test" and r["fact_id"] in clean_right
-              and not r["correct"] and r.get("given_qid")]
+              and not r["correct"] and r["answered"]]
 
     places, jobs = {}, []
     for layer in layers:
@@ -108,7 +108,13 @@ def vector(job, places):
 def load_or_make_plan(run_dir, prompts, answers, n_layers):
     out = run_dir / "steer"
     out.mkdir(exist_ok=True)
+    ff_ids = sorted(r["prompt_id"] + r["text_sha"] for r in read_jsonl(run_dir / "ff" / "results.jsonl"))
+    fit_sha = sha("|".join(ff_ids))  # identifies the free-form results the places were fitted on
     if (out / "plan.jsonl").exists():
+        meta = json.loads((out / "plan_meta.json").read_text())
+        if meta["ff_results_sha"] != fit_sha:
+            raise SystemExit(f"Refusing to resume steering in {out}: its plan was fitted on different free-form "
+                             "results. Use a new --run-dir (or delete the steer folder to re-plan).")
         z = np.load(out / "places.npz")
         places = {}
         for key in z.files:
@@ -124,6 +130,7 @@ def load_or_make_plan(run_dir, prompts, answers, n_layers):
     with open(tmp, "w") as f:
         for j in jobs:
             f.write(json.dumps(j) + "\n")
+    (out / "plan_meta.json").write_text(json.dumps({"ff_results_sha": fit_sha, "n_jobs": len(jobs)}))
     tmp.rename(out / "plan.jsonl")  # the plan exists only once it is complete
     return places, jobs
 

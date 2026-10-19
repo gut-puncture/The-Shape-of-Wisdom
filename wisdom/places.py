@@ -44,14 +44,21 @@ def load_stage(stage_dir: Path, prompts: list, answers: dict, with_states: bool 
             letter = r["argmax_token"].strip()
             rec["given_letter"] = letter if letter in ("A", "B", "C", "D") else None
             rec["given_qid"] = rec["options"]["ABCD".index(letter)] if rec["given_letter"] else None
+        rec.setdefault("reply_status", "answer" if rec.get("given_qid") else "unclear")
+        rec["answered"] = rec["reply_status"] in ("answer", "other")  # unclear replies are neither right nor wrong
         rec["correct"] = rec.get("given_qid") == rec["answer_qid"]
         records.append(rec)
         index.append((r["shard"], r["row"]))
     if not with_states:
         return records, None
     shards = {s: np.load(stage_dir / "states" / f"{s}.npy", mmap_mode="r") for s in {s for s, _ in index}}
-    states = np.stack([shards[s][i] for s, i in index]) if index else np.zeros((0, 0, 0), np.float16)
-    return records, states
+    states = np.stack([shards[s][i] for s, i in index]) if index else np.zeros((0, 0, 0), np.int16)
+    return records, bf16_to_f32(states)
+
+
+def bf16_to_f32(bits: np.ndarray) -> np.ndarray:
+    """Recorded states are bfloat16 bit patterns stored as int16; widen them exactly to float32."""
+    return (bits.astype(np.uint16).astype(np.uint32) << 16).view(np.float32)
 
 
 def fit_places(records, states, layer: int, split="train"):

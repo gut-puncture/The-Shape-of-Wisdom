@@ -52,13 +52,14 @@ def load_jsonl(path):
         return [json.loads(line) for line in f if line.strip()]
 
 
-def build(facts, rewrites):
+def build(facts, rewrites, answers):
     by_type = {}
-    for f in facts:
-        by_type.setdefault(f["answer_type"], {})[f["answer_qid"]] = f["answer_label"]
+    for q, a in answers.items():  # curated display names, e.g. "China" rather than "People's Republic of China"
+        by_type.setdefault(a["answer_type"], {})[q] = a["label"]
     out = []
     for f in facts:
-        base = {k: f[k] for k in ("fact_id", "answer_type", "relation", "subject_qid", "subject_label", "answer_qid", "answer_label", "band")}
+        base = {k: f[k] for k in ("fact_id", "answer_type", "relation", "subject_qid", "subject_label", "answer_qid", "band")}
+        base["answer_label"] = answers[f["answer_qid"]]["label"]
         base["split"] = split_of(f)
         wordings = {"w0": TEMPLATES[f["relation"]].format(s=f["subject_label"])}
         for w in ("w1", "w2"):
@@ -89,7 +90,8 @@ def main():
     facts = load_jsonl(DATASET / "facts.jsonl")
     rw_path = DATASET / "rewrites.jsonl"
     rewrites = {r["fact_id"]: r for r in load_jsonl(rw_path)} if rw_path.exists() else {}
-    prompts = build(facts, rewrites)
+    answers = json.load(open(DATASET / "answers.json"))
+    prompts = build(facts, rewrites, answers)
     with open(DATASET / "prompts.jsonl", "w") as f:
         for p in prompts:
             f.write(json.dumps(p, ensure_ascii=False) + "\n")

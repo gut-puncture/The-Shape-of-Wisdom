@@ -122,9 +122,9 @@ def subject_bootstrap(values: dict, recs, n=N_BOOT, seed=0):
 
 def answer_directions(unembed_npz):
     """The residual-stream directions the output layer reads for the answer words: each token's
-    unembedding row scaled by the final norm's weight. Orthonormal basis via rank-thresholded SVD."""
+    unembedding row times the final norm's measured per-dimension scale. Orthonormal basis via rank-thresholded SVD."""
     z = np.load(unembed_npz)
-    R = z["rows"] * z["final_norm_weight"][None, :]
+    R = z["rows"] * z["final_norm_scale"][None, :]
     U, S, Vt = np.linalg.svd(R, full_matrices=False)
     keep = S > S.max() * 1e-6
     return Vt[keep].T  # (d, r)
