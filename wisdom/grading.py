@@ -41,12 +41,24 @@ class Grader:
             taken.append((i, -neg_len))
         return out
 
-    def given(self, reply: str, answer_type: str, hint_qid=None):
-        """The answer the reply commits to. When the user suggested `hint_qid` and the reply names
-        both it and another answer ("Germany? No, it's France"), the other answer is the commitment."""
+    def given(self, reply: str, answer_type: str):
+        """The answer entity a reply commits to, or None. Conservative by design: a reply commits only
+        when its first line names exactly one candidate and contains no negation, hedge or refusal.
+        Anything else ("Germany, not France", "I can't confirm Germany") is unclear, not guessed at."""
+        return self.read(reply, answer_type)[0]
+
+    def read(self, reply: str, answer_type: str):
+        """(committed qid or None, status) with status in {"answer", "none", "multiple", "hedged"}."""
         named = self.mentions(reply, answer_type)
-        if hint_qid is not None:
-            others = [q for q in named if q != hint_qid]
-            if others:
-                return others[0]
-        return named[0] if named else None
+        line = normalize(reply.strip().split("\n")[0] if reply.strip() else "")
+        if not named:
+            return None, "none"
+        if len(named) > 1:
+            return None, "multiple"
+        if any(f" {w} " in line for w in HEDGES):
+            return None, "hedged"
+        return named[0], "answer"
+
+
+HEDGES = ["not", "no", "never", "cannot", "can t", "cant", "don t", "dont", "unsure", "unknown", "uncertain",
+          "maybe", "perhaps", "possibly", "might", "probably", "unclear", "sorry", "neither", "nor", "isn t", "wasn t"]

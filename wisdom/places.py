@@ -12,24 +12,33 @@ from wisdom.prompts import sha
 MIN_ITEMS_PER_PLACE = 5
 
 
+def read_jsonl(path):
+    """Records of an append-only log; a torn final line (a crash mid-write) is skipped."""
+    out = []
+    with open(path) as f:
+        for line in f:
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return out
+
+
 def load_stage(stage_dir: Path, prompts: list, answers: dict, with_states: bool = True):
     """Records for the current prompts (latest result per prompt, matching the current text),
     with graded answers, and their states as one (n, layers + 1, d) float16 array."""
     by_id = {p["prompt_id"]: p for p in prompts}
     latest = {}
-    with open(stage_dir / "results.jsonl") as f:
-        for line in f:
-            r = json.loads(line)
-            p = by_id.get(r["prompt_id"])
-            if p is not None and r["text_sha"] == sha(p["text"]):
-                latest[r["prompt_id"]] = r
+    for r in read_jsonl(stage_dir / "results.jsonl"):
+        p = by_id.get(r["prompt_id"])
+        if p is not None and r["text_sha"] == sha(p["text"]):
+            latest[r["prompt_id"]] = r
     grader = Grader(answers)
     records, index = [], []
     for pid, r in latest.items():
         rec = {**by_id[pid], **r}
         if "reply" in r:
-            rec["mentions"] = grader.mentions(r["reply"], rec["answer_type"])
-            rec["given_qid"] = grader.given(r["reply"], rec["answer_type"], rec.get("hint_qid"))
+            rec["given_qid"], rec["reply_status"] = grader.read(r["reply"], rec["answer_type"])
         elif "letter_logits" in r:
             # Only an actual letter counts as an answer; otherwise the model did not answer the format.
             letter = r["argmax_token"].strip()

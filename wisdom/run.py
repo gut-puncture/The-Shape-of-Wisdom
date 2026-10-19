@@ -10,7 +10,8 @@ Stages
 
 Stopping and resuming: kill the process at any time and rerun the same command. Finished
 prompts are skipped. A run directory is one task, defined by its invariants (model, exact
-weights, precision, what is recorded, answer length); resume refuses if any of them change.
+weights, precision, attention kernel, what is recorded, answer length, chat template, the answer
+list, library versions); resume refuses if any of them change.
 Everything else (batch size, stages, prompts added to the dataset) may change between resumes.
 """
 
@@ -23,9 +24,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import transformers
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 from wisdom.models import MODELS
+from wisdom.places import read_jsonl
 from wisdom.prompts import sha, stable_unit
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -129,9 +132,10 @@ def generate(model, tok, batch, device, first_ids):
     out = model.generate(**enc, max_new_tokens=MAX_NEW_TOKENS, do_sample=False, output_scores=True,
                          return_dict_in_generate=True, pad_token_id=tok.pad_token_id)
     new = out.sequences[:, enc["input_ids"].shape[1]:]
-    logp = torch.stack([torch.log_softmax(s.float(), dim=-1) for s in out.scores], dim=1)  # (b, steps, vocab)
-    chosen = logp.gather(-1, new[:, :logp.shape[1], None])[..., 0].cpu()
-    first = logp[:, 0].cpu()
+    steps = len(out.scores)
+    chosen = torch.stack([torch.log_softmax(out.scores[k].float(), dim=-1).gather(-1, new[:, k:k + 1])[:, 0]
+                          for k in range(steps)], dim=1).cpu()  # log-prob of each generated token
+    first = torch.log_softmax(out.scores[0].float(), dim=-1).cpu()
     eos = model.generation_config.eos_token_id
     stop_ids = set(eos if isinstance(eos, list) else [eos]) | {tok.eos_token_id}
     rows = []
@@ -148,7 +152,7 @@ def generate(model, tok, batch, device, first_ids):
 @torch.no_grad()
 def letter_scores(model, tok, batch, device, letters):
     enc = encode(tok, [p["text"] for p in batch], device)
-    logits = model(**enc).logits[:, -1, :].float()
+    logits = model(**enc, logits_to_keep=1, use_cache=False).logits[:, -1, :].float()
     rows = []
     for i in range(len(batch)):
         scores = {L: max(logits[i, j].item() for j in ids) for L, ids in letters.items()}
@@ -166,10 +170,8 @@ class StageStore:
         self.results = path / "results.jsonl"
         self.done = set()
         if self.results.exists():
-            with open(self.results) as f:
-                for line in f:
-                    r = json.loads(line)
-                    self.done.add((r["prompt_id"], r["text_sha"]))
+            for r in read_jsonl(self.results):  # a torn final line from a crash is simply redone
+                self.done.add((r["prompt_id"], r["text_sha"]))
         self.pending_rows, self.pending_states = [], []
 
     def todo(self, prompts):
@@ -189,8 +191,11 @@ class StageStore:
         if self.pending_states:
             arr = np.concatenate(self.pending_states)
             tmp = self.path / "states" / f"{shard}.tmp.npy"
-            np.save(tmp, arr)
-            os.replace(tmp, self.path / "states" / f"{shard}.npy")
+            with open(tmp, "wb") as fh:
+                np.save(fh, arr)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, self.path / "states" / f"{shard}.npy")  # data is durable before results point to it
             for i, r in enumerate(self.pending_rows):
                 r["shard"], r["row"] = shard, i
         with open(self.results, "a") as f:
@@ -229,17 +234,17 @@ def run_extract(stage, model, tok, prompts, store, batch_size, device, first_ids
 
 
 def save_unembedding(model, tok, answers, path):
-    """Unembedding rows of every answer's first tokens, for the 'project out the output words' control."""
+    """Unembedding rows of every token of every answer name (with and without a leading space), and the
+    final norm's weight, for the control that removes the answer words' output directions."""
     ids = set()
     for a in answers.values():
         for name in [a["label"], *a.get("aliases", [])]:
             for variant in (name, " " + name):
-                t = tok.encode(variant, add_special_tokens=False)
-                if t:
-                    ids.add(t[0])
+                ids.update(tok.encode(variant, add_special_tokens=False))
     ids = sorted(ids)
     W = model.get_output_embeddings().weight[ids].detach().float().cpu().numpy()
-    np.savez(path, token_ids=np.array(ids), rows=W.astype(np.float32))
+    norm_w = model.model.norm.weight.detach().float().cpu().numpy()
+    np.savez(path, token_ids=np.array(ids), rows=W.astype(np.float32), final_norm_weight=norm_w)
 
 
 def git_commit():
@@ -249,11 +254,12 @@ def git_commit():
         return "unknown"
 
 
-def check_invariants(run_dir: Path, spec, tok):
+def check_invariants(run_dir: Path, spec, tok, answers_sha):
     inv = {"model": spec.key, "repo": spec.repo, "revision": spec.revision, "untrained": spec.untrained,
            "attn_implementation": spec.attn_implementation,
            "dtype": str(DTYPE), "capture": CAPTURE, "max_new_tokens": MAX_NEW_TOKENS,
-           "chat_template_sha": sha(tok.chat_template or "")}
+           "chat_template_sha": sha(tok.chat_template or ""), "answers_sha": answers_sha,
+           "torch": torch.__version__.split("+")[0], "transformers": transformers.__version__}
     path = run_dir / "run.json"
     if path.exists():
         old = json.loads(path.read_text())
@@ -287,7 +293,7 @@ def main():
     answers = json.load(open(args.answers))
 
     model, tok = load_model(spec, args.device)
-    check_invariants(run_dir, spec, tok)
+    check_invariants(run_dir, spec, tok, sha(json.dumps(answers, sort_keys=True)))
     with open(run_dir / "resume_log.jsonl", "a") as f:
         f.write(json.dumps({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), "commit": git_commit(), "args": vars(args)}) + "\n")
     meta = run_dir / "model_meta.json"
