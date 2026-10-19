@@ -276,6 +276,20 @@ def shape_test(rows):
             "line_slope": float(np.polyfit(x, y, 1)[0])}
 
 
+def text_baseline(recs, label="given_qid"):
+    """The same held-out nearest-place test on the question's words alone (character n-gram TF-IDF,
+    reduced to 256 dimensions on training questions): how much of a 'place' could be read from the
+    wording without any model?"""
+    from sklearn.decomposition import TruncatedSVD
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    tr, te = split_idx(recs)
+    vec = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 4), min_df=2).fit([recs[i]["text"] for i in tr])
+    T = vec.transform([r["text"] for r in recs])
+    Z = TruncatedSVD(min(256, T.shape[1] - 1), random_state=0).fit(T[tr]).transform(T)
+    hits, ch = decode(Z, recs, tr, te, label)
+    return {**subject_bootstrap(hits, recs), "chance": float(np.mean(list(ch.values()))) if ch else None}
+
+
 def onset_layer(recs, S, label="given_qid"):
     """Layer where decodability first covers half the way from chance to its peak, chosen with
     training subjects only (places from one half of them, scored on the other half)."""
@@ -486,6 +500,7 @@ def main():
         hint = load_stage(d / "hint", prompts, answers, with_states=False)[0] if (d / "hint" / "results.jsonl").exists() else None
         unembed = d / "unembed_answers.npz"
         res["depth"] = depth_profile(ff, S, "given_qid", unembed if unembed.exists() else None, mcq)
+        res["text_baseline"] = text_baseline(ff)
         res["depth_gold"] = depth_profile(ff, S, label="answer_qid")
         res["shape"] = shape_test(res["depth"])
         L = onset_layer(ff, S)
