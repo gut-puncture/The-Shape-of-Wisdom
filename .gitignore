@@ -50,7 +50,7 @@ artifacts/parser_edge_case_regression/*
 !artifacts/parser_edge_case_regression/regression_cases.json
 
 # Paid/large inputs and derived data (never commit raw data)
-data/
+/data/
 
 # GPU downloads (large, never commit)
 downloads/
@@ -86,3 +86,7 @@ submission/
 page_pngs/
 v3_persistent_contender_margin_fix/outputs/derived_data/*.jsonl
 release/shape_of_wisdom_arxiv/data/derived/*.jsonl
+
+# Answer-places experiment: raw runs are large and stay local; results/ (small) is committed.
+runs/
+dataset/cache/
