@@ -1,4 +1,6 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-For the first half to two thirds of each network, the state from which the answer is produced carries only a weak trace of the answer, and moving it almost never changes the answer to the right one. At one layer the answer arrives. From that layer on, every question with the same answer sits near one centroid, whatever was asked, and moving a state to another centroid changes the reply. Wrong answers are placed the same way, so a near miss can be seen at the onset as a right answer that came second. We have not tested larger models, or open-ended answers, which have no fixed set of centroids; these are the obvious next cases.
+We followed the state from which four language models answer short factual questions, layer by layer. For the first half to two thirds of each network, the state carries only a weak trace of the answer, and moving it almost never changes the answer to the right one. Then, at one layer, the answer arrives. From that layer on, every question with the same answer sits near one centroid, whatever was asked, and moving a state to another centroid changes the reply.
+
+Wrong answers are placed the same way, so at the onset a near miss shows up as a right answer that came second. We have not tested larger models, or open-ended answers, which have no fixed set of centroids; these are the obvious next cases.

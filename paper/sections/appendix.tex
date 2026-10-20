@@ -13,7 +13,7 @@
 
 \paragraph{Controls.} Shuffled answers are permuted between facts of the same kind, all wordings of a fact keeping one answer; readability is averaged over five shuffles. For the question-text control, the TF-IDF vectors of character sequences of length two to four are reduced to 256 dimensions by a truncated singular value decomposition fitted on training questions.
 
-\paragraph{Separation.} $D_{\text{between}}$ and $D_{\text{within}}$ are computed for each kind of answer separately and each is summed over kinds, weighting each kind by its number of test questions, before taking their ratio.
+\paragraph{Tightness.} $D_{\text{between}}$ and $D_{\text{within}}$ are computed for each kind of answer separately and each is summed over kinds, weighting each kind by its number of test questions, before taking their ratio.
 
 \paragraph{Centroids follow the answer.} For other relations, each test question's readability is averaged over the centroids built from each other relation of its kind. For answer words removed, each unembedding vector is first multiplied by the final normalisation's scale, the vectors are turned into an orthonormal basis, and each state is projected onto the space at right angles to that basis; the whitening is then refitted. The random control removes a random orthonormal basis of the same size. True-answer centroids are built like ordinary centroids but group training questions by their true answer. The cross-model comparison uses plain test questions at each model's onset layer.
 

@@ -3,6 +3,6 @@
 
 The questions are short and factual, and their answers come from a closed set of 62 countries, cities, languages and sports. Three of these four kinds are names. For the one kind that is not, sports, the jump is much smaller (Section~\ref{sec:step}) and readability at 90\% of depth is lower (\SportLateMin{}--\SportLateMax{} against \NamesLateMin{}--\NamesLateMax{}). Sports have at most ten answers, all from one relation, so we cannot tell whether this reflects the kind of word or the smaller set. Centroids for open-ended answers, multi-step reasoning or long contexts may look different.
 
-We studied four instruction-tuned models between 1 and 9 billion parameters, with one prompt format each and greedy answers. Readability and separation both measure where states sit, not the computation that moves them there. Readability jumps within one layer, but separation keeps rising for about ten layers after the onset, so the convergence itself is not instantaneous.
+We studied four instruction-tuned models between 1 and 9 billion parameters, with one prompt format each and greedy answers. Readability and tightness both measure where states sit, not the computation that moves them there. Readability jumps within one layer, but tightness keeps rising for about ten layers after the onset, so the convergence itself is not instantaneous.
 
 Wikidata labels contain errors. We removed one unreliable relation--answer pair after a manual check, and a small number of wrong labels surely remain. The rewordings were written by a language model and filtered automatically.

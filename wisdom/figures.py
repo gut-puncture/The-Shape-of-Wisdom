@@ -99,7 +99,7 @@ def finish_depth_axis(ax, ylabel=None, ylim=(0, 1.0)):
 
 
 def onset(summary, out):
-    """Figure 2: readability (with controls) and separation, by depth, for all four models."""
+    """Figure 2: readability (with controls) and tightness, by depth, for all four models."""
     fig = plt.figure(figsize=(style.PAGEW, 2.45))
     (a, b), = axes_grid(fig, 1, 2, 0.075, 0.99, 0.29, 0.9, 0.09, 0)
     for m in MODELS:
@@ -120,8 +120,8 @@ def onset(summary, out):
     b.set_yscale("log")
     b.set_yticks([0.03, 0.1, 0.3, 1], ["0.03", "0.1", "0.3", "1"])
     b.minorticks_off()
-    finish_depth_axis(b, "Separation", ylim=(0.025, 1.3))
-    style.title(b, "B", "Separation, without whitening")
+    finish_depth_axis(b, "Tightness", ylim=(0.025, 1.3))
+    style.title(b, "B", "Tightness, without whitening")
     style.save(fig, out / "fig_onset.pdf")
 
 
