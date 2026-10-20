@@ -211,7 +211,11 @@ def depth_profile(recs, S, label="given_qid", unembed=None, mcq=None):
                 row[name] = subject_bootstrap(hh, recs)
         if mcq is not None:  # places from free-form questions, tested on multiple-choice states
             mrecs, MS = mcq
-            Zm = W(MS[:, layer])
+            # Remove the average offset between the two formats (fitted on training subjects only),
+            # so the test asks whether the places' arrangement carries over, not their absolute position.
+            m_tr = [i for i, r in enumerate(mrecs) if r["split"] == "train"]
+            offset = MS[m_tr, layer].astype(np.float64).mean(0) - X[tr].astype(np.float64).mean(0)
+            Zm = W(MS[:, layer] - offset)
             allr = recs + mrecs
             Zall = np.concatenate([Z, Zm])
             m_te = [len(recs) + i for i, r in enumerate(mrecs) if r["split"] == "test"]
@@ -490,7 +494,7 @@ def main():
             continue
         ff, S = load_stage(d / "ff", prompts, answers)
         res = {"n_prompts": len(ff),
-               "reply_status": {s: sum(r["reply_status"] == s for r in ff) for s in ("answer", "none", "multiple", "hedged")},
+               "reply_status": {s: sum(r["reply_status"] == s for r in ff) for s in ("answer", "other", "unclear")},
                "accuracy_test_w0": float(np.mean([r["correct"] for r in ff if r["split"] == "test" and r["wording"] == "w0"]))}
         if "untrained" in m:
             res["depth_gold"] = depth_profile(ff, S, label="answer_qid")

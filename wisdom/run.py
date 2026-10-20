@@ -47,7 +47,8 @@ def load_model(spec, device="cuda"):
     if spec.untrained:
         torch.manual_seed(0)
         config = AutoConfig.from_pretrained(spec.repo, revision=spec.revision)
-        model = AutoModelForCausalLM.from_config(config, **kw)
+        with torch.device(device):  # initialise the random weights on the GPU: seconds instead of minutes
+            model = AutoModelForCausalLM.from_config(config, **kw)
     else:
         model = AutoModelForCausalLM.from_pretrained(spec.repo, revision=spec.revision, device_map=device, **kw)
     return model.to(device).eval(), tok
