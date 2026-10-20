@@ -40,18 +40,38 @@ MIN_SUBJECTS = 3  # a place needs answers from at least this many distinct train
 # ---------- geometry primitives ----------
 
 class Whitener:
+    """Per-layer whitening fitted on training questions: centre, keep the K leading principal
+    directions, scale each to unit variance (shrunk toward the mean variance)."""
+
     def __init__(self, X, k=K):
-        X = X.astype(np.float64)
+        from sklearn.utils.extmath import randomized_svd
+        X = np.asarray(X, dtype=np.float32)
         self.mu = X.mean(0)
-        U, S, Vt = np.linalg.svd(X - self.mu, full_matrices=False)
-        var = S**2 / max(len(X) - 1, 1)
-        var = (1 - SHRINK) * var + SHRINK * var.mean()
+        Xc = X - self.mu
+        k = min(k, min(Xc.shape) - 1)
+        _, S, Vt = randomized_svd(Xc, n_components=k, n_oversamples=20, n_iter=4, random_state=0)
+        n = max(len(X) - 1, 1)
+        var = S**2 / n
+        mean_var = float((Xc.astype(np.float64) ** 2).sum()) / n / min(Xc.shape)  # mean of all eigenvalues
+        var = (1 - SHRINK) * var + SHRINK * mean_var
         var = np.maximum(var, 1e-6 * var.max() + 1e-12)
-        k = min(k, len(var))
-        self.P = Vt[:k].T / np.sqrt(var[:k])
+        self.P = (Vt.T / np.sqrt(var)).astype(np.float32)
 
     def __call__(self, X):
-        return (X.astype(np.float64) - self.mu) @ self.P
+        return (np.asarray(X, dtype=np.float32) - self.mu) @ self.P
+
+
+_WHITENERS = {}
+
+
+def whitener(S, layer, idx, tag=""):
+    """A Whitener for states S[idx, layer], reused across analyses that fit on the same rows."""
+    key = (id(S), layer, tag, hash(np.asarray(idx).tobytes()))
+    if key not in _WHITENERS:
+        if len(_WHITENERS) > 400:
+            _WHITENERS.clear()
+        _WHITENERS[key] = Whitener(S[idx, layer])
+    return _WHITENERS[key]
 
 
 def place_means(Z, recs, idx, label):
@@ -174,7 +194,7 @@ def depth_profile(recs, S, label="given_qid", unembed=None, mcq=None):
     rows = []
     for layer in range(1, S.shape[1]):  # slot 0 is the same template token for every prompt
         X = S[:, layer]
-        W = Whitener(X[tr])
+        W = whitener(S, layer, tr)
         Z = W(X)
         row = {"layer": layer, "depth": layer / (S.shape[1] - 1)}
         hits, ch = decode(Z, recs, tr, te, label)
@@ -302,7 +322,7 @@ def onset_layer(recs, S, label="given_qid"):
     b = [i for i in tr if i not in set(a)]
     acc, ch = [], []
     for layer in range(1, S.shape[1]):
-        Z = Whitener(S[a, layer])(S[:, layer])
+        Z = whitener(S, layer, a)(S[:, layer])
         h, c = decode(Z, recs, a, b, label)
         acc.append(np.mean(list(h.values())) if h else np.nan)
         ch.append(np.mean(list(c.values())) if c else np.nan)
@@ -322,7 +342,7 @@ def anatomy(recs, S, layer, label="given_qid"):
     """Where each test question's state sits at `layer`. Radii come from training subjects only:
     places from one half of them, distances of the other half's right answers to their own place."""
     tr, te = split_idx(recs)
-    W = Whitener(S[tr, layer])
+    W = whitener(S, layer, tr)
     Z = W(S[:, layer])
     a = [i for i in tr if stable_unit("half", recs[i]["subject_qid"]) < 0.5]
     b = [i for i in tr if i not in set(a)]
@@ -363,6 +383,37 @@ def anatomy(recs, S, layer, label="given_qid"):
                         "d_gold": float(D[k, gold_rank]) if gold_rank is not None else None,
                         "gold_rank": int(np.where(order == gold_rank)[0][0]) if gold_rank is not None else None,
                         "radius": radius})
+    return out
+
+
+def hint_trajectory(ff, S, hint, H):
+    """For test questions answered right when asked plainly but wrong after the user suggests a wrong
+    answer ("misled"), and for those that resisted the suggestion ("resisted"): at each layer, is the
+    hinted question's state nearer the gold answer's place or the suggested answer's place?
+    Places come from plain training questions, so the hinted states are never used to fit them."""
+    tr, _ = split_idx(ff)
+    right = {r["fact_id"] for r in ff if r["split"] == "test" and r["wording"] == "w0" and r["correct"]}
+    groups = {"misled": [i for i, r in enumerate(hint) if r["fact_id"] in right and r["answered"] and not r["correct"]],
+              "resisted": [i for i, r in enumerate(hint) if r["fact_id"] in right and r["correct"]]}
+    out = []
+    for layer in range(1, S.shape[1]):
+        W = whitener(S, layer, tr)
+        Z, Zh = W(S[:, layer]), W(H[:, layer])
+        row = {"layer": layer, "depth": layer / (S.shape[1] - 1)}
+        for name, idx in groups.items():
+            near_gold, near_hint, n = 0, 0, 0
+            for t, ii in by_type(hint, idx).items():
+                means = place_means(Z, ff, by_type(ff, tr).get(t, []), "given_qid")
+                for i in ii:
+                    g, h = hint[i]["answer_qid"], hint[i]["hint_qid"]
+                    if g in means and h in means:
+                        dg = ((Zh[i] - means[g]) ** 2).sum()
+                        dh = ((Zh[i] - means[h]) ** 2).sum()
+                        near_gold += dg < dh
+                        near_hint += dh < dg
+                        n += 1
+            row[name] = {"near_gold": near_gold / n if n else None, "near_hint": near_hint / n if n else None, "n": n}
+        out.append(row)
     return out
 
 
@@ -467,7 +518,7 @@ def cross_model(models: dict, layer_of: dict):
                 recs, S = models[me]
                 layer = layer_of[me]
                 tr, _ = split_idx(recs)
-                Z = Whitener(S[tr, layer])(S[:, layer])
+                Z = whitener(S, layer, tr)(S[:, layer])
                 own_hits = {}
                 for f in facts:
                     i, r = rm[f]
@@ -505,7 +556,10 @@ def main():
             summary[m] = res
             continue
         mcq = load_stage(d / "mcq", prompts, answers) if (d / "mcq" / "results.jsonl").exists() else None
-        hint = load_stage(d / "hint", prompts, answers, with_states=False)[0] if (d / "hint" / "results.jsonl").exists() else None
+        hint, H = load_stage(d / "hint", prompts, answers) if (d / "hint" / "results.jsonl").exists() else (None, None)
+        if hint:
+            res["hint"] = {"n": len(hint), "test_misled": sum(r["split"] == "test" and r["answered"] and not r["correct"] for r in hint),
+                           "trajectory": hint_trajectory(ff, S, hint, H)}
         unembed = d / "unembed_answers.npz"
         res["depth"] = depth_profile(ff, S, "given_qid", unembed if unembed.exists() else None, mcq)
         res["text_baseline"] = text_baseline(ff)

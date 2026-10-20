@@ -52,13 +52,30 @@ def load_stage(stage_dir: Path, prompts: list, answers: dict, with_states: bool 
     if not with_states:
         return records, None
     shards = {s: np.load(stage_dir / "states" / f"{s}.npy", mmap_mode="r") for s in {s for s, _ in index}}
-    states = np.stack([shards[s][i] for s, i in index]) if index else np.zeros((0, 0, 0), np.int16)
-    return records, bf16_to_f32(states)
+    bits = np.stack([shards[s][i] for s, i in index]) if index else np.zeros((0, 0, 0), np.int16)
+    return records, States(bits)
 
 
 def bf16_to_f32(bits: np.ndarray) -> np.ndarray:
     """Recorded states are bfloat16 bit patterns stored as int16; widen them exactly to float32."""
     return (bits.astype(np.uint16).astype(np.uint32) << 16).view(np.float32)
+
+
+class States:
+    """(prompts, layers + 1, d) states kept as their recorded bfloat16 bits, so a model's states take
+    half the memory of float32. Selecting rows stays lazy; selecting a layer returns exact float32."""
+
+    def __init__(self, bits):
+        self.bits = bits
+        self.shape = bits.shape
+
+    def __len__(self):
+        return len(self.bits)
+
+    def __getitem__(self, key):
+        if isinstance(key, tuple) and len(key) >= 2:
+            return bf16_to_f32(np.asarray(self.bits[key]))
+        return States(self.bits[key])
 
 
 def fit_places(records, states, layer: int, split="train"):

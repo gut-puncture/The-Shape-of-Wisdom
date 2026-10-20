@@ -1,0 +1,66 @@
+\documentclass[10pt,twocolumn]{article}
+
+\usepackage[letterpaper,margin=0.72in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,citecolor=blue,linkcolor=blue,urlcolor=blue]{hyperref}
+\usepackage{balance}
+\usepackage{stfloats}
+\usepackage{xcolor}
+
+\graphicspath{{figures/}}
+\input{generated/numbers}
+
+\setlength{\columnsep}{0.24in}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\dbltextfloatsep}{8pt plus 2pt minus 2pt}
+\captionsetup{font=small,labelfont=bf}
+\raggedbottom
+\emergencystretch=1em
+
+\title{\vspace{-1.0em}\textbf{The Shape of Wisdom: Answers Have Places in Language Models}}
+\author{Shailesh Rana\\Independent Researcher}
+\date{}
+
+\begin{document}
+
+\twocolumn[
+\begin{@twocolumnfalse}
+\maketitle
+\vspace{-1.4em}
+\begin{center}
+\begin{minipage}{0.82\textwidth}
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+\end{minipage}
+\end{center}
+\vspace{0.7em}
+\end{@twocolumnfalse}
+]
+
+\input{sections/intro}
+\input{sections/setup}
+\input{sections/results}
+\input{sections/related}
+\input{sections/limits}
+
+\paragraph{Code and data.} Code, the dataset and all derived results: \url{https://github.com/gut-puncture/shape-of-wisdom}.
+
+\paragraph{Acknowledgements.} \input{sections/ack}
+
+\small
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
