@@ -1,8 +1,8 @@
 # The Shape of Wisdom: How Language Models Converge on an Answer
 
-When a language model answers a factual question, the state from which it answers moves into a region shared by every question with the same answer, summarised by its *answer centroid*. In four open models the answer becomes readable within one layer, at a model-specific depth; centroids follow the model's answer across relations and wordings; moving a state to a centroid after that layer changes the answer; and where a wrong answer sits separates near misses from real gaps better than the model's confidence does.
+When a language model answers a factual question, the state from which it answers moves into a region shared by every question with the same answer, summarised by its *answer centroid*. In four open models the answer becomes readable within one layer, at a model-specific depth; centroids follow the model's answer across relations and wordings; moving a state to a centroid after that layer changes the answer; and at that layer a near miss already shows the right answer as a close runner-up.
 
-Paper: [`paper/main.pdf`](paper/main.pdf).
+Paper: [arXiv:2606.01202](https://arxiv.org/abs/2606.01202) (version 2) and [`paper/main.pdf`](paper/main.pdf).
 
 ## What is here
 
