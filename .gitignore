@@ -91,3 +91,4 @@ release/shape_of_wisdom_arxiv/data/derived/*.jsonl
 runs/
 dataset/cache/
 REVISION
+results_pilot/
