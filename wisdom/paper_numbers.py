@@ -152,6 +152,23 @@ def main():
     for name, v in kinds.items():
         rng(f"{name}Jump", [j for j, _ in v], fmt=lambda x: f"{100 * x:.0f}")
         rng(f"{name}Late", [l for _, l in v])
+    # hand-checked phrases in the text, now computed
+    early = []
+    for m in models:
+        L = S[m]["onset_layer"]
+        early += [r["acc"]["mean"] for r in S[m]["depth"] if r["layer"] < L - 1 and r["acc"]["mean"] is not None]
+    out["EarlyMin"], out["EarlyMax"] = pct(min(early)), pct(max(early))
+    folds = []
+    for m in models:
+        sp = [r["spread"] for r in S[m]["depth"] if r.get("spread")]
+        folds.append(max(sp) / min(sp))
+    rng("TightFold", folds, fmt=lambda v: f"{v:.0f}")
+    # logistic step: the 10%-90% rise spans 2 ln 9 widths of depth
+    rng("StepRise", [2 * np.log(9) * S[m]["shape"]["step_width"] for m in models])
+    mc = [r["acc_ff_to_mcq"]["mean"] for r in S["llama8b"]["depth"] if r.get("acc_ff_to_mcq") and r["acc_ff_to_mcq"].get("mean") is not None]
+    out["McqPeakLlama"] = pct(max(mc))
+    rng("RankRecog", [S[m]["errors_beyond_confidence"]["gold_rank_median_recognised"] for m in models], fmt=lambda v: f"{v:.0f}")
+    rng("RankNot", [S[m]["errors_beyond_confidence"]["gold_rank_median_not"] for m in models], fmt=lambda v: f"{v:.0f}")
     rng("TightAtJump", [float(out[f"TightAtJump{TAGS[m]}"].rstrip("\\%")) / 100 for m in models])
     if "llama8b_untrained" in S:
         u = S["llama8b_untrained"]

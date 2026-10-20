@@ -105,16 +105,14 @@ def readability(summary, out):
     for m in MODELS:
         band(a, summary[m]["depth"], "acc", COLORS[m], NAMES[m])
     a.legend(loc="upper left", handlelength=1.8)
-    controls = [Line2D([], [], color="#555555", lw=1.1, ls="--", label="Untrained model"),
-                Line2D([], [], color="#a6a6a6", lw=1.5, ls=":", label="Shuffled answers"),
+    controls = [Line2D([], [], color="#a6a6a6", lw=1.5, ls=":", label="Shuffled answers"),
                 Line2D([], [], color=style.INK, lw=0.9, ls="-.", label="Question text only")]
-    band(a, summary["llama8b_untrained"]["depth_trained_labels"], "acc", "#555555", None, lw=1.1, ls="--")
     rows = summary["llama8b"]["depth"]
     a.plot([r["depth"] for r in rows], [r["acc_shuffled"] for r in rows], color="#a6a6a6", lw=1.5, ls=":")
     a.axhline(summary["llama8b"]["text_baseline"]["mean"], color=style.INK, lw=0.9, ls="-.")
     finish_depth_axis(a, "Held-out readability")
     style.title(a, "A", "Four models and controls")
-    fig.legend(handles=controls, loc="lower center", bbox_to_anchor=(0.31, 0.0), ncol=3, columnspacing=1.0,
+    fig.legend(handles=controls, loc="lower center", bbox_to_anchor=(0.31, 0.0), ncol=2, columnspacing=1.0,
                handlelength=1.8)
     for key, color, label in [("acc", COLORS["llama8b"], "Same relation"), ("acc_cross_relation", "#7d3c98", "Other relation"),
                               ("acc_cross_wording", "#d35400", "Other wording"),

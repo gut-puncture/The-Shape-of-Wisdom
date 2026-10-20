@@ -458,6 +458,11 @@ def errors_beyond_confidence(anat, table):
     geo = np.array([[np.log(a["d_gold"] + 1e-9), a["gold_rank"], np.log(a["d_margin"] + 1e-9)] for a in rows])
     folds = GroupKFold(min(5, len(set(g))))
     res = {"n": len(rows), "positive_rate": float(y.mean())}
+    # Where the right answer's place ranks among all places by distance from the state (1 = nearest),
+    # for wrong answers the model does and does not recognise in multiple choice.
+    rank1 = geo[:, 1] + 1
+    res["gold_rank_median_recognised"] = float(np.median(rank1[y]))
+    res["gold_rank_median_not"] = float(np.median(rank1[~y]))
     preds = {}
     for name, X in (("confidence", conf), ("geometry", geo), ("both", np.c_[conf, geo])):
         preds[name] = cross_val_predict(LogisticRegression(max_iter=5000), X, y, cv=folds, groups=g, method="predict_proba")[:, 1]
