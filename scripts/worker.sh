@@ -8,7 +8,7 @@ for m in $MODELS; do
   stages=ff,mcq,hint,steer
   [[ $m == *untrained* ]] && stages=ff
   echo "== $m start $(date -u +%FT%TZ)" >> "$RUN_DIR/status"
-  python -m wisdom.run --model "$m" --run-dir "$RUN_DIR" --stages "$stages" "$@" 2>&1 | tee -a "$RUN_DIR/$m.log"
+  python3 -m wisdom.run --model "$m" --run-dir "$RUN_DIR" --stages "$stages" "$@" 2>&1 | tee -a "$RUN_DIR/$m.log"
   code=${PIPESTATUS[0]}
   echo "== $m exit $code $(date -u +%FT%TZ)" >> "$RUN_DIR/status"
 done

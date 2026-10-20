@@ -90,3 +90,4 @@ release/shape_of_wisdom_arxiv/data/derived/*.jsonl
 # Answer-places experiment: raw runs are large and stay local; results/ (small) is committed.
 runs/
 dataset/cache/
+REVISION

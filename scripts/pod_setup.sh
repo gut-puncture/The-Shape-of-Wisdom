@@ -8,10 +8,10 @@ cd "$REPO"
 exec > >(tee -a setup.log) 2>&1
 echo "== setup $(date -u +%FT%TZ)"
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
-python -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda, torch.cuda.is_available())"
+python3 -c "import torch; print('torch', torch.__version__, 'cuda', torch.version.cuda, torch.cuda.is_available())"
 mkdir -p "$HF_HOME"; cp -n ~/.cache/huggingface/token "$HF_HOME/token" 2>/dev/null || true
 # Download all weights in parallel while nothing else needs the network.
-python - <<'PY'
+python3 - <<'PY'
 from concurrent.futures import ThreadPoolExecutor
 from huggingface_hub import snapshot_download
 from wisdom.models import MODELS

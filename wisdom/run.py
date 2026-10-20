@@ -254,6 +254,9 @@ def save_unembedding(model, tok, answers, path):
 
 
 def git_commit():
+    stamp = ROOT / "REVISION"  # written at each sync to a machine without the git history
+    if stamp.exists():
+        return stamp.read_text().strip()
     try:
         return subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"], text=True).strip()
     except Exception:
