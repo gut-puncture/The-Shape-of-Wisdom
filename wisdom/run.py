@@ -131,8 +131,11 @@ def generate(model, tok, batch, device, first_ids):
     """Greedy answer plus confidence about the answer itself: the log-prob of every generated token,
     and, at the first answer position, the best logit among each candidate answer's first tokens."""
     enc = encode(tok, [p["text"] for p in batch], device)
+    # Stop each reply at its first line break: grading reads only the first line, so this saves decoding
+    # steps without changing any graded answer.
     out = model.generate(**enc, max_new_tokens=MAX_NEW_TOKENS, do_sample=False, output_scores=True,
-                         return_dict_in_generate=True, pad_token_id=tok.pad_token_id)
+                         return_dict_in_generate=True, pad_token_id=tok.pad_token_id,
+                         stop_strings=["\n"], tokenizer=tok)
     new = out.sequences[:, enc["input_ids"].shape[1]:]
     steps = len(out.scores)
     chosen = torch.stack([torch.log_softmax(out.scores[k].float(), dim=-1).gather(-1, new[:, k:k + 1])[:, 0]
