@@ -14,22 +14,43 @@ The plain question is also asked as four-option multiple choice, in all four cyc
 \subsection{Models and recordings}
 We study four instruction-tuned models: Llama-3.1-8B-Instruct~\citep{grattafiori2024the}, Qwen2.5-7B-Instruct~\citep{qwen2024qwen25}, Gemma-2-9B-it~\citep{gemma2024gemma} and Llama-3.2-1B-Instruct. All answer greedily.
 
-A transformer builds its output in the residual stream, a vector at each token position that every layer reads and adds to. The answer is produced from the last position of the prompt, so we record the residual stream there before the first layer and after every layer (before the final normalisation). We call this vector the question's \emph{state} at that layer. Depth is the fraction of the model's layers that the state has passed through.
+A transformer builds its output in the residual stream, a vector at each token position that every layer reads and adds to. The answer is produced from the last position of the prompt, so we record the residual stream there before the first layer and after every layer (before the final normalisation). We call this vector the question's \emph{state} at that layer, written $h_q^{\ell}$ for question $q$ at layer $\ell$. It has one number per dimension of the residual stream, for example 4,096 in Llama-3.1-8B. Depth is the fraction of the model's layers that the state has passed through.
 
 A free-form reply is graded by its first line. If that line names one candidate, matched against hand-curated names such as ``China'' or ``Mandarin'', the reply is right or wrong. A single answer outside the candidate list is wrong. Replies that hedge, refuse or name two answers are set aside as unclear.
 
+\subsection{Training and test questions}
+Several of our measurements first fit something to questions and then test it, for example the answer places defined next. To keep each test fair, fitting and testing use different questions. We split the subjects (the people, towns, films, companies and athletes) at random into two halves, once, and use the same split throughout. Questions about the first half are \emph{training questions}; questions about the second half are \emph{test questions}. Anything fitted uses only training questions, and every number we report is measured on test questions. We split by subject rather than by question because the several questions about one subject, in different wordings and formats, are close copies of each other.
+
 \subsection{Answer places}
-We give each answer a reference point at each layer. An answer's \emph{place} at a layer is the average state, at that layer, of all questions to which the model gave that answer. For example, the place of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of every question Llama answered with ``Argentina'', whether about a person, a town or a film, in any wording.
+An answer's \emph{place} at a layer is the average state, at that layer, of the training questions to which the model gave that answer:
+\begin{equation}
+p_a^{\ell} = \frac{1}{|Q_a|} \sum_{q \in Q_a} h_q^{\ell},
+\label{eq:place}
+\end{equation}
+where $Q_a$ is the set of training questions that the model answered with $a$. For example, the place of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of the training questions that Llama answered with ``Argentina'', whether about a person, a town or a film, in any wording. We build a place only for an answer the model gave at least five times, for at least three different subjects.
 
 Places are built from the answers the model gives, not from the true answers. A question that the model answers wrongly with ``Chile'' counts toward the place of Chile. This lets us ask, later, where wrong answers sit.
 
-Every score is held out. We split the subjects (the people, towns, films, companies and athletes) into two halves once. Places, and everything else fitted to data, use only questions about the first half, the training subjects. Every score uses only questions about the other half, the test subjects. A place must therefore work for questions it has never seen. We build a place only for an answer the model gave at least five times, for at least three training subjects.
+\subsection{Readability}
+\label{sec:read}
+Readability asks whether the answer the model gave can be identified from where its state lies. A state and a place are vectors of the same size, so we can measure the distance between them; no output probabilities are involved. For a test question $q$, we find the nearest place among answers of the same kind (for a country question, among the country places):
+\begin{equation}
+\hat{a}(q) = \operatorname*{arg\,min}_{a \in A_q} \big\lVert W(h_q^{\ell}) - W(p_a^{\ell}) \big\rVert,
+\label{eq:read}
+\end{equation}
+where $A_q$ is the set of places of the question's kind and $W$ is a whitening, described below. Readability at a layer is the share of test questions for which $\hat{a}(q)$ is the answer the model gave, counting only questions whose given answer has a place. If states carried no information about the answer, readability would be about one over the number of places, for example 4\% for the 24 countries.
 
-\subsection{Readability and tightness}
-We measure how states converge on places in two ways. \emph{Readability} asks whether the answer can be read from where the state is. For a test question, we find the nearest place among answers of the same kind, for example the nearest country place for a country question. Readability is the share of test questions whose nearest place is the answer the model gave. Chance is one over the number of places, about 4\% for countries.
+Plain distances would mislead, because a few dimensions of the residual stream take very large values and dominate any distance. The whitening $W$ prevents this. At each layer, it re-expresses a state in the 128 directions along which training states vary most, and rescales each direction to unit variance, so that each direction counts equally. To avoid amplifying noise, each variance is first shrunk by 10\% toward the average variance.
 
-A few directions of the residual stream have very large values and would dominate plain distances. Before measuring distances at a layer, we therefore whiten the states: we centre them, keep the 128 directions of largest variance, and scale each to unit variance. The whitening is fitted on training questions only.
+\subsection{Tightness}
+Readability depends on the whitening. Tightness gives a second view that does not: it measures, in the model's own states, how closely test questions gather around their places compared with how far apart the places are. At each layer,
+\begin{equation}
+T^{\ell} = \frac{\frac{1}{N} \sum_{q} \lVert h_q^{\ell} - p_{a(q)}^{\ell} \rVert^2}{\frac{1}{|A|} \sum_{a \in A} \lVert p_a^{\ell} - \bar{p}^{\ell} \rVert^2}.
+\label{eq:tight}
+\end{equation}
+The upper sum runs over the $N$ test questions whose given answer $a(q)$ has a place. $A$ is the set of places of one kind of answer, and $\bar{p}^{\ell}$ is their average. The numerator is the average squared distance of a question from its own place. The denominator is the average squared distance of a place from the centre of all places. A small $T$ means that questions sit close to their places relative to the distances between places. We compute both parts for each kind of answer and add them, weighting each kind by its number of test questions.
 
-\emph{Tightness} asks how closely questions gather around their places, in the model's own, unwhitened states. It is the average squared distance of test questions from their own place, divided by the average squared distance of places from their centre. Lower is tighter.
+\subsection{Uncertainty and controls}
+Questions about the same subject are not independent: a model tends to get all of them right or all of them wrong. We therefore measure uncertainty by resampling subjects. We draw test subjects at random, with replacement, 300 times, recompute the measure on the questions of the drawn subjects each time, and report the range that holds the middle 95\% of the results.
 
-Intervals are 95\% intervals from resampling subjects. Two controls show what readability reaches without the model's knowledge: answers shuffled between facts, and the question's characters alone (character n-gram frequencies, reduced to 256 dimensions) in place of the state.
+Two controls show how much readability could arise without information about the answer in the states. In the first, we shuffle the given answers between facts of the same kind before building places, and average over five shuffles. This keeps the number and sizes of the places but breaks the link between a state and its answer, so it measures readability by chance. In the second, we replace each state with a representation of the question's text alone: weighted counts of its two- to four-character sequences, reduced to 256 dimensions. This measures how much of the answer can be guessed from the wording, for example from the spelling of a name.

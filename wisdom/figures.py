@@ -110,7 +110,7 @@ def readability(summary, out):
     rows = summary["llama8b"]["depth"]
     a.plot([r["depth"] for r in rows], [r["acc_shuffled"] for r in rows], color="#a6a6a6", lw=1.5, ls=":")
     a.axhline(summary["llama8b"]["text_baseline"]["mean"], color=style.INK, lw=0.9, ls="-.")
-    finish_depth_axis(a, "Held-out readability")
+    finish_depth_axis(a, "Readability")
     style.title(a, "A", "Four models and controls")
     fig.legend(handles=controls, loc="lower center", bbox_to_anchor=(0.31, 0.0), ncol=2, columnspacing=1.0,
                handlelength=1.8)
@@ -192,7 +192,7 @@ def recognition(summary, out):
     ax.tick_params(axis="x", length=0)
     ax.set_ylim(0.5, 0.9)
     ax.spines["bottom"].set_visible(False)
-    ax.set_ylabel("AUC on held-out subjects")
+    ax.set_ylabel("AUC on test questions")
     ax.legend(loc="upper left", ncol=3, columnspacing=1.0, handlelength=1.2)
     style.save(fig, out / "fig_recognition.pdf")
 
