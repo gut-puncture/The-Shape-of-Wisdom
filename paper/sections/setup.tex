@@ -29,7 +29,7 @@ Sport & Sport played & Which sport does $X$ play? \\
 \label{tab:relations}
 \end{table}
 
-Each fact is asked as an open question in up to three wordings: the plain question of Table~\ref{tab:relations}, and two rewordings in different styles, written by a language model that was never told the answer. For example, a casual rewording of the plain question ``What country is An\'{i}bal Ponce a citizen of?'' is ``Hi, I'd appreciate knowing which country An\'{i}bal Ponce is a citizen of, if possible?'' The plain question is also asked as multiple choice with four options; this format is used only in Section~\ref{sec:errors}.
+Each fact is asked as an open question in up to three wordings: the plain question of Table~\ref{tab:relations} and two rewordings. A language model wrote the rewordings in different styles and was never told the answer. For example, a casual rewording of the plain question ``What country is An\'{i}bal Ponce a citizen of?'' is ``Hi, I'd appreciate knowing which country An\'{i}bal Ponce is a citizen of, if possible?'' The plain question is also asked as multiple choice with four options; this format is used only in Section~\ref{sec:errors}.
 
 \subsection{Models and states}
 \label{sec:models}
@@ -51,7 +51,7 @@ where
 \item $h_q$ is the state of question $q$ at the layer;
 \item $c_a$ is the centroid of $a$ at that layer.
 \end{itemize}
-The centroid of Argentina at layer 15 of Llama-3.1-8B, for example, is the average layer-15 state of all training questions that Llama answered with ``Argentina'', whether they asked about a person, a town or a film, and in any wording. Centroids are built from the answers the model gives, not from the true answers. A question that the model wrongly answers with ``Chile'' counts toward the centroid of Chile, so wrong answers can be studied in the same way as right ones.
+For example, the centroid of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of all training questions that Llama answered with ``Argentina''. These questions may be about a person, a town or a film, in any wording. Centroids are built from the answers the model gives, not from the true answers. A question that the model wrongly answers with ``Chile'' counts toward the centroid of Chile, so wrong answers can be studied in the same way as right ones.
 
 Centroids are built from questions about one half of the subjects, the \emph{training questions}. Every number we report is measured on questions about the other half, the \emph{test questions}. We split by subject, not by question, because the several questions about one subject are near copies of each other.
 

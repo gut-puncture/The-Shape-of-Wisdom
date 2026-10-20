@@ -467,6 +467,11 @@ def errors_beyond_confidence(anat, table):
     conf_mean = conf[:, 0] / np.maximum(conf[:, 1], 1)
     res["auc_rank"] = float(roc_auc_score(y, -rank1))
     res["auc_conf_mean"] = float(roc_auc_score(y, conf_mean))
+    kind = np.array([a["answer_type"] for a in rows])
+    c = kind == "country"
+    if 0 < y[c].sum() < c.sum():
+        res["country"] = {"n": int(c.sum()), "auc_rank": float(roc_auc_score(y[c], -rank1[c])),
+                          "auc_conf_mean": float(roc_auc_score(y[c], conf_mean[c]))}
     res["gold_rank_median_recognised"] = float(np.median(rank1[y]))
     res["gold_rank_median_not"] = float(np.median(rank1[~y]))
     preds = {}
@@ -513,6 +518,7 @@ def steering(run_dir, ff, hint, answers, anat, S=None):
         out.append({"target": j["target"], "class": cls.get(j["prompt_id"]), "layer": j["layer"],
                     "condition": j["condition"], "scale": j["scale"], "subject_qid": r["subject_qid"],
                     "to_gold": given == r["answer_qid"], "to_toward": given == j["toward"], "status": status,
+                    "changed": given != r.get("given_qid"),
                     "push_rel": s["push_norm"] / state_norm[j["layer"]] if j["layer"] in state_norm else None})
     return out
 
@@ -526,6 +532,7 @@ def summarize_steering(rows, n_layers):
         out.append({"target": t, "class": c, "condition": cond, "scale": s, "layer": l, "depth": l / n_layers,
                     "n": len(rs), "to_gold": float(np.mean([r["to_gold"] for r in rs])),
                     "to_toward": float(np.mean([r["to_toward"] for r in rs])),
+                    "changed": float(np.mean([r["changed"] for r in rs])),
                     "push_rel": float(np.median([r["push_rel"] for r in rs])) if rs[0].get("push_rel") is not None else None})
     return out
 

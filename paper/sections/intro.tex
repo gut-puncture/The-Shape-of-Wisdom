@@ -9,9 +9,9 @@ To study this, we built \NFacts{} factual questions from Wikidata whose answers 
 
 \emph{The answer becomes readable in a single layer} (Section~\ref{sec:step}). In each model, the share of questions whose state lies nearest its own answer's centroid jumps within one layer, at a depth that differs between models.
 
-\emph{Centroids follow the model's answer, not the question or the truth} (Section~\ref{sec:shared}). The centroid of a country learned from questions about people also identifies that country in questions about towns and films. It survives rewording, and it does not depend on the directions the model uses to write the answer word. When two models disagree, each state follows its own model's answer.
+\emph{Centroids follow the model's answer, not the question} (Section~\ref{sec:shared}). The centroid of a country learned from questions about people also identifies that country in questions about towns and films. It survives rewording, and it is not simply the output direction of the answer word. When two models disagree, each state follows its own model's answer.
 
-\emph{The model uses the centroids} (Section~\ref{sec:steer}). Moving a state to an answer's centroid after the jump makes the model give that answer. Random moves of the same size rarely do, and moves made before the jump have no effect.
+\emph{The model uses the centroids} (Section~\ref{sec:steer}). Moving a state to an answer's centroid after the jump makes the model give that answer. Random moves of the same size rarely do. Moves made before the jump have no effect, even when scaled up to the size of late moves.
 
 \emph{Centroids reveal near misses} (Section~\ref{sec:errors}). Some wrong answers are near misses: shown the options, the model picks the right one. In a near miss, the right answer's centroid is among the nearest to the state. This tells near misses apart from real gaps in knowledge better than the model's confidence does.
 

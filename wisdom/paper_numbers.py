@@ -175,6 +175,26 @@ def main():
         fmt=lambda v: f"{100 * v:.1f}\\%")
     rng("GoldLate", [at_depth(S[m]["depth_gold"], 0.9)["acc"]["mean"] for m in models])
     rng("GivenLate", [at_depth(S[m]["depth"], 0.9)["acc"]["mean"] for m in models])
+    # random moves at the deepest layer: how often they change the reply at all
+    def last_random_changed(m):
+        rs = [r for r in S[m]["steering"] if r["target"] == "wrong_placed" and r["condition"] == "random" and r["scale"] == 1.0]
+        last = max(r["layer"] for r in rs)
+        rs = [r for r in rs if r["layer"] == last]
+        return sum(r["changed"] * r["n"] for r in rs) / sum(r["n"] for r in rs)
+    rng("RandomChanged", [last_random_changed(m) for m in models])
+    rng("CountryAucRank", [S[m]["errors_beyond_confidence"]["country"]["auc_rank"] for m in models], fmt=lambda v: f"{v:.2f}")
+    rng("CountryAucConf", [S[m]["errors_beyond_confidence"]["country"]["auc_conf_mean"] for m in models], fmt=lambda v: f"{v:.2f}")
+    size = Path(args.results) / "size_check_llama1b.json"
+    if size.exists():
+        sc = json.loads(size.read_text())["results"]
+        pre = [r for r in sc if r["layer"] < 10]
+        out["SizePreSmallMax"] = pct(max(r["right"] for r in pre if r["condition"] == "right" and r["size"] == 0.17))
+        out["SizePreLargeMax"] = pct(max(r["right"] for r in pre if r["condition"] == "right" and r["size"] == 0.44))
+        out["SizePreRandomMax"] = pct(max(r["right"] for r in pre if r["condition"] == "random"))
+        out["SizeOnsetRight"] = pct(next(r["right"] for r in sc if r["layer"] == 10 and r["condition"] == "right"))
+        out["SizeOnsetRandom"] = pct(next(r["right"] for r in sc if r["layer"] == 10 and r["condition"] == "random"))
+        out["SizePreLargeChangedMax"] = pct(max(r["changed"] for r in pre if r["condition"] == "right" and r["size"] == 0.44))
+        out["SizeN"] = str(sc[0]["n"])
     out["NPromptsAnalysed"] = f"{sum(p['kind'] in ('ff', 'mcq') for p in prompts):,}"
     for m in models:
         e = S[m]["errors_beyond_confidence"]

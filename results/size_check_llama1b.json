@@ -1,0 +1,94 @@
+{
+ "model": "llama1b",
+ "onset_layer": 10,
+ "results": [
+  {
+   "layer": 3,
+   "condition": "right",
+   "size": 0.17,
+   "n": 224,
+   "right": 0.013392857142857142,
+   "changed": 0.044642857142857144
+  },
+  {
+   "layer": 3,
+   "condition": "right",
+   "size": 0.44,
+   "n": 224,
+   "right": 0.017857142857142856,
+   "changed": 0.10267857142857142
+  },
+  {
+   "layer": 3,
+   "condition": "random",
+   "size": 0.44,
+   "n": 224,
+   "right": 0.022321428571428572,
+   "changed": 0.07589285714285714
+  },
+  {
+   "layer": 6,
+   "condition": "right",
+   "size": 0.17,
+   "n": 224,
+   "right": 0.022321428571428572,
+   "changed": 0.09375
+  },
+  {
+   "layer": 6,
+   "condition": "right",
+   "size": 0.44,
+   "n": 224,
+   "right": 0.03125,
+   "changed": 0.26339285714285715
+  },
+  {
+   "layer": 6,
+   "condition": "random",
+   "size": 0.44,
+   "n": 224,
+   "right": 0.026785714285714284,
+   "changed": 0.17857142857142858
+  },
+  {
+   "layer": 8,
+   "condition": "right",
+   "size": 0.17,
+   "n": 224,
+   "right": 0.022321428571428572,
+   "changed": 0.12053571428571429
+  },
+  {
+   "layer": 8,
+   "condition": "right",
+   "size": 0.44,
+   "n": 224,
+   "right": 0.044642857142857144,
+   "changed": 0.28125
+  },
+  {
+   "layer": 8,
+   "condition": "random",
+   "size": 0.44,
+   "n": 224,
+   "right": 0.044642857142857144,
+   "changed": 0.23214285714285715
+  },
+  {
+   "layer": 10,
+   "condition": "right",
+   "size": 0.17,
+   "n": 224,
+   "right": 0.36160714285714285,
+   "changed": 0.6785714285714286
+  },
+  {
+   "layer": 10,
+   "condition": "random",
+   "size": 0.17,
+   "n": 224,
+   "right": 0.013392857142857142,
+   "changed": 0.10267857142857142
+  }
+ ]
+}
