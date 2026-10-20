@@ -57,7 +57,8 @@ def hero(run_dir, model, prompts, answers, out, onset=None, answer_type="country
     te = [i for i in te if recs[i]["given_qid"] in top]
     colors = dict(zip(top, style.hues(len(top), start=0.02)))
     L = S.shape[1] - 1
-    layers = sorted(set([1, round(0.25 * L), round(0.4 * L)] + ([onset - 1, onset + 1] if onset else []) + [L]))[:n_panels]
+    o = onset or round(0.5 * L)
+    layers = sorted(set([1, max(2, o - 3), o - 1, o + 1, min(L - 1, o + 6), L]))
     fig = plt.figure(figsize=(style.PAGEW, 1.75))
     for j, layer in enumerate(layers):
         W = Whitener(S[tr, layer])
@@ -163,6 +164,44 @@ def steering(summary, out, model="llama8b"):
     style.save(fig, out / "fig_steering.pdf")
 
 
+def errors(summary, out):
+    """(a) Among wrong free-form answers: how well does each signal predict that the model still picks
+    the right option in multiple choice? (b) Questions misled by a user's wrong suggestion: share of
+    states nearer the right answer's place than the suggested answer's place, by depth."""
+    fig, axes = plt.subplots(1, 2, figsize=(style.PAGEW, 2.05), gridspec_kw={"width_ratios": [1, 1.25]})
+    ax = axes[0]
+    models = [m for m in MODEL_COLORS if m in summary and summary[m].get("errors_beyond_confidence", {}).get("auc_both")]
+    w = 0.26
+    for k, (key, c, lab) in enumerate([("auc_confidence", style.MUTED, "confidence"), ("auc_geometry", style.ACCENT, "place geometry"),
+                                       ("auc_both", style.INK, "both")]):
+        ax.bar(np.arange(len(models)) + (k - 1) * w, [summary[m]["errors_beyond_confidence"][key] for m in models],
+               width=w, color=c, label=lab)
+    ax.axhline(0.5, color=style.MUTED, lw=0.6, ls=":")
+    ax.set_xticks(range(len(models)), [MODEL_NAMES[m] for m in models], fontsize=6)
+    ax.set_ylim(0.4, 0.85)
+    ax.set_ylabel("AUC, held-out subjects")
+    ax.set_title("a  Which wrong answers are still recognised", loc="left", fontweight="bold")
+    ax.legend(frameon=False, fontsize=6, ncol=3, loc="upper left")
+    style.clean(ax)
+    ax = axes[1]
+    for m, c in MODEL_COLORS.items():
+        h = summary.get(m, {}).get("hint")
+        if not h:
+            continue
+        rows = h["trajectory"]
+        ax.plot([r["depth"] for r in rows], [r["misled"]["near_gold"] for r in rows], color=c, lw=1.4, label=f"{MODEL_NAMES[m]}, misled")
+        ax.plot([r["depth"] for r in rows], [r["resisted"]["near_gold"] for r in rows], color=c, lw=0.9, ls="--", alpha=0.8)
+    ax.plot([], [], color=style.INK, lw=0.9, ls="--", label="resisted the hint (dashed)")
+    ax.axhline(0.5, color=style.MUTED, lw=0.6, ls=":")
+    ax.set_xlabel("depth (fraction of layers)")
+    ax.set_ylabel("nearer the right place")
+    ax.set_title("b  Misled by a hint: the right place first, then lost", loc="left", fontweight="bold")
+    ax.legend(frameon=False, fontsize=6, loc="lower left")
+    style.clean(ax)
+    fig.tight_layout(w_pad=1.2)
+    style.save(fig, out / "fig_errors.pdf")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", default=str(ROOT / "runs" / "main"))
@@ -181,6 +220,7 @@ def main():
     decodability(summary, out)
     contraction(summary, out)
     steering(summary, out)
+    errors(summary, out)
 
 
 if __name__ == "__main__":
