@@ -6,6 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parent.parent
 TAGS = {"llama8b": "Llama", "qwen7b": "Qwen", "gemma9b": "Gemma", "llama1b": "LlamaSmall"}
 
@@ -92,6 +94,48 @@ def main():
             out[f"AnatInGiven{tag}"] = pct(on["in_given"] / max(1, sum(on.values())))
             out[f"AnatInGold{tag}"] = pct((on["in_gold"] + off["in_gold"]) / max(1, wrong))
             out[f"AnatWrongN{tag}"] = str(wrong)
+    # ranges across the four models, computed rather than hand-picked
+    models = [m for m in TAGS if m in S]
+    def rng(name, values, fmt=pct):
+        out[f"{name}Min"], out[f"{name}Max"] = fmt(min(values)), fmt(max(values))
+    def push(m, target, cond, key, which="last"):
+        agg = {}
+        for r in S[m].get("steering", []):
+            if r["target"] == target and r["condition"] == cond and r["scale"] == 1.0:
+                h, n, rel = agg.get(r["layer"], (0, 0, []))
+                agg[r["layer"]] = (h + r[key] * r["n"], n + r["n"], rel + [r.get("push_rel")])
+        layers = sorted(agg)
+        layer = layers[-1] if which == "last" else layers[0]
+        h, n, rel = agg[layer]
+        return h / n, n, (np.median([x for x in rel if x is not None]) if any(x is not None for x in rel) else None)
+    rng("PushGold", [push(m, "wrong_placed", "gold", "to_gold")[0] for m in models])
+    rng("PushUnplaced", [push(m, "wrong_unplaced", "gold", "to_gold")[0] for m in models])
+    rng("PushRandom", [push(m, "wrong_placed", "random", "to_gold")[0] for m in models])
+    rng("PushOther", [push(m, "wrong_placed", "other", "to_toward")[0] for m in models])
+    rng("PushRightOther", [push(m, "right", "other", "to_toward")[0] for m in models])
+    rng("PushEarly", [push(m, "wrong_placed", "gold", "to_gold", "first")[0] for m in models])
+    rng("PushN", [push(m, "wrong_placed", "gold", "to_gold")[1] for m in models], fmt=str)
+    rng("PushNUnplaced", [push(m, "wrong_unplaced", "gold", "to_gold")[1] for m in models], fmt=str)
+    rng("PushRelEarly", [push(m, "wrong_placed", "gold", "to_gold", "first")[2] for m in models])
+    rng("PushRelLate", [push(m, "wrong_placed", "gold", "to_gold")[2] for m in models])
+    rng("StepRatio", [S[m]["shape"]["loo_mse_line"] / S[m]["shape"]["loo_mse_step"] for m in models], fmt=lambda v: f"{v:.0f}")
+    rng("Onset", [S[m]["onset_depth"] for m in models], fmt=lambda v: f"{100 * v:.0f}\\%")
+    rng("ErrPos", [S[m]["errors_beyond_confidence"]["positive_rate"] for m in models])
+    for m in models:
+        tag, rows = TAGS[m], S[m]["depth"]
+        L = S[m]["onset_layer"]
+        before = next(r for r in rows if r["layer"] == L - 1)
+        at = next(r for r in rows if r["layer"] == L)
+        out[f"JumpFrom{tag}"], out[f"JumpTo{tag}"] = pct(before["acc"]["mean"]), pct(at["acc"]["mean"])
+        out[f"JumpLayerBefore{tag}"] = str(L - 1)
+        sp = {r["layer"]: np.log(r["spread"]) for r in rows if r["spread"]}
+        total = max(sp.values()) - min(sp.values())
+        out[f"TightAtJump{tag}"] = pct(max(0.0, (sp[L - 1] - sp[min(L + 1, max(sp))])) / total)
+        gold_late = at_depth(S[m]["depth_gold"], 0.9)["acc"]["mean"]
+        given_late = at_depth(rows, 0.9)["acc"]["mean"]
+        out[f"GoldLate{tag}"], out[f"GivenLate{tag}"] = pct(gold_late), pct(given_late)
+        out[f"ErrPos{tag}"] = pct(S[m]["errors_beyond_confidence"]["positive_rate"])
+    rng("TightAtJump", [float(out[f"TightAtJump{TAGS[m]}"].rstrip("\\%")) / 100 for m in models])
     if "llama8b_untrained" in S:
         u = S["llama8b_untrained"]
         out["UntrainedPeak"] = pct(max(r["acc"]["mean"] for r in u["depth_trained_labels"] if r["acc"]["mean"] is not None))

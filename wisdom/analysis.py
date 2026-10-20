@@ -470,12 +470,18 @@ def errors_beyond_confidence(anat, table):
     return res
 
 
-def steering(run_dir, ff, hint, answers, anat):
+def steering(run_dir, ff, hint, answers, anat, S=None):
     from wisdom.grading import Grader
     plan = {j["job_id"]: j for j in read_jsonl(run_dir / "steer" / "plan.jsonl")}
     grader = Grader(answers)
     recs = {r["prompt_id"]: r for r in ff + (hint or [])}
     cls = {a["prompt_id"]: a["class"] for a in anat}
+    # typical length of the state at each layer (test subjects), to express push sizes relative to it
+    te = [i for i, r in enumerate(ff) if r["split"] == "test"]
+    state_norm = {}
+    if S is not None:
+        for layer in sorted({j["layer"] for j in plan.values()}):
+            state_norm[layer] = float(np.median(np.linalg.norm(S[te, layer], axis=1)))
     out = []
     for s in read_jsonl(run_dir / "steer" / "results.jsonl"):
         j = plan.get(s["job_id"])
@@ -485,7 +491,8 @@ def steering(run_dir, ff, hint, answers, anat):
         given, status = grader.read(s["reply"], r["answer_type"])
         out.append({"target": j["target"], "class": cls.get(j["prompt_id"]), "layer": j["layer"],
                     "condition": j["condition"], "scale": j["scale"], "subject_qid": r["subject_qid"],
-                    "to_gold": given == r["answer_qid"], "to_toward": given == j["toward"], "status": status})
+                    "to_gold": given == r["answer_qid"], "to_toward": given == j["toward"], "status": status,
+                    "push_rel": s["push_norm"] / state_norm[j["layer"]] if j["layer"] in state_norm else None})
     return out
 
 
@@ -497,7 +504,8 @@ def summarize_steering(rows, n_layers):
     for (t, c, cond, s, l), rs in sorted(groups.items(), key=lambda kv: str(kv[0])):
         out.append({"target": t, "class": c, "condition": cond, "scale": s, "layer": l, "depth": l / n_layers,
                     "n": len(rs), "to_gold": float(np.mean([r["to_gold"] for r in rs])),
-                    "to_toward": float(np.mean([r["to_toward"] for r in rs]))})
+                    "to_toward": float(np.mean([r["to_toward"] for r in rs])),
+                    "push_rel": float(np.median([r["push_rel"] for r in rs])) if rs[0].get("push_rel") is not None else None})
     return out
 
 
@@ -576,7 +584,7 @@ def main():
         res["anatomy"]["unclear"] = sum(a["class"] == "unclear" and a["wording"] == "w0" for a in anat)
         res["errors_beyond_confidence"] = errors_beyond_confidence(anat, table)
         if (d / "steer" / "plan.jsonl").exists() and (d / "steer" / "results.jsonl").exists():
-            res["steering"] = summarize_steering(steering(d, ff, hint, answers, anat), S.shape[1] - 1)
+            res["steering"] = summarize_steering(steering(d, ff, hint, answers, anat, S), S.shape[1] - 1)
         with open(out / f"{m}_anatomy.jsonl", "w") as f:
             for a in anat:
                 f.write(json.dumps(a) + "\n")

@@ -102,7 +102,7 @@ def decodability(summary, out):
             ax.axhline(tb["mean"], color=style.INK, lw=0.8, ls="-.", label="question text only")
     ax.set_xlabel("depth (fraction of layers)")
     ax.set_ylabel("held-out answer read from the state")
-    ax.set_title("a  Answers have places", loc="left", fontweight="bold")
+    ax.set_title("a  The answer becomes readable in one layer", loc="left", fontweight="bold")
     ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=6, columnspacing=0.8)
     style.clean(ax)
     ax = axes[1]
@@ -114,7 +114,7 @@ def decodability(summary, out):
             if any(r.get(key) for r in rows):
                 band(ax, rows, key, c, lab)
     ax.set_xlabel("depth (fraction of layers)")
-    ax.set_title("b  The place is a concept, not a word (Llama-3.1-8B)", loc="left", fontweight="bold")
+    ax.set_title("b  A place is shared across questions (Llama-3.1-8B)", loc="left", fontweight="bold")
     ax.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=3, fontsize=6, columnspacing=1.0)
     style.clean(ax)
     fig.tight_layout(w_pad=1.2)
@@ -187,7 +187,7 @@ def errors(summary, out):
         ax.bar(np.arange(len(models)) + (k - 1) * w, [summary[m]["errors_beyond_confidence"][key] for m in models],
                width=w, color=c, label=lab)
     ax.axhline(0.5, color=style.MUTED, lw=0.6, ls=":")
-    short = {"llama8b": "Llama 8B", "qwen7b": "Qwen 7B", "gemma9b": "Gemma 9B", "llama1b": "Llama 1B"}
+    short = {"llama8b": "Llama\n8B", "qwen7b": "Qwen\n7B", "gemma9b": "Gemma\n9B", "llama1b": "Llama\n1B"}
     ax.set_xticks(range(len(models)), [short[m] for m in models], fontsize=6.5)
     ax.set_ylim(0.4, 0.97)
     ax.set_ylabel("AUC, held-out subjects")
@@ -200,13 +200,13 @@ def errors(summary, out):
         if not h:
             continue
         rows = h["trajectory"]
-        ax.plot([r["depth"] for r in rows], [r["misled"]["near_gold"] for r in rows], color=c, lw=1.4, label=f"{MODEL_NAMES[m]}, misled (solid)")
+        ax.plot([r["depth"] for r in rows], [r["misled"]["near_gold"] for r in rows], color=c, lw=1.4, label=f"{MODEL_NAMES[m]}, gave a wrong answer")
         ax.plot([r["depth"] for r in rows], [r["resisted"]["near_gold"] for r in rows], color=c, lw=0.9, ls="--", alpha=0.8)
-    ax.plot([], [], color=style.INK, lw=0.9, ls="--", label="resisted the hint (dashed)")
+    ax.plot([], [], color=style.INK, lw=0.9, ls="--", label="dashed: kept the right answer")
     ax.axhline(0.5, color=style.MUTED, lw=0.6, ls=":")
     ax.set_xlabel("depth (fraction of layers)")
     ax.set_ylabel("nearer the right place")
-    ax.set_title("b  Misled by a hint: the right place first, then lost", loc="left", fontweight="bold")
+    ax.set_title("b  Asked again with a wrong suggestion", loc="left", fontweight="bold")
     ax.legend(frameon=False, fontsize=6, loc="upper center", bbox_to_anchor=(0.5, -0.22), ncol=3, columnspacing=1.0)
     style.clean(ax)
     fig.tight_layout(w_pad=1.2)
