@@ -178,12 +178,13 @@ def recognition(summary, out):
     """Figure 5: among wrong answers, how well one number separates near misses from gaps."""
     fig = plt.figure(figsize=(style.COLW, 2.45))
     ax = fig.add_axes([0.16, 0.27, 0.82, 0.7])
-    keys = [("auc_rank", style.ACCENT, "Rank of right centroid"), ("auc_conf_mean", "#a6a6a6", "Confidence")]
-    w = 0.34
+    keys = [("auc_rank", style.ACCENT, "Centroid rank"), ("auc_output_rank", "#2c2c2c", "Output rank"),
+            ("auc_conf_mean", "#a6a6a6", "Confidence")]
+    w = 0.26
     for k, (key, c, lab) in enumerate(keys):
         vals = np.array([summary[m]["errors_beyond_confidence"][key] for m in MODELS])
-        ax.bar(np.arange(len(MODELS)) + (k - 0.5) * w, vals - 0.5, bottom=0.5, width=w, color=c, label=lab)
-        for x, v in zip(np.arange(len(MODELS)) + (k - 0.5) * w, vals):
+        ax.bar(np.arange(len(MODELS)) + (k - 1) * w, vals - 0.5, bottom=0.5, width=w, color=c, label=lab)
+        for x, v in zip(np.arange(len(MODELS)) + (k - 1) * w, vals):
             if v - 0.5 < 0.02:  # a bar at chance has no height; say its value instead
                 ax.text(x, 0.505, f"{v:.2f}", ha="center", va="bottom", fontsize=6.5, color=style.MUTED)
     ax.axhline(0.5, color=style.AXIS, lw=0.8)
@@ -192,7 +193,7 @@ def recognition(summary, out):
     ax.set_ylim(0.5, 0.9)
     ax.spines["bottom"].set_visible(False)
     ax.set_ylabel("AUC")
-    ax.legend(loc="upper left", ncol=2, columnspacing=1.0, handlelength=1.2)
+    ax.legend(loc="upper left", ncol=3, columnspacing=1.0, handlelength=1.2)
     style.save(fig, out / "fig_recognition.pdf")
 
 

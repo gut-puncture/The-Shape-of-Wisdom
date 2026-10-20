@@ -195,6 +195,31 @@ def main():
         out["SizeOnsetRandom"] = pct(next(r["right"] for r in sc if r["layer"] == 10 and r["condition"] == "random"))
         out["SizePreLargeChangedMax"] = pct(max(r["changed"] for r in pre if r["condition"] == "right" and r["size"] == 0.44))
         out["SizeN"] = str(sc[0]["n"])
+    # matched-size moves in the main runs: the full move at the last depth before the onset against the
+    # half move at the first depth at or after it
+    pre_size, pre_right, post_size, post_right, all_pre = [], [], [], [], []
+    for m in models:
+        agg = {}
+        for r in S[m]["steering"]:
+            if r["target"] == "wrong_placed" and r["condition"] == "gold":
+                h, n, rel = agg.get((r["layer"], r["scale"]), (0, 0, 0))
+                agg[(r["layer"], r["scale"])] = (h + r["to_gold"] * r["n"], n + r["n"], rel + r["push_rel"] * r["n"])
+        on = S[m]["onset_layer"]
+        all_pre.append(max(agg[(l, sc)][0] / agg[(l, sc)][1] for l, sc in agg if l < on and sc == 1.0))
+        before = max(l for l, sc in agg if l < on)
+        after = min(l for l, sc in agg if l >= on)
+        h, n, rel = agg[(before, 1.0)]
+        pre_right.append(h / n); pre_size.append(rel / n)
+        h, n, rel = agg[(after, 0.5)]
+        post_right.append(h / n); post_size.append(rel / n)
+    rng("MatchPreSize", pre_size); rng("MatchPreRight", pre_right)
+    rng("MatchPostSize", post_size); rng("MatchPostRight", post_right)
+    rng("PushAllPre", all_pre)
+    rng("JumpFrom", [next(r for r in S[m]["depth"] if r["layer"] == S[m]["onset_layer"] - 1)["acc"]["mean"] for m in models])
+    if all("auc_output_rank" in S[m]["errors_beyond_confidence"] for m in models):
+        for m in models:
+            out[f"AucOutRank{TAGS[m]}"] = f"{S[m]['errors_beyond_confidence']['auc_output_rank']:.2f}"
+        rng("AucOutRank", [S[m]["errors_beyond_confidence"]["auc_output_rank"] for m in models], fmt=lambda v: f"{v:.2f}")
     out["NPromptsAnalysed"] = f"{sum(p['kind'] in ('ff', 'mcq') for p in prompts):,}"
     for m in models:
         e = S[m]["errors_beyond_confidence"]

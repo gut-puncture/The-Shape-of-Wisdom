@@ -441,7 +441,7 @@ def fact_table(ff, mcq, hint):
     return T
 
 
-def errors_beyond_confidence(anat, table):
+def errors_beyond_confidence(anat, table, recs=None):
     """The non-circular headline test. Among wrong free-form answers (plain wording, test subjects),
     does the state's geometry at the onset layer (distance to the gold place, its rank, the margin to
     the nearest place) predict whether the model still recognises the right answer in multiple choice
@@ -467,6 +467,16 @@ def errors_beyond_confidence(anat, table):
     conf_mean = conf[:, 0] / np.maximum(conf[:, 1], 1)
     res["auc_rank"] = float(roc_auc_score(y, -rank1))
     res["auc_conf_mean"] = float(roc_auc_score(y, conf_mean))
+    if recs is not None:
+        # The output-side counterpart of the rank: where the right answer ranks among the candidates of its
+        # kind by the model's own logit for each candidate's first token at the first answer position.
+        out_rank = []
+        for a in rows:
+            lp = recs[a["i"]]["answer_logprobs"]
+            gold = lp.get(recs[a["i"]]["answer_qid"], -np.inf)
+            out_rank.append(1 + sum(v > gold for v in lp.values()))
+        out_rank = np.array(out_rank, dtype=float)
+        res["auc_output_rank"] = float(roc_auc_score(y, -out_rank))
     kind = np.array([a["answer_type"] for a in rows])
     c = kind == "country"
     if 0 < y[c].sum() < c.sum():
@@ -610,7 +620,7 @@ def main():
                           for kind in ("on_list", "off_list")}
         res["anatomy"]["right"] = sum(a["class"] == "right" and a["wording"] == "w0" for a in anat)
         res["anatomy"]["unclear"] = sum(a["class"] == "unclear" and a["wording"] == "w0" for a in anat)
-        res["errors_beyond_confidence"] = errors_beyond_confidence(anat, table)
+        res["errors_beyond_confidence"] = errors_beyond_confidence(anat, table, ff)
         if (d / "steer" / "plan.jsonl").exists() and (d / "steer" / "results.jsonl").exists():
             res["steering"] = summarize_steering(steering(d, ff, hint, answers, anat, S), S.shape[1] - 1)
         with open(out / f"{m}_anatomy.jsonl", "w") as f:
