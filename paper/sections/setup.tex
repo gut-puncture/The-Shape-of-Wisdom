@@ -1,7 +1,7 @@
 \section{Setup}
 \label{sec:setup}
 
-This section covers what every result relies on: the questions, the models and their recorded states, the answer centroids, and readability. Each result in Section~\ref{sec:results} then describes its own test and controls. Details needed only for reproduction are in Appendix~\ref{app:details}.
+Appendix~\ref{app:details} gives the details needed to reproduce the results.
 
 \subsection{Questions}
 \label{sec:questions}
@@ -51,7 +51,7 @@ where
 \item $h_q$ is the state of question $q$ at the layer;
 \item $c_a$ is the centroid of $a$ at that layer.
 \end{itemize}
-For example, the centroid of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of all training questions that Llama answered with ``Argentina''. These questions may be about a person, a town or a film, in any wording. Centroids are built from the answers the model gives, not from the true answers. A question that the model wrongly answers with ``Chile'' counts toward the centroid of Chile, so wrong answers can be studied in the same way as right ones.
+For example, the centroid of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of all training questions that Llama answered with ``Argentina''. These questions may be about a person, a town or a film, in any wording. Centroids are built from the answers the model gives, whether right or wrong. A question that the model wrongly answers with ``Chile'' counts toward the centroid of Chile, so wrong answers can be studied in the same way as right ones.
 
 Centroids are built from questions about one half of the subjects, the \emph{training questions}. Every number we report is measured on questions about the other half, the \emph{test questions}. We split by subject, not by question, because the several questions about one subject are near copies of each other.
 
