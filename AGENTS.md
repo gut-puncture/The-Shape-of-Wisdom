@@ -1,10 +1,7 @@
-# Experiment Agent Instructions
+# Agent instructions: Shape of Wisdom (answer places)
 
-- Work only inside `/Users/shaileshrana/shape-of-wisdom/`.
-- Treat `/Users/shaileshrana/shape-of-wisdom_legacy_20260327T121445/v2/BLOCKER_REPORT.md` as active context.
-- Do not silence dataset, model, prompt, or tokenization anomalies. Log them.
-- Do not run `run_full_sweep.py` unless the runtime guard and config blocker are both cleared.
-- Update `TODO.md` and `BLOCKERS.md` whenever a phase state or blocker changes.
-- Preserve exact option surfaces in the main semantic path.
-- Keep controls paired with the semantic readout on the same valid example subset whenever
-  comparisons are reported.
+- The current experiment lives at the repository root (`wisdom/`, `dataset/`, `scripts/`, `results/`, `paper/`); `archive/` holds superseded phases and is read-only.
+- Every number in the paper comes from `results/summary.json` through `python -m wisdom.paper_numbers`; never type a result into the LaTeX by hand.
+- Scores are held out by subject; never fit anything (places, whitening, radii, layer choices) on test subjects.
+- A run directory is one task; `wisdom/run.py` refuses to resume if its invariants change. Use a new `--run-dir` for a different model, precision or recording.
+- For paper and figure work: render the compiled PDF and inspect every page with a figure or table after each change; no overlaps, clipping, legends over data, or text outside the margins.

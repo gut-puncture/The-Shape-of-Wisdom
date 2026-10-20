@@ -1,0 +1,17 @@
+\section{Introduction}
+\label{sec:intro}
+
+Ask a language model ``What country is An\'{i}bal Ponce a citizen of?'' and, a few dozen layers later, it answers ``Argentina''. Between the question and the answer the model's internal state at the answering position changes at every layer. This paper asks what shape that change has. Does the state wander, drift slowly toward the answer, or arrive somewhere definite? And if it arrives somewhere, is that somewhere the same for every question with the same answer?
+
+We find that it is. As a question passes through the network, the state moves into a region shared by all questions to which the model gives the same answer. We call this region the answer's \emph{place}. Figure~\ref{fig:hero} shows it directly: early in Llama-3.1-8B, questions whose answers are twelve different countries form one tangled cloud; within a few layers they separate into one strand per country.
+
+Four properties make places more than a picture. First, they appear suddenly. In each of four models the answer becomes readable from the state within a few layers at a model-specific depth, and a step describes the change far better than gradual convergence (Section~\ref{sec:step}). Second, a place is a concept, not a word: the same place is reached from different relations and wordings, and it does not depend on the output directions of the answer's own name (Section~\ref{sec:concept}). Third, places are causal. Moving a state into a place after the step makes the model give that place's answer, while random moves of the same size do nothing and moves before the step are ignored (Section~\ref{sec:steer}). Fourth, places are organised by the model's belief, and this makes wrong answers legible: where a wrong answer sits predicts whether the model still recognises the right one, better than the model's confidence does (Section~\ref{sec:errors}).
+
+These results give an intuition a precise form. A model that knows a fact does not hold a vague tendency toward the answer that sharpens layer by layer. It has a definite place for the answer and, at one depth, moves the question there. A confident mistake goes through the same motion to the wrong place: the geometry follows what the model believes, and the truth only decides which place it should have been.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_hero.pdf}
+\caption{\textbf{Questions converge on the place of their answer, and they do so at one depth.} Held-out questions about citizens, towns and films of twelve countries, as seen by Llama-3.1-8B at six layers. Each panel shows the last prompt position's state in the three directions that best separate the twelve answers among \emph{other} (training) questions at that layer; colour is the country the model answered. Up to layer 14 the questions form one cloud. Answers become readable at layer \OnsetLayerLlama{}; by layer 16 the questions have begun to separate, and by the last layers each country is a strand of its own. Points are scaled to a robust common range per panel; shadows are drawn on the floor.}
+\label{fig:hero}
+\end{figure*}

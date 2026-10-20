@@ -50,6 +50,56 @@ def main():
                           ("acc_ff_to_mcq", "ToMcq")]:
             if late.get(key) and late[key].get("mean") is not None:
                 out[f"{name}{tag}"] = pct(late[key]["mean"])
+        e = s.get("errors_beyond_confidence", {})
+        if e.get("auc_both"):
+            out[f"AucConf{tag}"] = f"{e['auc_confidence']:.2f}"
+            out[f"AucGeo{tag}"] = f"{e['auc_geometry']:.2f}"
+            out[f"AucBoth{tag}"] = f"{e['auc_both']:.2f}"
+            out[f"AucGainLo{tag}"] = f"{e['gain_both_minus_conf'][0]:.2f}"
+            out[f"AucGainHi{tag}"] = f"{e['gain_both_minus_conf'][1]:.2f}"
+            out[f"ErrN{tag}"] = f"{e['n']:,}"
+        st = s.get("steering", [])
+        if st:
+            def rate(target, cond, key, which):
+                agg = {}
+                for r in st:
+                    if r["target"] == target and r["condition"] == cond and r["scale"] == 1.0:
+                        h, n = agg.get(r["layer"], (0, 0))
+                        agg[r["layer"]] = (h + r[key] * r["n"], n + r["n"])
+                layers = sorted(agg)
+                layer = layers[-1] if which == "last" else layers[0]
+                return agg[layer][0] / agg[layer][1], agg[layer][1], layer
+            g, n, layer = rate("wrong_placed", "gold", "to_gold", "last")
+            out[f"PushGold{tag}"], out[f"PushN{tag}"], out[f"PushLayer{tag}"] = pct(g), str(n), str(layer)
+            out[f"PushRandom{tag}"] = pct(rate("wrong_placed", "random", "to_gold", "last")[0])
+            out[f"PushOther{tag}"] = pct(rate("wrong_placed", "other", "to_toward", "last")[0])
+            out[f"PushRightOther{tag}"] = pct(rate("right", "other", "to_toward", "last")[0])
+            out[f"PushEarly{tag}"] = pct(rate("wrong_placed", "gold", "to_gold", "first")[0])
+            out[f"PushMisled{tag}"] = pct(rate("misled", "gold", "to_gold", "last")[0])
+        h = s.get("hint", {})
+        if h:
+            traj = h["trajectory"]
+            peak = max((r for r in traj if r["misled"]["near_gold"] is not None), key=lambda r: r["misled"]["near_gold"])
+            out[f"HintPeak{tag}"] = pct(peak["misled"]["near_gold"])
+            out[f"HintPeakDepth{tag}"] = f"{peak['depth']:.2f}"
+            out[f"HintEnd{tag}"] = pct(traj[-1]["misled"]["near_gold"])
+            out[f"HintResistEnd{tag}"] = pct(traj[-1]["resisted"]["near_gold"])
+            out[f"HintMisledN{tag}"] = str(peak["misled"]["n"])
+        an = s.get("anatomy", {})
+        if an:
+            on, off = an["on_list"], an["off_list"]
+            wrong = sum(on.values()) + sum(off.values())
+            out[f"AnatInGiven{tag}"] = pct(on["in_given"] / max(1, sum(on.values())))
+            out[f"AnatInGold{tag}"] = pct((on["in_gold"] + off["in_gold"]) / max(1, wrong))
+            out[f"AnatWrongN{tag}"] = str(wrong)
+    if "llama8b_untrained" in S:
+        u = S["llama8b_untrained"]
+        out["UntrainedPeak"] = pct(max(r["acc"]["mean"] for r in u["depth_trained_labels"] if r["acc"]["mean"] is not None))
+    cm = S.get("cross_model", [])
+    if cm:
+        vals = [c["mean"] for c in cm if c.get("mean") is not None]
+        out["CrossModelMin"], out["CrossModelMax"] = pct(min(vals)), pct(max(vals))
+        out["CrossModelPairs"] = str(len(vals))
     path = Path(args.out)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(f"\\newcommand{{\\{k}}}{{{v}}}\n" for k, v in sorted(out.items())))

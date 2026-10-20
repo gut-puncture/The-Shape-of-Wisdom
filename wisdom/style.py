@@ -11,6 +11,9 @@ MUTED = "#86868b"
 FLOOR = "#ececee"
 SHADOW = "#c7c7cc"
 ACCENT = "#d0021b"   # a clear red for the headline series
+# Twelve clearly distinct, saturated colours for categorical answers (no pale yellows on white).
+DISTINCT = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#00a6b4", "#f032e6", "#7cb800",
+            "#9a6324", "#000075", "#808000", "#ff6f91"]
 COLW = 3.25          # one column of a two-column page, inches
 PAGEW = 6.75         # full page width, inches
 
