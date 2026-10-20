@@ -40,7 +40,7 @@ def lda_3d(Ztr, ytr, k=3):
     return vecs[:, order].real
 
 
-def hero(run_dir, model, prompts, answers, out, answer_type="country", n_panels=6):
+def hero(run_dir, model, prompts, answers, out, onset=None, answer_type="country", n_panels=6):
     """Test-subject questions at evenly spaced depths, in the three directions that best separate the
     training subjects' answers at that depth (fitted without any test question). Colour = the answer
     the model gave."""
@@ -57,20 +57,22 @@ def hero(run_dir, model, prompts, answers, out, answer_type="country", n_panels=
     te = [i for i in te if recs[i]["given_qid"] in top]
     colors = dict(zip(top, style.hues(len(top), start=0.02)))
     L = S.shape[1] - 1
-    layers = np.linspace(1, L, n_panels).round().astype(int)
-    fig = plt.figure(figsize=(style.PAGEW, 1.55))
+    layers = sorted(set([1, round(0.25 * L), round(0.4 * L)] + ([onset - 1, onset + 1] if onset else []) + [L]))[:n_panels]
+    fig = plt.figure(figsize=(style.PAGEW, 1.75))
     for j, layer in enumerate(layers):
         W = Whitener(S[tr, layer])
         Ztr, Zte = W(S[tr, layer]), W(S[te, layer])
         V = lda_3d(Ztr, [recs[i]["given_qid"] for i in tr])
         P = Zte @ V
-        P = (P - P.mean(0)) / P.std(0).max()
-        ax = fig.add_subplot(1, n_panels, j + 1, projection="3d")
-        style.floor_cloud(ax, P, [colors[recs[i]["given_qid"]] for i in te], size=2.2)
-        ax.set_title(f"layer {layer} of {L}", y=0.88, fontsize=7, color=style.INK)
-    plt.subplots_adjust(wspace=-0.12, left=0, right=1, top=1, bottom=0)
+        P = P - np.median(P, 0)
+        P = np.clip(P / np.percentile(np.abs(P), 95), -1.6, 1.6)  # robust scale: a few far knots cannot squash the rest
+        ax = fig.add_subplot(1, len(layers), j + 1, projection="3d")
+        style.floor_cloud(ax, P, [colors[recs[i]["given_qid"]] for i in te], size=2.6)
+        ax.set_title(f"layer {layer} of {L}", y=0.9, fontsize=7, color=style.INK)
+    handles = [plt.Line2D([], [], marker="o", ls="", ms=3.5, color=colors[q], label=answers[q]["label"]) for q in top]
+    fig.legend(handles=handles, loc="lower center", ncol=12, frameon=False, fontsize=6, handletextpad=0.1, columnspacing=0.8)
+    plt.subplots_adjust(wspace=-0.12, left=0, right=1, top=1, bottom=0.12)
     style.save(fig, out / "fig_hero.pdf")
-    style.save_png = None
     return [answers[q]["label"] for q in top], [colors[q] for q in top]
 
 
@@ -145,9 +147,10 @@ def steering(summary, out, model="llama8b"):
             rs = sorted([r for r in rows if r["target"] == target and r["condition"] == cond and r["scale"] == 1.0
                          and r["class"] in (None, "in_given", "in_gold", "in_third", "nowhere", "right")], key=lambda r: r["depth"])
             agg = {}
+            k = "to_toward" if cond == "other" else key  # each line: did the model give the answer it was pushed to?
             for r in rs:
                 h, n = agg.get(r["depth"], (0, 0))
-                agg[r["depth"]] = (h + r[key] * r["n"], n + r["n"])
+                agg[r["depth"]] = (h + r[k] * r["n"], n + r["n"])
             if agg:
                 xs = sorted(agg)
                 ax.plot(xs, [agg[x][0] / agg[x][1] for x in xs], color=c, lw=1.4, marker="o", ms=2.5, label=lab)
@@ -173,7 +176,7 @@ def main():
     summary = json.loads((Path(args.results) / "summary.json").read_text())
     prompts = [json.loads(l) for l in open(ROOT / "dataset" / "prompts.jsonl")]
     answers = json.load(open(ROOT / "dataset" / "answers.json"))
-    names, cols = hero(Path(args.run_dir), args.hero_model, prompts, answers, out)
+    names, cols = hero(Path(args.run_dir), args.hero_model, prompts, answers, out, onset=summary.get(args.hero_model, {}).get("onset_layer"))
     (out / "hero_legend.json").write_text(json.dumps({"names": names, "colors": cols}))
     decodability(summary, out)
     contraction(summary, out)

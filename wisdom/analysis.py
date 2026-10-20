@@ -343,6 +343,8 @@ def anatomy(recs, S, layer, label="given_qid"):
             gold_rank = keys.index(r["answer_qid"]) if r["answer_qid"] in means else None
             if r["correct"]:
                 cls = "right"
+            elif not r.get("answered"):
+                cls = "unclear"  # declined, hedged or several answers: neither right nor wrong
             elif D[k, order[0]] > radius:
                 cls = "nowhere"
             elif near == r["answer_qid"]:
@@ -354,6 +356,8 @@ def anatomy(recs, S, layer, label="given_qid"):
             conf, length = seq_confidence(r)
             out.append({"i": i, "prompt_id": r["prompt_id"], "fact_id": r["fact_id"], "subject_qid": r["subject_qid"],
                         "wording": r["wording"], "answer_type": t, "correct": r["correct"], "class": cls,
+                        "wrong_kind": None if r["correct"] or not r.get("answered") else
+                                      ("on_list" if r["reply_status"] == "answer" else "off_list"),
                         "reply_status": r.get("reply_status"), "conf": conf, "length": length,
                         "d_nearest": float(D[k, order[0]]), "d_margin": float(D[k, order[1]] - D[k, order[0]]),
                         "d_gold": float(D[k, gold_rank]) if gold_rank is not None else None,
@@ -387,7 +391,7 @@ def errors_beyond_confidence(anat, table):
     does the state's geometry at the onset layer (distance to the gold place, its rank, the margin to
     the nearest place) predict whether the model still recognises the right answer in multiple choice
     (majority of the four orders correct), beyond the model's confidence and reply length?"""
-    rows = [a for a in anat if not a["correct"] and a["wording"] == "w0" and a["d_gold"] is not None
+    rows = [a for a in anat if a["wrong_kind"] and a["wording"] == "w0" and a["d_gold"] is not None
             and np.isfinite(a["conf"]) and table.get(a["fact_id"], {}).get("mcq_correct_share") is not None]
     if len(rows) < 40:
         return {"n": len(rows), "status": "insufficient"}
@@ -511,8 +515,11 @@ def main():
         res["onset_layer"], res["onset_depth"] = L, (L / (S.shape[1] - 1) if L else None)
         anat = anatomy(ff, S, L) if L else []
         table = fact_table(ff, mcq[0] if mcq else None, hint)
-        res["anatomy"] = {c: sum(a["class"] == c and a["wording"] == "w0" for a in anat)
-                          for c in ("right", "in_gold", "in_given", "in_third", "nowhere")}
+        res["anatomy"] = {kind: {c: sum(a["class"] == c and a["wording"] == "w0" and a["wrong_kind"] == kind for a in anat)
+                                 for c in ("in_gold", "in_given", "in_third", "nowhere")}
+                          for kind in ("on_list", "off_list")}
+        res["anatomy"]["right"] = sum(a["class"] == "right" and a["wording"] == "w0" for a in anat)
+        res["anatomy"]["unclear"] = sum(a["class"] == "unclear" and a["wording"] == "w0" for a in anat)
         res["errors_beyond_confidence"] = errors_beyond_confidence(anat, table)
         if (d / "steer" / "plan.jsonl").exists() and (d / "steer" / "results.jsonl").exists():
             res["steering"] = summarize_steering(steering(d, ff, hint, answers, anat), S.shape[1] - 1)
