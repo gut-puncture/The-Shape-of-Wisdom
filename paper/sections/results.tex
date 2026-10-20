@@ -17,6 +17,8 @@ The early plateau is not zero. Before the jump, 20--55\% of answers can be read,
 
 Three controls rule out chance, wording and architecture as the source of the structure. Shuffling answers between facts gives \ShuffledLlama{}--\ShuffledLlamaSmall{} at every layer. A classifier on the question's words alone reaches at most \TextQwen{}. And an untrained Llama-3.1-8B, given the same prompts and grouped by the trained model's answers, never exceeds \UntrainedPeak{}.
 
+\paragraph{Kinds of answer.} Three of the four kinds of answer are names (countries, cities and languages); sports are common nouns. The jump is clearest for names. At the onset layer, readability for names rises by \NamesJumpMin{}--\NamesJumpMax{} percentage points in a single layer; for sports it rises by only \SportJumpMin{}--\SportJumpMax{} points. Sports are also read less well late in the network: at 90\% of depth, \SportLateMin{}--\SportLateMax{} against \NamesLateMin{}--\NamesLateMax{} for names (Table~\ref{tab:models}). Sports have at most ten places and are reached through a single relation, so these data cannot tell whether the difference comes from the kind of word or from a smaller and narrower set.
+
 \paragraph{Tightness.} Readability depends on a whitening of the state, so a jump could in principle come from the whitening. The tightness ratio does not use one: it compares, in the model's own space, how far held-out questions sit from their place with how far places sit from each other. It falls 16- to 25-fold through the network (Figure~\ref{fig:tight}). The fall is steepest at the jump, where the two layers around it account for \TightAtJumpMin{}--\TightAtJumpMax{} of the total fall in log tightness, and continues more slowly over the next ten or so layers. We fitted two shapes to the logarithm of each model's curve, a straight line (the same contraction at every layer, the pattern found in trained classifiers~\citep{he2022a}) and a smooth step, and compared them by how well each predicts a left-out layer. The step predicts better in every model, by a factor of \StepRatioMin{} to \StepRatioMax{} in error (Table~\ref{tab:models}). The step is not instantaneous: the fitted widths correspond to a rise over roughly a quarter to two fifths of the network's depth.
 
 \begin{figure}[t]
@@ -42,9 +44,13 @@ Error, step fit & \StepMseLlama{} & \StepMseQwen{} & \StepMseGemma{} & \StepMseL
 Error, line fit & \LineMseLlama{} & \LineMseQwen{} & \LineMseGemma{} & \LineMseLlamaSmall{} \\
 Other relation & \XRelLlama{} & \XRelQwen{} & \XRelGemma{} & \XRelLlamaSmall{} \\
 Answer words removed & \NoWordsLlama{} & \NoWordsQwen{} & \NoWordsGemma{} & \NoWordsLlamaSmall{} \\
+Names & \NamesLateLlama{} & \NamesLateQwen{} & \NamesLateGemma{} & \NamesLateLlamaSmall{} \\
+Sports & \SportLateLlama{} & \SportLateQwen{} & \SportLateGemma{} & \SportLateLlamaSmall{} \\
+Jump, names (points) & \NamesJumpLlama{} & \NamesJumpQwen{} & \NamesJumpGemma{} & \NamesJumpLlamaSmall{} \\
+Jump, sports (points) & \SportJumpLlama{} & \SportJumpQwen{} & \SportJumpGemma{} & \SportJumpLlamaSmall{} \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Per-model summary.} Accuracy: share of plain questions from test subjects answered correctly (unclear replies count as not correct). ``Readable from'': the depth at which readability first covers half the distance from chance to its peak, chosen on training subjects only. Step and line fits: mean squared error in predicting a left-out layer's log tightness. The last two rows are readability at 90\% of depth.}
+\caption{\textbf{Per-model summary.} Accuracy: share of plain questions from test subjects answered correctly (unclear replies count as not correct). ``Readable from'': the depth at which readability first covers half the distance from chance to its peak, chosen on training subjects only. Step and line fits: mean squared error in predicting a left-out layer's log tightness. Other relation to Sports: readability at 90\% of depth (names are countries, cities and languages). Jump: rise in readability from the layer before the onset layer to the onset layer.}
 \label{tab:models}
 \end{table}
 

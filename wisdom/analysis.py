@@ -199,6 +199,10 @@ def depth_profile(recs, S, label="given_qid", unembed=None, mcq=None):
         row = {"layer": layer, "depth": layer / (S.shape[1] - 1)}
         hits, ch = decode(Z, recs, tr, te, label)
         row["acc"] = subject_bootstrap(hits, recs)
+        kinds = {}
+        for i, v in hits.items():
+            kinds.setdefault(recs[i]["answer_type"], []).append(v)
+        row["acc_by_type"] = {t: {"mean": float(np.mean(v)), "n": len(v)} for t, v in sorted(kinds.items())}
         row["chance"] = float(np.mean(list(ch.values()))) if ch else None
         # null: labels shuffled between facts (whitening is label-free, so it is reused)
         null = []

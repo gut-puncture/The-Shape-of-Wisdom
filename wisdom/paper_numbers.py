@@ -135,6 +135,23 @@ def main():
         given_late = at_depth(rows, 0.9)["acc"]["mean"]
         out[f"GoldLate{tag}"], out[f"GivenLate{tag}"] = pct(gold_late), pct(given_late)
         out[f"ErrPos{tag}"] = pct(S[m]["errors_beyond_confidence"]["positive_rate"])
+    # readability by kind of answer: names (countries, cities, languages) pooled, and sports (common nouns)
+    def kind_acc(row, sport):
+        ks = [v for t, v in row["acc_by_type"].items() if (t == "sport") == sport]
+        return sum(v["mean"] * v["n"] for v in ks) / sum(v["n"] for v in ks)
+    kinds = {}
+    for m in models:
+        tag, rows, L = TAGS[m], S[m]["depth"], S[m]["onset_layer"]
+        before = next(r for r in rows if r["layer"] == L - 1)
+        at = next(r for r in rows if r["layer"] == L)
+        late = at_depth(rows, 0.9)
+        for sport, name in [(False, "Names"), (True, "Sport")]:
+            jump, lt = kind_acc(at, sport) - kind_acc(before, sport), kind_acc(late, sport)
+            out[f"{name}Jump{tag}"], out[f"{name}Late{tag}"] = f"{100 * jump:.0f}", pct(lt)
+            kinds.setdefault(name, []).append((jump, lt))
+    for name, v in kinds.items():
+        rng(f"{name}Jump", [j for j, _ in v], fmt=lambda x: f"{100 * x:.0f}")
+        rng(f"{name}Late", [l for _, l in v])
     rng("TightAtJump", [float(out[f"TightAtJump{TAGS[m]}"].rstrip("\\%")) / 100 for m in models])
     if "llama8b_untrained" in S:
         u = S["llama8b_untrained"]
