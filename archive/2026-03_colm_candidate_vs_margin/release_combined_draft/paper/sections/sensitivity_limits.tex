@@ -1,9 +1,0 @@
-\section{Sensitivity and limits}
-
-The broad result depends on exact-option continuation scoring under canonical answer ordering. That is the intended primary readout because it scores the answer string itself rather than a proxy label. Alternate readouts and option orders are useful sensitivity material, but they can change the final winner and therefore are not used to replace the primary path.
-
-Several edge cases are handled explicitly. Final-layer ties are logged, and rows with nonpositive final gaps are excluded from normalized-gap metrics rather than forced into $d_{50}$. Across included broad-panel rows, \FinalLayerTieCount{} rows have a final-layer top tie and \NormalizedGapExcludedCount{} rows are excluded from normalized-gap metrics. The appendix reports neighboring thresholds, $25\%$ and $75\%$, to show how the margin-depth timing shifts when the criterion is relaxed or tightened.
-
-The mechanistic results also have a boundary. The attention/MLP decomposition is a scalar accounting model over cached readouts. Span deletion is a true input-level intervention in the legacy cache. Simulated ablation and substitution are linearized bookkeeping estimates: they do not let later layers react to a modified activation state. We therefore use them to support conditional component-level patterns, not to claim complete causal circuits.
-
-The empirical scope is multiple-choice cached readouts in the tested open-weight models and benchmarks. The paper does not claim behavior for open-ended generation, all architectures, or all answer formats.

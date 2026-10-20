@@ -14,7 +14,6 @@ Paper: [`paper/main.pdf`](paper/main.pdf).
 | `results/summary.json` | Every measurement in the paper. |
 | `results/*_anatomy.jsonl` | Per-question records for each model: answer given, grade, and where the state sits relative to answer centroids. |
 | `paper/` | LaTeX source; all numbers come from `paper/generated/numbers.tex`, written from the results. |
-| `archive/` | Earlier phases of this project, with a note on why they were superseded. |
 
 ## Reproduce
 
@@ -32,3 +31,5 @@ The recorded states (about 19 GB) are not in the repository; the full run took a
 ## Licence
 
 MIT. Wikidata content is CC0.
+
+Earlier phases of this project (the MMLU decision-trajectory papers) were removed from the tree; they remain in the git history, and the code of the earlier arXiv paper is under the tag `mmlu-arxiv-v1`.

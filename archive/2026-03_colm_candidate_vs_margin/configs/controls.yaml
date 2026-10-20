@@ -1,7 +1,0 @@
-controls:
-  permutations:
-    identity:
-      strategy: identity
-    reverse:
-      strategy: reverse
-  paired_comparison_required: true

@@ -1,7 +1,0 @@
-\section{Introduction}
-
-A final answer compresses a depth-wise process into one surface choice. The older draft in this repository tried to describe that process by comparing a weak first-hit event to stronger forever-after events. That comparison was asymmetric, so part of the reported lag could come from the metric definitions rather than from the score dynamics themselves.
-
-This paper replaces that center with a fully persistence-based one. Under exact-option continuation scoring, we ask when the eventual winner first becomes a contender that never leaves the top-2 again, when it becomes the top-1 option for the rest of depth, and when it finally acquires a winner-runner gap that never again drops below half of its final value. Figure~\ref{fig:pooled-cdfs} shows those three persistent depths in one view.
-
-The claim is deliberately narrow. We study only cached exact-option score trajectories for nine tested instruction-tuned open-weight models. We do not use this analysis to claim answer-format invariance, a hidden-state mechanism, or universality beyond the tested panel. Within that scope, the central pattern is consistent: the lag from persistent contender status to persistent decisive margin is typically nontrivial.
