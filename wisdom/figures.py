@@ -114,10 +114,9 @@ def readability(summary, out):
     style.title(a, "A", "Four models and controls")
     fig.legend(handles=controls, loc="lower center", bbox_to_anchor=(0.31, 0.0), ncol=2, columnspacing=1.0,
                handlelength=1.8)
-    for key, color, label in [("acc", COLORS["llama8b"], "Same relation"), ("acc_cross_relation", "#7d3c98", "Other relation"),
-                              ("acc_cross_wording", "#d35400", "Other wording"),
-                              ("acc_no_answer_words", style.INK, "Answer words removed"),
-                              ("acc_ff_to_mcq", "#148f77", "Multiple choice")]:
+    for key, color, label in [("acc", COLORS["llama8b"], "Standard"), ("acc_cross_relation", "#7d3c98", "Other relations"),
+                              ("acc_cross_wording", "#d35400", "Other wordings"),
+                              ("acc_no_answer_words", style.INK, "Answer words removed")]:
         band(b, rows, key, color, label, lw=1.5)
     finish_depth_axis(b)
     style.title(b, "B", "Transfer tests, Llama-3.1-8B")
@@ -135,7 +134,7 @@ def tightness(summary, out):
     ax.set_yscale("log")
     ax.set_yticks([1, 3, 10, 30], ["1", "3", "10", "30"])
     ax.minorticks_off()
-    finish_depth_axis(ax, "Within / between spread", ylim=(0.8, 40))
+    finish_depth_axis(ax, "Tightness, $T$", ylim=(0.8, 40))
     ax.legend(loc="lower left", handlelength=2.0)
     style.save(fig, out / "fig_tightness.pdf")
 
@@ -176,15 +175,15 @@ def steering(summary, out):
 
 
 def recognition(summary, out):
-    """Figure 5: among wrong answers, predicting recognition in multiple choice."""
+    """Figure 5: among wrong answers, how well one number separates near misses from gaps."""
     fig = plt.figure(figsize=(style.COLW, 2.45))
     ax = fig.add_axes([0.16, 0.27, 0.82, 0.7])
-    keys = [("auc_confidence", "#a6a6a6", "Confidence"), ("auc_geometry", style.ACCENT, "Geometry"), ("auc_both", "#2c2c2c", "Both")]
-    w = 0.26
+    keys = [("auc_rank", style.ACCENT, "Rank of right place"), ("auc_conf_mean", "#a6a6a6", "Confidence")]
+    w = 0.34
     for k, (key, c, lab) in enumerate(keys):
         vals = np.array([summary[m]["errors_beyond_confidence"][key] for m in MODELS])
-        ax.bar(np.arange(len(MODELS)) + (k - 1) * w, vals - 0.5, bottom=0.5, width=w, color=c, label=lab)
-        for x, v in zip(np.arange(len(MODELS)) + (k - 1) * w, vals):
+        ax.bar(np.arange(len(MODELS)) + (k - 0.5) * w, vals - 0.5, bottom=0.5, width=w, color=c, label=lab)
+        for x, v in zip(np.arange(len(MODELS)) + (k - 0.5) * w, vals):
             if v - 0.5 < 0.02:  # a bar at chance has no height; say its value instead
                 ax.text(x, 0.505, f"{v:.2f}", ha="center", va="bottom", fontsize=6.5, color=style.MUTED)
     ax.axhline(0.5, color=style.AXIS, lw=0.8)
@@ -192,8 +191,8 @@ def recognition(summary, out):
     ax.tick_params(axis="x", length=0)
     ax.set_ylim(0.5, 0.9)
     ax.spines["bottom"].set_visible(False)
-    ax.set_ylabel("AUC on test questions")
-    ax.legend(loc="upper left", ncol=3, columnspacing=1.0, handlelength=1.2)
+    ax.set_ylabel("AUC")
+    ax.legend(loc="upper left", ncol=2, columnspacing=1.0, handlelength=1.2)
     style.save(fig, out / "fig_recognition.pdf")
 
 
@@ -232,7 +231,6 @@ def main():
     tightness(summary, out)
     steering(summary, out)
     recognition(summary, out)
-    suggestion(summary, out)
 
 
 if __name__ == "__main__":

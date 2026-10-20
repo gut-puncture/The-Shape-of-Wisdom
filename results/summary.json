@@ -4118,6 +4118,8 @@
   "errors_beyond_confidence": {
    "n": 339,
    "positive_rate": 0.6047197640117994,
+   "auc_rank": 0.7747178740444121,
+   "auc_conf_mean": 0.6622315253003276,
    "gold_rank_median_recognised": 2.0,
    "gold_rank_median_not": 7.0,
    "auc_confidence": 0.6914816163087004,
@@ -4126,6 +4128,10 @@
    "gain_both_minus_conf": [
     0.0357895872353271,
     0.1299119139025905
+   ],
+   "rank_minus_conf_mean": [
+    0.0471283524848857,
+    0.17908877430803388
    ]
   },
   "steering": [
@@ -10766,6 +10772,8 @@
   "errors_beyond_confidence": {
    "n": 463,
    "positive_rate": 0.5399568034557235,
+   "auc_rank": 0.7539530516431924,
+   "auc_conf_mean": 0.5259154929577465,
    "gold_rank_median_recognised": 2.0,
    "gold_rank_median_not": 8.0,
    "auc_confidence": 0.6037652582159625,
@@ -10774,6 +10782,10 @@
    "gain_both_minus_conf": [
     0.08187988531408118,
     0.188626664815534
+   ],
+   "rank_minus_conf_mean": [
+    0.16830939731487327,
+    0.28918131360808896
    ]
   },
   "steering": [
@@ -19612,6 +19624,8 @@
   "errors_beyond_confidence": {
    "n": 364,
    "positive_rate": 0.5247252747252747,
+   "auc_rank": 0.7529431347032656,
+   "auc_conf_mean": 0.4902399903156493,
    "gold_rank_median_recognised": 2.0,
    "gold_rank_median_not": 8.0,
    "auc_confidence": 0.5025572738552795,
@@ -19620,6 +19634,10 @@
    "gain_both_minus_conf": [
     0.14577734420995378,
     0.2890140640887839
+   ],
+   "rank_minus_conf_mean": [
+    0.18598863584766948,
+    0.32734894841939677
    ]
   },
   "steering": [
@@ -25156,6 +25174,8 @@
   "errors_beyond_confidence": {
    "n": 488,
    "positive_rate": 0.06147540983606557,
+   "auc_rank": 0.8176128093158661,
+   "auc_conf_mean": 0.6631004366812226,
    "gold_rank_median_recognised": 1.0,
    "gold_rank_median_not": 4.0,
    "auc_confidence": 0.6067321688500728,
@@ -25164,6 +25184,10 @@
    "gain_both_minus_conf": [
     0.15915714042272716,
     0.32042104517610637
+   ],
+   "rank_minus_conf_mean": [
+    0.07134008074589993,
+    0.2487647349474129
    ]
   },
   "steering": [

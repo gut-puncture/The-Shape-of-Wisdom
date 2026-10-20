@@ -461,6 +461,12 @@ def errors_beyond_confidence(anat, table):
     # Where the right answer's place ranks among all places by distance from the state (1 = nearest),
     # for wrong answers the model does and does not recognise in multiple choice.
     rank1 = geo[:, 1] + 1
+    # The simple form reported in the paper: one number each, no fitted model. Geometry: the rank of the
+    # right answer's place (nearer = more likely recognised). Confidence: the reply's mean per-token
+    # log-probability (more confident = more likely recognised).
+    conf_mean = conf[:, 0] / np.maximum(conf[:, 1], 1)
+    res["auc_rank"] = float(roc_auc_score(y, -rank1))
+    res["auc_conf_mean"] = float(roc_auc_score(y, conf_mean))
     res["gold_rank_median_recognised"] = float(np.median(rank1[y]))
     res["gold_rank_median_not"] = float(np.median(rank1[~y]))
     preds = {}
@@ -476,6 +482,12 @@ def errors_beyond_confidence(anat, table):
         if 0 < y[idx].sum() < len(idx):
             gains.append(roc_auc_score(y[idx], preds["both"][idx]) - roc_auc_score(y[idx], preds["confidence"][idx]))
     res["gain_both_minus_conf"] = [float(np.percentile(gains, 2.5)), float(np.percentile(gains, 97.5))]
+    diffs = []
+    for _ in range(N_BOOT):
+        idx = np.concatenate([np.where(subj == s)[0] for s in rng.choice(uniq, len(uniq))])
+        if 0 < y[idx].sum() < len(idx):
+            diffs.append(roc_auc_score(y[idx], -rank1[idx]) - roc_auc_score(y[idx], conf_mean[idx]))
+    res["rank_minus_conf_mean"] = [float(np.percentile(diffs, 2.5)), float(np.percentile(diffs, 97.5))]
     return res
 
 

@@ -38,7 +38,7 @@ def main():
         rows = s["depth"]
         peak = max(rows, key=lambda r: r["acc"]["mean"] or 0)
         out[f"Acc{tag}"] = pct(s["accuracy_test_w0"])
-        out[f"Onset{tag}"] = f"{s['onset_depth']:.2f}"
+        out[f"Onset{tag}"] = pct(s['onset_depth'])
         out[f"OnsetLayer{tag}"] = str(s["onset_layer"])
         out[f"Layers{tag}"] = str(len(rows))
         out[f"Peak{tag}"] = pct(peak["acc"]["mean"])
@@ -169,6 +169,24 @@ def main():
     out["McqPeakLlama"] = pct(max(mc))
     rng("RankRecog", [S[m]["errors_beyond_confidence"]["gold_rank_median_recognised"] for m in models], fmt=lambda v: f"{v:.0f}")
     rng("RankNot", [S[m]["errors_beyond_confidence"]["gold_rank_median_not"] for m in models], fmt=lambda v: f"{v:.0f}")
+    rng("Shuffled", [sum(r["acc_shuffled"] for r in S[m]["depth"]) / len(S[m]["depth"]) for m in models])
+    rng("Text", [S[m]["text_baseline"]["mean"] for m in models])
+    rng("Unclear", [S[m]["reply_status"]["unclear"] / sum(S[m]["reply_status"].values()) for m in models],
+        fmt=lambda v: f"{100 * v:.1f}\\%")
+    rng("GoldLate", [at_depth(S[m]["depth_gold"], 0.9)["acc"]["mean"] for m in models])
+    rng("GivenLate", [at_depth(S[m]["depth"], 0.9)["acc"]["mean"] for m in models])
+    out["NPromptsAnalysed"] = f"{sum(p['kind'] in ('ff', 'mcq') for p in prompts):,}"
+    for m in models:
+        e = S[m]["errors_beyond_confidence"]
+        out[f"AucRank{TAGS[m]}"] = f"{e['auc_rank']:.2f}"
+        out[f"AucConfMean{TAGS[m]}"] = f"{e['auc_conf_mean']:.2f}"
+        out[f"RankDiffLo{TAGS[m]}"] = f"{e['rank_minus_conf_mean'][0]:.2f}"
+        out[f"RankDiffHi{TAGS[m]}"] = f"{e['rank_minus_conf_mean'][1]:.2f}"
+    f2 = lambda v: f"{v:.2f}"
+    rng("AucRank", [S[m]["errors_beyond_confidence"]["auc_rank"] for m in models], fmt=f2)
+    rng("AucConfMean", [S[m]["errors_beyond_confidence"]["auc_conf_mean"] for m in models], fmt=f2)
+    rng("AucGeo", [S[m]["errors_beyond_confidence"]["auc_geometry"] for m in models], fmt=f2)
+    rng("AucConf", [S[m]["errors_beyond_confidence"]["auc_confidence"] for m in models], fmt=f2)
     rng("TightAtJump", [float(out[f"TightAtJump{TAGS[m]}"].rstrip("\\%")) / 100 for m in models])
     if "llama8b_untrained" in S:
         u = S["llama8b_untrained"]

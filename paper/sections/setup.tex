@@ -1,56 +1,123 @@
 \section{Methods}
 \label{sec:setup}
 
-\subsection{Questions}
-To test whether questions with the same answer reach the same state, we need many different questions for each answer. We built such a set from Wikidata~\citep{vrandecic2014wikidata}. It has \NFacts{} facts and 62 possible answers of four kinds: 24 countries, 16 cities, 12 languages\footnote{We dropped Hindi as the language a person spoke after a manual check found its Wikidata labels unreliable. Hindi remains as the language of films.} and 10 sports. Each kind of answer is reached through one to three relations, or types of question. A country answers which country a person is a citizen of, which country a town is in, or which country a film is from. A city answers where a person was born or where a company is based. A language answers which language a person spoke or a film was made in. A sport answers which sport an athlete plays.
+In outline: we ask each model many factual questions whose answers recur, record its internal state at every layer, and compare the states of questions that receive the same answer. This section describes the questions (\ref{sec:questions}--\ref{sec:formats}), what we record (\ref{sec:models}), how we keep fitting and testing apart (\ref{sec:split}), and the three quantities used throughout: answer places, readability and tightness (\ref{sec:places}--\ref{sec:tight}).
 
-Models know popular facts far better than rare ones~\citep{mallen2022when}, so we sampled subjects evenly from three popularity bands (by number of Wikipedia language editions), giving a mix of facts the models know and do not know. Every subject has one value for its relation, a unique English label and no namesake of the same kind.
+\subsection{Questions}
+\label{sec:questions}
+To see whether questions with the same answer reach the same state, we need many different questions for each answer. We built such a set from Wikidata~\citep{vrandecic2014wikidata}. It has \NFacts{} facts and 62 possible answers of four kinds: 24 countries, 16 cities, 12 languages\footnote{We dropped Hindi as the language a person spoke after a manual check found its Wikidata labels unreliable. Hindi remains as the language of films.} and 10 sports.
+
+The facts come in eight types, listed in Table~\ref{tab:relations}. Following Wikidata, we call a type of fact a \emph{relation}. Several relations share a kind of answer. For example, a country can be the answer to a question about a person's citizenship, about where a town is, or about where a film is from. This lets us test later whether the same answer is reached in the same way from different relations.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Answer & Relation & Plain question \\
+\midrule
+Country & Citizenship & What country is $X$ a citizen of? \\
+Country & Town's country & In which country is $X$? \\
+Country & Film's country & Which country is the film $X$ from? \\
+City & Birthplace & In which city was $X$ born? \\
+City & Headquarters & In which city is $X$ headquartered? \\
+Language & Language spoken & Which language did $X$ speak or write? \\
+Language & Film's language & What is the original language of the film $X$? \\
+Sport & Sport played & Which sport does $X$ play? \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{The eight relations.} $X$ is the subject: a person, town, film, company or athlete.}
+\label{tab:relations}
+\end{table}
+
+Models know popular facts far better than rare ones~\citep{mallen2022when}, so we sampled subjects from three popularity bands, measured by the number of Wikipedia language editions (1--4, 5--19, and 20 or more), roughly a third from each. The models therefore know some facts and not others. Every subject has a single answer in Wikidata, a unique English name and no namesake of the same kind.
 
 \subsection{Wordings and formats}
-Each fact is asked as an open question in up to three wordings. One is a plain template: ``What country is An\'{i}bal Ponce a citizen of?'' Two are rewordings in assigned styles, such as a casual text or a quiz host's question: ``Hi, I'd appreciate knowing which country An\'{i}bal Ponce is a citizen of, if possible?'' A language model wrote the rewordings, knowing the subject but never the answer. We kept a rewording only if it named the subject exactly, asked a question, and mentioned no candidate answer or its demonym; \NRewrites{} passed.
+\label{sec:formats}
+Each fact is asked as an open question in up to three wordings. The first is the plain question in Table~\ref{tab:relations}. The other two are rewordings in assigned styles, such as a casual text message or a quiz host's question: ``Hi, I'd appreciate knowing which country An\'{i}bal Ponce is a citizen of, if possible?'' A language model wrote the rewordings. It was told the subject and what to ask, but never the answer. We kept a rewording only if it named the subject exactly, asked a question, and mentioned no candidate answer; \NRewrites{} rewordings passed.
 
-The plain question is also asked as four-option multiple choice, in all four cyclic orders of the options. For a random 30\% of facts, it is also asked with a wrong suggestion from the user: ``In which country is Ireneo Portela? I'm fairly sure it's Mexico.'' In total, each model sees \NPromptsPerModel{} prompts in its own chat format.
+The plain question is also asked as multiple choice, with four options shown in all four rotations of their order. The multiple-choice prompts are used only in Section~\ref{sec:errors}, to tell near misses from gaps; all other measurements use the open questions. In total, each model answers \NPromptsAnalysed{} prompts, each in the model's own chat format.
 
-\subsection{Models and recordings}
-We study four instruction-tuned models: Llama-3.1-8B-Instruct~\citep{grattafiori2024the}, Qwen2.5-7B-Instruct~\citep{qwen2024qwen25}, Gemma-2-9B-it~\citep{gemma2024gemma} and Llama-3.2-1B-Instruct. All answer greedily.
+\subsection{Models and states}
+\label{sec:models}
+We study four instruction-tuned models: Llama-3.1-8B-Instruct~\citep{grattafiori2024the}, Qwen2.5-7B-Instruct~\citep{qwen2024qwen25}, Gemma-2-9B-it~\citep{gemma2024gemma} and Llama-3.2-1B-Instruct. Each answers greedily.
 
-A transformer builds its output in the residual stream, a vector at each token position that every layer reads and adds to. The answer is produced from the last position of the prompt, so we record the residual stream there before the first layer and after every layer (before the final normalisation). We call this vector the question's \emph{state} at that layer, written $h_q^{\ell}$ for question $q$ at layer $\ell$. It has one number per dimension of the residual stream, for example 4,096 in Llama-3.1-8B. Depth is the fraction of the model's layers that the state has passed through.
+A transformer keeps one vector per token position, the residual stream. Each layer reads this vector and adds its output to it. The answer is produced from the last position of the prompt, so we record the residual stream at that position: once before the first layer and once after every layer (before the final normalisation). We call this vector the question's \emph{state} at that layer. It is a list of numbers, 4,096 of them in Llama-3.1-8B. \emph{Depth} is the fraction of the model's layers that the state has passed through, from 0 at the input to 1 at the output. When we report a result at a given depth, we use the nearest layer.
 
-A free-form reply is graded by its first line. If that line names one candidate, matched against hand-curated names such as ``China'' or ``Mandarin'', the reply is right or wrong. A single answer outside the candidate list is wrong. Replies that hedge, refuse or name two answers are set aside as unclear.
+We grade a reply by its first line. If that line names exactly one of the 62 candidates, matched against hand-curated names such as ``China'' or ``Mandarin'', the reply is right or wrong. A single answer outside the candidate list is wrong. Replies that hedge, refuse or name two answers are set aside (\UnclearMin{}--\UnclearMax{} of open replies, depending on the model).
 
 \subsection{Training and test questions}
-Several of our measurements first fit something to questions and then test it, for example the answer places defined next. To keep each test fair, fitting and testing use different questions. We split the subjects (the people, towns, films, companies and athletes) at random into two halves, once, and use the same split throughout. Questions about the first half are \emph{training questions}; questions about the second half are \emph{test questions}. Anything fitted uses only training questions, and every number we report is measured on test questions. We split by subject rather than by question because the several questions about one subject, in different wordings and formats, are close copies of each other.
+\label{sec:split}
+Several measurements first fit something to questions and then test it on other questions. To keep the tests fair, we split the subjects at random into two halves, once, and use the same split everywhere. Questions about the first half are \emph{training questions}; questions about the second half are \emph{test questions}. Everything that is fitted uses training questions only. Every number we report is measured on test questions. We split by subject, not by question, because the questions about one subject (its wordings and formats) are near copies of each other.
 
 \subsection{Answer places}
+\label{sec:places}
 An answer's \emph{place} at a layer is the average state, at that layer, of the training questions to which the model gave that answer:
 \begin{equation}
-p_a^{\ell} = \frac{1}{|Q_a|} \sum_{q \in Q_a} h_q^{\ell},
+p_a = \frac{1}{|Q_a|} \sum_{q \in Q_a} h_q,
 \label{eq:place}
 \end{equation}
-where $Q_a$ is the set of training questions that the model answered with $a$. For example, the place of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of the training questions that Llama answered with ``Argentina'', whether about a person, a town or a film, in any wording. We build a place only for an answer the model gave at least five times, for at least three different subjects.
+where
+\begin{itemize}\itemsep0pt
+\item $a$ is an answer, for example Argentina;
+\item $Q_a$ is the set of training questions that the model answered with $a$, and $|Q_a|$ is their number;
+\item $h_q$ is the state of question $q$ at the layer;
+\item $p_a$ is the place of $a$ at the layer.
+\end{itemize}
+For example, the place of Argentina at layer 15 of Llama-3.1-8B is the average layer-15 state of all training questions that Llama answered with ``Argentina'', whether they asked about a person, a town or a film, in any wording. Each answer has one place per layer. We build a place only if the model gave that answer at least five times, for at least three different subjects.
 
-Places are built from the answers the model gives, not from the true answers. A question that the model answers wrongly with ``Chile'' counts toward the place of Chile. This lets us ask, later, where wrong answers sit.
+Places are built from the answers the model gives, not from the true answers. If the model wrongly answers ``Chile'', the question counts toward the place of Chile. This lets us ask later where wrong answers sit.
 
 \subsection{Readability}
 \label{sec:read}
-Readability asks whether the answer the model gave can be identified from where its state lies. A state and a place are vectors of the same size, so we can measure the distance between them; no output probabilities are involved. For a test question $q$, we find the nearest place among answers of the same kind (for a country question, among the country places):
+Readability measures whether the answer a model gave can be identified from its state alone. For each test question, we find the place nearest to its state, among answers of the same kind:
 \begin{equation}
-\hat{a}(q) = \operatorname*{arg\,min}_{a \in A_q} \big\lVert W(h_q^{\ell}) - W(p_a^{\ell}) \big\rVert,
+\hat{a}_q = \operatorname*{arg\,min}_{a \in A_q} \big\lVert W(h_q) - W(p_a) \big\rVert,
 \label{eq:read}
 \end{equation}
-where $A_q$ is the set of places of the question's kind and $W$ is a whitening, described below. Readability at a layer is the share of test questions for which $\hat{a}(q)$ is the answer the model gave, counting only questions whose given answer has a place. If states carried no information about the answer, readability would be about one over the number of places, for example 4\% for the 24 countries.
+where
+\begin{itemize}\itemsep0pt
+\item $h_q$ is the state of test question $q$ at the layer;
+\item $A_q$ is the set of answers, with a place, of the same kind as the answer the model gave to $q$, for example all country answers for a country question;
+\item $p_a$ is the place of answer $a$ at the same layer;
+\item $W$ is a whitening, described below, applied to both;
+\item $\lVert \cdot \rVert$ is the ordinary straight-line distance between two vectors;
+\item $\hat{a}_q$ is the answer whose place is nearest.
+\end{itemize}
+\emph{Readability} at a layer is the share of test questions for which $\hat{a}_q$ is the answer the model actually gave. For example, a readability of 70\% means that for 70\% of test questions, the nearest place belongs to the model's own answer. We count only test questions whose given answer has a place. If states carried no information about answers, readability would be about one over the number of places, for example 4\% for the 24 countries.
 
-Plain distances would mislead, because a few dimensions of the residual stream take very large values and dominate any distance. The whitening $W$ prevents this. At each layer, it re-expresses a state in the 128 directions along which training states vary most, and rescales each direction to unit variance, so that each direction counts equally. To avoid amplifying noise, each variance is first shrunk by 10\% toward the average variance.
+Whitening is needed because a few dimensions of the residual stream take much larger values than the rest, and would decide any distance on their own. Whitening makes every direction count equally. At each layer, using training questions only, we (i) subtract the average state, (ii) find the 128 directions along which states vary most (their principal components), (iii) describe each state by its 128 coordinates along these directions, and (iv) divide each coordinate by the spread of training states along that direction.\footnote{Each spread is first shrunk 10\% toward the average spread, so that directions with very little spread are not blown up.}
 
 \subsection{Tightness}
-Readability depends on the whitening. Tightness gives a second view that does not: it measures, in the model's own states, how closely test questions gather around their places compared with how far apart the places are. At each layer,
+\label{sec:tight}
+Readability depends on the whitening. As a check that does not, we also measure tightness in the model's own, unwhitened states. Tightness compares how far questions sit from their own place with how far apart the places are:
 \begin{equation}
-T^{\ell} = \frac{\frac{1}{N} \sum_{q} \lVert h_q^{\ell} - p_{a(q)}^{\ell} \rVert^2}{\frac{1}{|A|} \sum_{a \in A} \lVert p_a^{\ell} - \bar{p}^{\ell} \rVert^2}.
+T = \frac{S_{\text{within}}}{S_{\text{between}}},
 \label{eq:tight}
 \end{equation}
-The upper sum runs over the $N$ test questions whose given answer $a(q)$ has a place. $A$ is the set of places of one kind of answer, and $\bar{p}^{\ell}$ is their average. The numerator is the average squared distance of a question from its own place. The denominator is the average squared distance of a place from the centre of all places. A small $T$ means that questions sit close to their places relative to the distances between places. We compute both parts for each kind of answer and add them, weighting each kind by its number of test questions.
+with
+\begin{align*}
+S_{\text{within}} &= \frac{1}{N} \sum_{q} \lVert h_q - p_{g_q} \rVert^2, \\
+S_{\text{between}} &= \frac{1}{|A|} \sum_{a \in A} \lVert p_a - \bar{p} \rVert^2,
+\end{align*}
+where
+\begin{itemize}\itemsep0pt
+\item the sum in $S_{\text{within}}$ runs over the $N$ test questions whose given answer has a place;
+\item $g_q$ is the answer the model gave to question $q$, so $p_{g_q}$ is that answer's place;
+\item $S_{\text{within}}$ is therefore the average squared distance of a question from its own place: how widely questions scatter around their places;
+\item $A$ is the set of answers that have a place, and $|A|$ is their number;
+\item $\bar{p}$ is the average of all these places;
+\item $S_{\text{between}}$ is therefore the average squared distance of a place from the centre of all places: how far apart the places are.
+\end{itemize}
+A small $T$ means that questions gather tightly around places that are far apart. A large $T$ means that questions scatter far more widely than the places are separated, so places cannot be told apart. We compute $S_{\text{within}}$ and $S_{\text{between}}$ for each kind of answer separately, and add each over the kinds, weighting each kind by its number of test questions.
 
 \subsection{Uncertainty and controls}
-Questions about the same subject are not independent: a model tends to get all of them right or all of them wrong. We therefore measure uncertainty by resampling subjects. We draw test subjects at random, with replacement, 300 times, recompute the measure on the questions of the drawn subjects each time, and report the range that holds the middle 95\% of the results.
+\label{sec:controls}
+Questions about the same subject are not independent: a model tends to get all of them right or all of them wrong. We therefore estimate uncertainty by resampling subjects. We draw the test subjects at random, with replacement, 300 times, recompute the result each time, and report the range that contains the middle 95\% of the results.
 
-Two controls show how much readability could arise without information about the answer in the states. In the first, we shuffle the given answers between facts of the same kind before building places, and average over five shuffles. This keeps the number and sizes of the places but breaks the link between a state and its answer, so it measures readability by chance. In the second, we replace each state with a representation of the question's text alone: weighted counts of its two- to four-character sequences, reduced to 256 dimensions. This measures how much of the answer can be guessed from the wording, for example from the spelling of a name.
+Two controls show how much readability could appear without any information about the answer in the states:
+\begin{itemize}\itemsep0pt
+\item \emph{Shuffled answers.} We randomly reassign the given answers among facts of the same kind, then build places and measure readability exactly as before (average of five shuffles). The states are unchanged, but their link to the answers is broken, so what remains is chance.
+\item \emph{Question text only.} We replace each state with a vector made from the question's text alone, without the model: the counts of every sequence of two to four characters, weighted by how rare each sequence is (TF-IDF) and compressed to 256 numbers by a truncated singular value decomposition fitted on training questions. This shows how much of the answer could be guessed from the wording, for example from the spelling of a name.
+\end{itemize}
