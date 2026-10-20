@@ -49,10 +49,14 @@ def floor_cloud(ax, P, colors, size=4, alpha=0.9, pad=0.15):
     x0, x1 = mid[0] - span / 2, mid[0] + span / 2
     y0, y1 = mid[1] - span / 2, mid[1] + span / 2
     z0 = lo[2] - 0.08 * span
+    # Fixed drawing order: the floor lies below every point, so it must never be painted over one.
+    # (Matplotlib's automatic 3-D ordering sorts whole artists by depth and sometimes puts the floor on top.)
+    ax.computed_zorder = False
     ax.plot_surface(np.array([[x0, x1], [x0, x1]]), np.array([[y0, y0], [y1, y1]]), np.full((2, 2), z0),
-                    color=FLOOR, alpha=0.9, linewidth=0, antialiased=True, shade=False, zorder=0)
-    ax.scatter(P[:, 0], P[:, 1], np.full(len(P), z0), s=size * 0.7, c=SHADOW, alpha=0.6, linewidths=0, depthshade=False)
-    ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=size, c=colors, alpha=alpha, linewidths=0, depthshade=False)
+                    color=FLOOR, alpha=1.0, linewidth=0, antialiased=True, shade=False, zorder=0)
+    ax.scatter(P[:, 0], P[:, 1], np.full(len(P), z0), s=size * 0.7, c=SHADOW, alpha=0.45, linewidths=0,
+               depthshade=False, zorder=1)
+    ax.scatter(P[:, 0], P[:, 1], P[:, 2], s=size, c=colors, alpha=alpha, linewidths=0, depthshade=False, zorder=2)
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
     ax.set_zlim(z0, z0 + span)

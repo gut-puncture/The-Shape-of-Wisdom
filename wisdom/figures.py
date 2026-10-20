@@ -105,12 +105,12 @@ def readability(summary, out):
     for m in MODELS:
         band(a, summary[m]["depth"], "acc", COLORS[m], NAMES[m])
     a.legend(loc="upper left", handlelength=1.8)
-    controls = [Line2D([], [], color=style.MUTED, lw=1.2, ls="--", label="Untrained model"),
-                Line2D([], [], color=style.MUTED, lw=1.2, ls=":", label="Shuffled answers"),
+    controls = [Line2D([], [], color="#555555", lw=1.1, ls="--", label="Untrained model"),
+                Line2D([], [], color="#a6a6a6", lw=1.5, ls=":", label="Shuffled answers"),
                 Line2D([], [], color=style.INK, lw=0.9, ls="-.", label="Question text only")]
-    band(a, summary["llama8b_untrained"]["depth_trained_labels"], "acc", style.MUTED, None, lw=1.2, ls="--")
+    band(a, summary["llama8b_untrained"]["depth_trained_labels"], "acc", "#555555", None, lw=1.1, ls="--")
     rows = summary["llama8b"]["depth"]
-    a.plot([r["depth"] for r in rows], [r["acc_shuffled"] for r in rows], color=style.MUTED, lw=1.2, ls=":")
+    a.plot([r["depth"] for r in rows], [r["acc_shuffled"] for r in rows], color="#a6a6a6", lw=1.5, ls=":")
     a.axhline(summary["llama8b"]["text_baseline"]["mean"], color=style.INK, lw=0.9, ls="-.")
     finish_depth_axis(a, "Held-out readability")
     style.title(a, "A", "Four models and controls")
@@ -186,6 +186,9 @@ def recognition(summary, out):
     for k, (key, c, lab) in enumerate(keys):
         vals = np.array([summary[m]["errors_beyond_confidence"][key] for m in MODELS])
         ax.bar(np.arange(len(MODELS)) + (k - 1) * w, vals - 0.5, bottom=0.5, width=w, color=c, label=lab)
+        for x, v in zip(np.arange(len(MODELS)) + (k - 1) * w, vals):
+            if v - 0.5 < 0.02:  # a bar at chance has no height; say its value instead
+                ax.text(x, 0.505, f"{v:.2f}", ha="center", va="bottom", fontsize=6.5, color=style.MUTED)
     ax.axhline(0.5, color=style.AXIS, lw=0.8)
     ax.set_xticks(range(len(MODELS)), ["\n".join(NAMES[m].rsplit("-", 1)) for m in MODELS])
     ax.tick_params(axis="x", length=0)
