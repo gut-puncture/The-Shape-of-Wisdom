@@ -1,32 +1,41 @@
 \section{Results}
 \label{sec:results}
 
-We report five results: when the answer becomes readable (\ref{sec:step}), whether places are shared across different questions (\ref{sec:shared}), whether the model uses places (\ref{sec:steer}), what places reveal about wrong answers (\ref{sec:errors}), and whether places follow the given or the true answer (\ref{sec:given}). Table~\ref{tab:models} collects the main numbers for each model.
-
-\subsection{When the answer becomes readable}
+\subsection{The answer becomes readable in a single layer}
 \label{sec:step}
 
-Figure~\ref{fig:read}A shows readability layer by layer. In every model the curve has the same shape: a low plateau, a jump, and a high plateau. The jump takes a single layer. In Llama-3.1-8B, readability rises from \JumpFromLlama{} at layer \JumpLayerBeforeLlama{} to \JumpToLlama{} at layer \OnsetLayerLlama{}. The other three models show the same one-layer jump (Table~\ref{tab:models}). After the jump, readability keeps rising to a peak of \PeakLlamaSmall{}--\PeakLlama{}.
+If the model formed its answer gradually, readability would rise smoothly with depth. It does not. In every model the curve has the same shape: a low plateau, a jump within a single layer, and a high plateau (Figure~\ref{fig:onset}A). In Llama-3.1-8B, readability rises from \JumpFromLlama{} at layer \JumpLayerBeforeLlama{} to \JumpToLlama{} at layer \OnsetLayerLlama{}. The other three models show the same one-layer jump (Table~\ref{tab:models}). After the jump, readability keeps rising to a peak of \PeakLlamaSmall{}--\PeakLlama{}. We call the layer of the jump the \emph{onset layer}: the first layer at which readability covers half the distance from chance to its peak. To choose it without test questions, we measure this readability on training questions, building centroids from one half of the training subjects and testing on the other (Appendix~\ref{app:details}). The depth of the onset layer, the \emph{onset depth}, differs between models, from \OnsetMin{} to \OnsetMax{} of the way through the network.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{fig_readability.pdf}
-\caption{\textbf{Readability by depth.} (A) All four models, with the two controls of Section~\ref{sec:controls} (shown for Llama-3.1-8B). (B) Llama-3.1-8B under the three tests of Section~\ref{sec:shared}; the standard, other-wording and answer-words-removed curves nearly coincide. Bands are 95\% intervals.}
-\label{fig:read}
+\includegraphics[width=\textwidth]{fig_onset.pdf}
+\caption{\textbf{Readability and separation by depth.} (A) Readability for the four models. The two horizontal lines are the controls, shown for Llama-3.1-8B; the other models' controls are similar. (B) Separation for the four models, on a log scale. Bands are 95\% intervals.}
+\label{fig:onset}
 \end{figure*}
 
-We call the layer of the jump the \emph{onset layer}, and its depth the \emph{onset depth}. The onset depth differs between models, from \OnsetMin{} to \OnsetMax{} of the way through the network. We find the onset layer without looking at test questions: we split the training subjects in half again, build places from one half, measure readability on the other, and take the first layer at which this readability covers half the distance from chance to its highest value over layers. Chance here is the average, over questions, of one over the number of places of the question's kind.
+Two controls show how much readability our procedure reaches when the state carries no information about the answer. \emph{Shuffled answers} keeps every state but credits each question with the answer of a different, randomly chosen fact of the same kind; readability then measures pure chance, which is low because there are 10 to 24 candidate answers of each kind (\ShuffledMin{}--\ShuffledMax{} across models). \emph{Question text only} replaces the model's state with a vector built from the question's spelling alone, without the model.\footnote{The vector counts every sequence of two to four characters in the question, weighted so that sequences common to many questions count less (term frequency--inverse document frequency, TF-IDF), and is compressed to 256 numbers.} It asks how far the wording gives the answer away, for example a name that sounds Japanese. It reaches \TextMin{}--\TextMax{}. Readability above both lines is information that the model added to the state. Before the jump, readability is already \EarlyMin{}--\EarlyMax{}, above both controls; this early signal may come from cues in the subject's name, which we did not test, and it does not grow toward the jump. The jump is much smaller for sports, the one kind of answer that is not a name: \SportJumpMin{}--\SportJumpMax{} percentage points, against \NamesJumpMin{}--\NamesJumpMax{} for countries, cities and languages (Section~\ref{sec:limits}).
 
-Both controls stay low at every layer, in every model: \ShuffledMin{}--\ShuffledMax{} with shuffled answers and \TextMin{}--\TextMax{} with the question text only. Before the jump, readability is \EarlyMin{}--\EarlyMax{}, above both controls. This early signal may come from surface cues in the subject's name, such as its language; we did not test this. It does not grow toward the jump. The jump is smaller for sports, the one kind of answer that is not a name (Section~\ref{sec:limits}).
+Readability depends on the whitening. To check the jump in the model's own states, we also measure \emph{separation}: how far apart the centroids are, compared with how widely questions scatter around their own centroid. At each layer,
+\begin{equation}
+S = \frac{D_{\text{between}}}{D_{\text{within}}},
+\label{eq:tight}
+\end{equation}
+with
+\begin{align*}
+D_{\text{between}} &= \frac{1}{|A|} \sum_{a \in A} \lVert c_a - \bar{c} \rVert^2, \\
+D_{\text{within}} &= \frac{1}{N} \sum_{q} \lVert h_q - c_{g_q} \rVert^2,
+\end{align*}
+where
+\begin{itemize}\itemsep0pt
+\item $A$ is the set of answers of one kind, $|A|$ is their number, and $\bar{c}$ is the average of their centroids;
+\item $D_{\text{between}}$ is therefore the average squared distance of a centroid from the centre of all centroids: how far apart the centroids are;
+\item the sum in $D_{\text{within}}$ runs over the $N$ test questions of that kind, and $g_q$ is the answer the model gave to question $q$;
+\item $D_{\text{within}}$ is therefore the average squared distance of a question from its own answer's centroid: how widely questions scatter;
+\item all distances are measured on the unwhitened states.
+\end{itemize}
+Higher separation means questions sit closer to their own centroid relative to the distance between centroids. We combine the four kinds of answer by weighting each by its number of test questions.
 
-Tightness shows the same event without whitening (Figure~\ref{fig:tight}). From its highest to its lowest value, it falls \TightFoldMin{}- to \TightFoldMax{}-fold, and the fall is concentrated at the onset. Two of each model's 16 to 42 layers, the one into the onset layer and the one out of it, carry \TightAtJumpMin{}--\TightAtJumpMax{} of the whole fall (on a log scale). Tightness then keeps falling more slowly for about ten layers. This differs from trained classifiers, in which the classes separate by a roughly constant factor at every layer~\citep{he2022a}.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{fig_tightness.pdf}
-\caption{\textbf{Tightness by depth} (Equation~\ref{eq:tight}, log scale). Lower is tighter.}
-\label{fig:tight}
-\end{figure}
+Separation shows the same event (Figure~\ref{fig:onset}B). From its lowest to its highest value it rises \TightFoldMin{}- to \TightFoldMax{}-fold, and the rise is concentrated at the onset. The two layer steps at the onset, into the onset layer and out of it, carry \TightAtJumpMin{}--\TightAtJumpMax{} of the whole rise on a log scale. If the rise were spread evenly over a model's 16 to 42 layers, two steps would carry only 5\%--13\%. Separation then keeps rising more slowly for about ten layers. This differs from trained classifiers, in which classes separate by a roughly constant factor at every layer~\citep{he2022a}.
 
 \begin{table}[t]
 \centering
@@ -46,83 +55,80 @@ Layer before onset & \JumpFromLlama{} & \JumpFromQwen{} & \JumpFromGemma{} & \Ju
 Onset layer & \JumpToLlama{} & \JumpToQwen{} & \JumpToGemma{} & \JumpToLlamaSmall{} \\
 Peak & \PeakLlama{} & \PeakQwen{} & \PeakGemma{} & \PeakLlamaSmall{} \\
 Standard, 90\% depth & \GivenLateLlama{} & \GivenLateQwen{} & \GivenLateGemma{} & \GivenLateLlamaSmall{} \\
-True-answer places & \GoldLateLlama{} & \GoldLateQwen{} & \GoldLateGemma{} & \GoldLateLlamaSmall{} \\
 Other relations & \XRelLlama{} & \XRelQwen{} & \XRelGemma{} & \XRelLlamaSmall{} \\
 Other wordings & \XWordLlama{} & \XWordQwen{} & \XWordGemma{} & \XWordLlamaSmall{} \\
 Answer words removed & \NoWordsLlama{} & \NoWordsQwen{} & \NoWordsGemma{} & \NoWordsLlamaSmall{} \\
+True-answer centroids & \GoldLateLlama{} & \GoldLateQwen{} & \GoldLateGemma{} & \GoldLateLlamaSmall{} \\
 \midrule
 \multicolumn{5}{@{}l}{\emph{Telling near misses from gaps (AUC)}} \\
-Rank of right place & \AucRankLlama{} & \AucRankQwen{} & \AucRankGemma{} & \AucRankLlamaSmall{} \\
+Rank of right centroid & \AucRankLlama{} & \AucRankQwen{} & \AucRankGemma{} & \AucRankLlamaSmall{} \\
 Confidence & \AucConfMeanLlama{} & \AucConfMeanQwen{} & \AucConfMeanGemma{} & \AucConfMeanLlamaSmall{} \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Per-model summary.} Accuracy: share of plain test questions answered correctly. True-answer places: Section~\ref{sec:given}. The last three readability rows are the tests of Section~\ref{sec:shared}. All readability rows from ``Standard'' down are at 90\% of depth. AUC: Section~\ref{sec:errors}.}
+\caption{\textbf{Per-model summary.} Accuracy: share of plain test questions answered correctly. Readability rows from ``Standard'' down are at 90\% of depth; the four below ``Standard'' are the tests of Section~\ref{sec:shared}. AUC: Section~\ref{sec:errors}.}
 \label{tab:models}
 \end{table}
 
-\subsection{Places are shared across questions}
+\subsection{Centroids follow the model's answer, not the question or the truth}
 \label{sec:shared}
 
-If a place stands for the answer itself, it should not depend on what exactly the question asks or how. We test this in three ways, each a change to the standard readability measurement (Figure~\ref{fig:read}B, Table~\ref{tab:models}). In each test, a drop in readability would mean that places depend on the thing changed.
+A centroid is built from questions that share an answer. It could still reflect something else those questions share: the type of fact asked, the wording, the word the model is about to write, or the true answer. We test each possibility by changing how the centroids are built or what the state contains, and measuring readability again (Figure~\ref{fig:transfer}, Table~\ref{tab:models}). Below, ``standard'' readability is that of Section~\ref{sec:read}; for Llama-3.1-8B it is \GivenLateLlama{} at 90\% of depth.
 
-\paragraph{Other relations.} We build places from the training questions of one relation only, for example citizenship, and measure readability on test questions of the other relations with the same kind of answer, for example the countries of towns and films. We do this for each relation in turn and average the results. Sports, with a single relation, are left out of this test. In Llama-3.1-8B, readability at 90\% of depth is \XRelLlama{}, against \NamesLateLlama{} in the standard measurement on the same kinds of answer, in which places are built from all relations. The place of a country is therefore much the same whether the question is about a person, a town or a film.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_transfer.pdf}
+\caption{\textbf{Readability of Llama-3.1-8B under three changes} (Section~\ref{sec:shared}). The standard, other-wordings and answer-words-removed curves nearly coincide. Bands are 95\% intervals.}
+\label{fig:transfer}
+\end{figure}
 
-\paragraph{Other wordings.} We build places from plain questions only and measure readability on the rewordings. Readability is \XWordLlama{}, the same as in the standard measurement.
+\paragraph{Other relations.} If centroids were tied to the type of fact, a country centroid built from questions about people would not identify that country in questions about towns or films. We built centroids from the training questions of one relation only, measured readability on test questions of the other relations with the same kind of answer, and averaged over the choice of relation. (Sports have a single relation and are left out.) In Llama-3.1-8B, readability at 90\% of depth is \XRelLlama{}, against \NamesLateLlama{} with standard centroids on the same kinds of answer. The centroid of a country is nearly the same whether the question is about a person, a town or a film.
 
-\paragraph{Answer words removed.} A place could simply be the model preparing to say a particular word, since that would also be shared across questions. To test this, we removed from every state the directions through which the model writes the answer words. The model produces a word by comparing its final state with one fixed vector per token (its unembedding vector), after a normalisation that rescales each dimension. We took these vectors, rescaled in the same way, for every token of the 62 answer names, and removed from each state every direction they span, keeping only the part of the state at right angles to them. Readability did not change (\NoWordsLlama{}). Removing the same number of random directions did not change it either. Places can therefore be read without the directions that write the answer word.
+\paragraph{Other wordings.} If centroids were tied to the wording, centroids built from plain questions would fail on rewordings such as the casual example in Section~\ref{sec:questions}. We built centroids from plain questions only and measured readability on the rewordings. It is \XWordLlama{}, the same as standard.
 
-\subsection{The model uses places}
+\paragraph{Answer words removed.} A centroid could simply reflect the model getting ready to write a particular word, such as ``Argentina'', which every question answered with Argentina shares. The model writes a word through the unembedding vectors of its tokens. We removed from every state its component along the unembedding vectors of all tokens of all 62 answer names, then rebuilt the centroids and measured readability again. It stays at \NoWordsLlama{} in Llama-3.1-8B, unchanged, and removing the same number of random directions does not change it either. The answer can therefore be read from the state without the directions that write the answer word.
+
+\paragraph{True answers.} If centroids reflected the true answer, centroids built from true answers would work at least as well as centroids built from the answers the model gives. They work worse: at 90\% of depth they identify the true answer in \GoldLateMin{}--\GoldLateMax{} of test questions, against \GivenLateMin{}--\GivenLateMax{} for standard centroids identifying the given answer. Two models that disagree show the same thing. Take the plain test questions that two models answer differently. Each model's state lies nearer its own centroid for its own answer than its own centroid for the other model's answer in \CrossModelMin{}--\CrossModelMax{} of these questions, across all \CrossModelPairs{} ordered pairs of models.
+
+\subsection{The model uses the centroids}
 \label{sec:steer}
 
-Readability shows that the answer can be read from the state. It does not show that the model uses this information. To test that, we moved states into places and checked whether the answer changed. For each test question that the model had answered wrongly, with an answer that has a place (\PushNMin{}--\PushNMax{} questions per model), we changed its state at one layer to
+Readability shows that the answer can be read from the state. It does not show that the model uses this information. If it does, moving a state to another answer's centroid should change the answer. For each test question that the model answered wrongly (\PushNMin{}--\PushNMax{} per model, those whose wrong answer has a centroid), we changed its state at one layer to
 \begin{equation}
-h' = h + \left(p_{\text{right}} - p_{\text{given}}\right),
+h' = h + \left(c_{\text{right}} - c_{\text{given}}\right),
 \label{eq:move}
 \end{equation}
 where
 \begin{itemize}\itemsep0pt
-\item $h$ is the question's state at that layer, at the last prompt position;
-\item $p_{\text{given}}$ is the place of the wrong answer the model gave;
-\item $p_{\text{right}}$ is the place of the right answer;
-\item $h'$ is the moved state.
+\item $h$ is the question's state at that layer;
+\item $c_{\text{given}}$ is the centroid of the wrong answer the model gave;
+\item $c_{\text{right}}$ is the centroid of the right answer;
+\item $h'$ is the moved state, which replaces $h$ while the model reads the prompt; the model then writes its reply as usual.
 \end{itemize}
-The move therefore shifts the state by exactly the gap between the two places. The move is made once, while the model reads the prompt; the model then generates its reply without further changes. We made this move at one depth at a time, at seven depths: 20\%, 35\%, 50\%, 60\%, 70\%, 80\% and 90\% of the network. We also ran two controls: a move of the same length in a random direction, and a move toward the place of a third answer, neither given nor right, drawn at random from the places of the same kind. Finally, we took questions the model had answered correctly and moved them toward the place of another answer of the same kind, also drawn at random.
+The centroids are the training centroids of Section~\ref{sec:places} at that layer, and the move is made in the model's own, unwhitened states. We made this move at one layer at a time, at seven depths from 20\% to 90\% of the network. As controls, we moved the state by the same distance in a random direction, and toward the centroid of a third, randomly chosen answer of the same kind. We also moved right answers toward another answer's centroid.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_steering.pdf}
-\caption{\textbf{Moving states toward places} (Section~\ref{sec:steer}). (A) Wrong answers moved toward the right answer's place. (B) Right answers moved toward another answer's place. Solid lines: moves toward the place; dotted lines: random moves of the same length. Short bars under each axis mark each model's onset depth.}
+\caption{\textbf{Moving states to answer centroids.} (A) Wrong answers moved to the right answer's centroid. (B) Right answers moved to another answer's centroid. Solid lines: moves to the centroid; dotted lines: random moves of the same length. The y-axis is the share of questions for which the model then gives the target answer. Short bars under each axis mark each model's onset depth.}
 \label{fig:steer}
 \end{figure*}
 
-Moves work only after the onset (Figure~\ref{fig:steer}). At 20\% of depth they correct \PushEarlyMin{}--\PushEarlyMax{} of wrong answers. After the onset, the later the move, the more often it works. At about 90\% of depth it corrects \PushGoldLlama{} of wrong answers in Llama-3.1-8B, \PushGoldQwen{} in Qwen2.5-7B, \PushGoldGemma{} in Gemma-2-9B and \PushGoldLlamaSmall{} in Llama-3.2-1B. Random moves of the same length produce the right answer in only \PushRandomMin{}--\PushRandomMax{} of cases.
+Moves work only after the onset (Figure~\ref{fig:steer}). At 20\% of depth they correct \PushEarlyMin{}--\PushEarlyMax{} of wrong answers. After the onset, the later the move, the more often it works. At 90\% of depth, it corrects \PushGoldLlama{} of wrong answers in Llama-3.1-8B, \PushGoldQwen{} in Qwen2.5-7B, \PushGoldGemma{} in Gemma-2-9B and \PushGoldLlamaSmall{} in Llama-3.2-1B, while random moves of the same length give the right answer in only \PushRandomMin{}--\PushRandomMax{} of cases. The effect is not specific to the truth. At 90\% of depth, moves toward a third answer's centroid produce that answer in \PushOtherMin{}--\PushOtherMax{} of cases, and right answers moved toward another answer's centroid switch to it in \PushRightOtherMin{}--\PushRightOtherMax{}.
 
-The effect is not specific to the right answer. At 90\% of depth, wrong answers moved toward a third answer's place give that answer in \PushOtherMin{}--\PushOtherMax{} of cases, and right answers moved toward another answer's place switch to it in \PushRightOtherMin{}--\PushRightOtherMax{} of cases.
+Because centroids move apart with depth, the moves grow from \PushRelEarlyMin{}--\PushRelEarlyMax{} of the state's length at 20\% of depth to \PushRelLateMin{}--\PushRelLateMax{} at 90\%, so late moves may partly write the answer directly. The clearest evidence is therefore the depth at which moves start to work, and the failure of random moves of the same length.
 
-One caveat concerns size. Because places move apart with depth, the moves grow from \PushRelEarlyMin{}--\PushRelEarlyMax{} of the state's length at 20\% of depth to \PushRelLateMin{}--\PushRelLateMax{} at 90\%. Late moves are large and close to the output, and may partly write the answer directly. The clearest evidence is therefore the depth at which moves start to work, and the failure of random moves of the same length.
-
-\subsection{Wrong answers: near misses and gaps}
+\subsection{Centroids reveal near misses}
 \label{sec:errors}
 
-Because places are built from the answers the model gives, a wrong answer has a place too, and we can ask what the state of a wrong answer looks like. Some wrong answers are \emph{near misses}: the model fails the open question but picks the right option when the same question is asked as multiple choice. We count a wrong answer as a near miss only if the model picks the right option in at least three of the four option orders. This holds for \ErrPosMin{}--\ErrPosMax{} of wrong answers, fewest in Llama-3.2-1B. The other wrong answers we call \emph{gaps}.
+Some wrong answers are \emph{near misses}: the model gets the open question wrong but picks the right option when the same question is asked as multiple choice. We count a wrong answer as a near miss only if the model picks the right option in at least three of the four option orders. This holds for \ErrPosLlama{} of wrong answers in Llama-3.1-8B, \ErrPosQwen{} in Qwen2.5-7B, \ErrPosGemma{} in Gemma-2-9B and only \ErrPosLlamaSmall{} in Llama-3.2-1B. We call the other wrong answers \emph{gaps}. Can the state tell the two apart, and can the model's confidence?
 
-Can near misses be told apart from gaps? We compared two single numbers for each wrong answer to a plain test question whose right answer has a place:
-\begin{itemize}\itemsep0pt
-\item \emph{Rank of the right place.} At the onset layer, where answers first become readable, we rank all places of the question's kind by their distance from the state (in whitened states), with 1 for the nearest, and take the rank of the right answer's place.
-\item \emph{Confidence.} The model's average log-probability per token of its own reply.
-\end{itemize}
-We measure how well each number separates near misses from gaps with the AUC: the probability that a randomly chosen near miss scores better than a randomly chosen gap (a nearer right place, or a more confident reply). An AUC of 0.5 is chance and 1 is perfect separation. Both AUCs use the same wrong answers, and neither number is fitted to the data.
+For each wrong answer to a plain test question, we computed two numbers. The first is the \emph{rank of the right centroid}. We use the onset layer, fixed in advance as the first layer at which answers are readable; much later, nearly every state lies nearest the centroid of the answer the model gave. At that layer, we rank the centroids of all answers of the question's kind by their distance from the state, with 1 for the nearest, and take the rank of the right answer's centroid. The second is the model's \emph{confidence}: its average log-probability per token of its own reply. For each number, we measure how well it separates near misses from gaps by the area under the receiver operating characteristic curve (AUC): the probability that a randomly chosen near miss scores better than a randomly chosen gap. An AUC of 0.5 is chance and 1 is perfect separation. Neither number is fitted to the data.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{fig_recognition.pdf}
-\caption{\textbf{Telling near misses from gaps} (Section~\ref{sec:errors}). AUC of each single number among wrong answers; 0.5 is chance.}
+\caption{\textbf{Telling near misses from gaps.} AUC of each number among wrong answers. The axis starts at chance (0.5), so Gemma-2-9B's confidence (0.49) has no bar.}
 \label{fig:errors}
 \end{figure}
 
-The rank of the right place separates near misses from gaps better than confidence in every model (Figure~\ref{fig:errors}): AUC \AucRankMin{}--\AucRankMax{}, against \AucConfMeanMin{}--\AucConfMeanMax{} for confidence. The 95\% interval for the difference excludes zero in every model. For near misses, the right answer's place has a median rank of \RankRecogMin{}--\RankRecogMax{}, depending on the model; for gaps it is \RankNotMin{}--\RankNotMax{}. A near miss is thus visible inside the model: the right answer's place is among the nearest, often just behind the place of the answer the model gave. The model's confidence in its reply barely shows this.
-
-\subsection{Places follow the given answer}
-\label{sec:given}
-
-Places are built from the answers the model gives. Two results show that this is also what they represent, rather than the true answer. First, take two models, M and N, and the plain test questions to which they give different answers. On these questions, M's state at its onset layer lies nearer M's place for M's answer than M's place for N's answer in \CrossModelMin{}--\CrossModelMax{} of cases (the range over all \CrossModelPairs{} ordered pairs of models). Second, we built places from the true answers instead, and measured how often the nearest place is the true answer. At 90\% of depth this readability is \GoldLateMin{}--\GoldLateMax{}, well below the \GivenLateMin{}--\GivenLateMax{} of places built from the given answers (Table~\ref{tab:models}).
+The rank of the right centroid separates near misses from gaps better than confidence in every model (Figure~\ref{fig:errors}): AUC \AucRankMin{}--\AucRankMax{}, against \AucConfMeanMin{}--\AucConfMeanMax{}. The 95\% interval for the difference excludes zero in every model. For near misses, the right answer's centroid has a median rank of \RankRecogMin{}--\RankRecogMax{}, depending on the model; for gaps, \RankNotMin{}--\RankNotMax{}. A near miss is thus visible inside the model: the right answer's centroid is among the nearest to the state, often just behind the centroid of the answer the model gave. The model's confidence barely shows this.

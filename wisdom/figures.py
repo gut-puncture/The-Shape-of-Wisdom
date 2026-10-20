@@ -67,7 +67,7 @@ def hero(run_dir, model, prompts, answers, out, onset):
     te = [i for i in te if recs[i]["given_qid"] in top]
     colors = dict(zip(top, style.DISTINCT))
     L = S.shape[1] - 1
-    layers = sorted({1, max(2, onset - 3), onset - 1, onset + 1, min(L - 1, onset + 6), L})
+    layers = sorted({1, onset - 1, onset, onset + 1, min(L - 1, onset + 6), L})
     fig = plt.figure(figsize=(style.PAGEW, 4.75))
     grid = axes_grid(fig, 2, 3, 0.0, 1.0, 0.11, 0.99, 0.0, 0.04, projection="3d")
     for ax, layer in zip([a for row in grid for a in row], layers):
@@ -98,49 +98,49 @@ def finish_depth_axis(ax, ylabel=None, ylim=(0, 1.0)):
         ax.set_ylabel(ylabel)
 
 
-def readability(summary, out):
-    """Figure 2: held-out readability by depth; controls; transfer tests."""
+def onset(summary, out):
+    """Figure 2: readability (with controls) and separation, by depth, for all four models."""
     fig = plt.figure(figsize=(style.PAGEW, 2.45))
     (a, b), = axes_grid(fig, 1, 2, 0.075, 0.99, 0.29, 0.9, 0.09, 0)
     for m in MODELS:
         band(a, summary[m]["depth"], "acc", COLORS[m], NAMES[m])
     a.legend(loc="upper left", handlelength=1.8)
-    controls = [Line2D([], [], color="#a6a6a6", lw=1.5, ls=":", label="Shuffled answers"),
-                Line2D([], [], color=style.INK, lw=0.9, ls="-.", label="Question text only")]
+    controls = [Line2D([], [], color="#a6a6a6", lw=1.5, ls=":", label="Shuffled answers (Llama-3.1-8B)"),
+                Line2D([], [], color=style.INK, lw=0.9, ls="-.", label="Question text only (Llama-3.1-8B)")]
     rows = summary["llama8b"]["depth"]
     a.plot([r["depth"] for r in rows], [r["acc_shuffled"] for r in rows], color="#a6a6a6", lw=1.5, ls=":")
     a.axhline(summary["llama8b"]["text_baseline"]["mean"], color=style.INK, lw=0.9, ls="-.")
     finish_depth_axis(a, "Readability")
-    style.title(a, "A", "Four models and controls")
+    style.title(a, "A", "Readability")
     fig.legend(handles=controls, loc="lower center", bbox_to_anchor=(0.31, 0.0), ncol=2, columnspacing=1.0,
                handlelength=1.8)
+    for m in MODELS:
+        rs = [r for r in summary[m]["depth"] if r.get("spread")]
+        b.plot([r["depth"] for r in rs], [1 / r["spread"] for r in rs], color=COLORS[m], label=NAMES[m])
+    b.set_yscale("log")
+    b.set_yticks([0.03, 0.1, 0.3, 1], ["0.03", "0.1", "0.3", "1"])
+    b.minorticks_off()
+    finish_depth_axis(b, "Separation", ylim=(0.025, 1.3))
+    style.title(b, "B", "Separation, without whitening")
+    style.save(fig, out / "fig_onset.pdf")
+
+
+def transfer(summary, out):
+    """Figure 3: readability of Llama-3.1-8B under the transfer tests."""
+    fig = plt.figure(figsize=(style.COLW, 2.35))
+    ax = fig.add_axes([0.16, 0.19, 0.81, 0.78])
+    rows = summary["llama8b"]["depth"]
     for key, color, label in [("acc", COLORS["llama8b"], "Standard"), ("acc_cross_relation", "#7d3c98", "Other relations"),
                               ("acc_cross_wording", "#d35400", "Other wordings"),
                               ("acc_no_answer_words", style.INK, "Answer words removed")]:
-        band(b, rows, key, color, label, lw=1.5)
-    finish_depth_axis(b)
-    style.title(b, "B", "Transfer tests, Llama-3.1-8B")
-    b.legend(loc="center right", bbox_to_anchor=(1.03, 0.5), handlelength=1.5, labelspacing=0.35)
-    style.save(fig, out / "fig_readability.pdf")
-
-
-def tightness(summary, out):
-    """Figure 3: within-place over between-place spread, unwhitened, by depth."""
-    fig = plt.figure(figsize=(style.COLW, 2.3))
-    ax = fig.add_axes([0.17, 0.2, 0.8, 0.76])
-    for m in MODELS:
-        rows = [r for r in summary[m]["depth"] if r.get("spread")]
-        ax.plot([r["depth"] for r in rows], [r["spread"] for r in rows], color=COLORS[m], label=NAMES[m])
-    ax.set_yscale("log")
-    ax.set_yticks([1, 3, 10, 30], ["1", "3", "10", "30"])
-    ax.minorticks_off()
-    finish_depth_axis(ax, "Tightness, $T$", ylim=(0.8, 40))
-    ax.legend(loc="lower left", handlelength=2.0)
-    style.save(fig, out / "fig_tightness.pdf")
+        band(ax, rows, key, color, label, lw=1.5)
+    finish_depth_axis(ax, "Readability")
+    ax.legend(loc="center right", bbox_to_anchor=(1.03, 0.45), handlelength=1.5, labelspacing=0.35)
+    style.save(fig, out / "fig_transfer.pdf")
 
 
 def steering(summary, out):
-    """Figure 4: moving states toward places, by the depth of the move."""
+    """Figure 4: moving states toward answer centroids, by the depth of the move."""
     def curve(rows, target, cond, key):
         agg = {}
         for r in rows:
@@ -161,8 +161,8 @@ def steering(summary, out):
             ax.plot(rx, ry, color=COLORS[m], lw=1.1, ls=":")
             ax.plot([summary[m]["onset_depth"]] * 2, [-0.08, -0.025], color=COLORS[m], lw=2.0, clip_on=False,
                     solid_capstyle="butt")
-    for ax, letter, text in [(a, "A", "Wrong answers moved to the right answer's place"),
-                             (b, "B", "Right answers moved to another answer's place")]:
+    for ax, letter, text in [(a, "A", "Wrong answers moved to the right answer's centroid"),
+                             (b, "B", "Right answers moved to another answer's centroid")]:
         finish_depth_axis(ax, None, ylim=(-0.08, 1.02))
         ax.set_xlabel("Depth of the move (fraction of layers)")
         ax.set_xlim(0.15, 0.95)
@@ -178,7 +178,7 @@ def recognition(summary, out):
     """Figure 5: among wrong answers, how well one number separates near misses from gaps."""
     fig = plt.figure(figsize=(style.COLW, 2.45))
     ax = fig.add_axes([0.16, 0.27, 0.82, 0.7])
-    keys = [("auc_rank", style.ACCENT, "Rank of right place"), ("auc_conf_mean", "#a6a6a6", "Confidence")]
+    keys = [("auc_rank", style.ACCENT, "Rank of right centroid"), ("auc_conf_mean", "#a6a6a6", "Confidence")]
     w = 0.34
     for k, (key, c, lab) in enumerate(keys):
         vals = np.array([summary[m]["errors_beyond_confidence"][key] for m in MODELS])
@@ -196,24 +196,6 @@ def recognition(summary, out):
     style.save(fig, out / "fig_recognition.pdf")
 
 
-def suggestion(summary, out):
-    """Figure 6: with a wrong suggestion, share of states nearer the right place than the suggested one."""
-    fig = plt.figure(figsize=(style.COLW, 2.6))
-    ax = fig.add_axes([0.16, 0.29, 0.8, 0.68])
-    for m in MODELS:
-        rows = summary[m]["hint"]["trajectory"]
-        x = [r["depth"] for r in rows]
-        ax.plot(x, [r["misled"]["near_gold"] for r in rows], color=COLORS[m], lw=1.5)
-        ax.plot(x, [r["resisted"]["near_gold"] for r in rows], color=COLORS[m], lw=1.1, ls="--")
-    ax.axhline(0.5, color=style.MUTED, lw=0.8, ls=":")
-    finish_depth_axis(ax, "Nearer the right place", ylim=(0, 1.02))
-    handles = [Line2D([], [], color=COLORS[m], lw=1.5, label=NAMES[m]) for m in MODELS]
-    handles += [Line2D([], [], color=style.INK, lw=1.5, label="Gave a wrong answer"),
-                Line2D([], [], color=style.INK, lw=1.1, ls="--", label="Kept the right answer")]
-    fig.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.55, 0.0), ncol=3, columnspacing=1.0, handlelength=2.0)
-    style.save(fig, out / "fig_suggestion.pdf")
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", default=str(ROOT / "runs" / "main"))
@@ -227,8 +209,8 @@ def main():
     prompts = [json.loads(l) for l in open(ROOT / "dataset" / "prompts.jsonl")]
     answers = json.load(open(ROOT / "dataset" / "answers.json"))
     hero(Path(args.run_dir), "llama8b", prompts, answers, out, summary["llama8b"]["onset_layer"])
-    readability(summary, out)
-    tightness(summary, out)
+    onset(summary, out)
+    transfer(summary, out)
     steering(summary, out)
     recognition(summary, out)
 
